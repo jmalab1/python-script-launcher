@@ -45,12 +45,20 @@ export async function deleteProfile(id) {
     return api('DELETE', '/api/profiles/' + id);
 }
 
+export async function saveProfileOrder(ids) {
+    return api('POST', '/api/profiles/reorder', { order: ids });
+}
+
 export async function saveWorkflow(data) {
     return api('POST', '/api/workflows', data);
 }
 
 export async function deleteWorkflow(id) {
     return api('DELETE', '/api/workflows/' + id);
+}
+
+export async function saveWorkflowOrder(ids) {
+    return api('POST', '/api/workflows/reorder', { order: ids });
 }
 
 export async function runProfile(id, argValues) {

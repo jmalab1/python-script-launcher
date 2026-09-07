@@ -23,3 +23,14 @@ def handle_delete(profile_id):
     profiles = [p for p in profiles if p.get("id") != profile_id]
     save_json(PROFILES_FILE, profiles)
     return {"ok": True}
+
+
+def handle_reorder(data):
+    order = data.get("order") or []
+    profiles = load_json(PROFILES_FILE)
+    by_id = {p.get("id"): p for p in profiles}
+    ordered = [by_id[i] for i in order if i in by_id]
+    ordered_set = {p.get("id") for p in ordered}
+    ordered += [p for p in profiles if p.get("id") not in ordered_set]
+    save_json(PROFILES_FILE, ordered)
+    return {"ok": True}

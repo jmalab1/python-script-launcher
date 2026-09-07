@@ -135,8 +135,16 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
                 result = profiles.handle_create(data)
                 self._json_response(result)
 
+            elif path == "/api/profiles/reorder":
+                result = profiles.handle_reorder(data)
+                self._json_response(result)
+
             elif path == "/api/workflows":
                 result = workflows.handle_create(data)
+                self._json_response(result)
+
+            elif path == "/api/workflows/reorder":
+                result = workflows.handle_reorder(data)
                 self._json_response(result)
 
             elif path == "/api/run/profile":

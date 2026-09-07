@@ -130,8 +130,8 @@ function App() {
                         ` : ''}
 
                         ${currentPanel.value === 'workflows' ? html`
-                            <div id="panel-workflows" class="panel">
-                                <div class="flex items-center justify-between mb-6">
+                            <div id="panel-workflows" class="panel xl:flex xl:flex-col xl:h-[calc(100vh-6.75rem)]">
+                                <div class="flex items-center justify-between mb-6 xl:shrink-0">
                                     <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Workflows</h1>
                                     <button onClick=${openNewWorkflowModal}
                                         class="bg-gray-900 text-gray-100 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-800 dark:hover:bg-white text-sm font-medium px-3 py-2 rounded-lg inline-flex items-center gap-1.5 transition">
@@ -139,11 +139,11 @@ function App() {
                                         New Workflow
                                     </button>
                                 </div>
-                                <div class="grid grid-cols-1 xl:grid-cols-5 gap-6">
-                                    <div class="xl:col-span-2">
+                                <div class="grid grid-cols-1 xl:grid-cols-5 gap-6 xl:flex-1 xl:min-h-0">
+                                    <div class="xl:col-span-2 xl:overflow-y-auto xl:pr-1">
                                         <${WorkflowList} onEdit=${(w) => { setEditingWorkflow(w); setWorkflowOpen(true); }} onRun=${handleRunStarted} />
                                     </div>
-                                    <div class="xl:col-span-3">
+                                    <div class="xl:col-span-3 xl:overflow-y-auto xl:pr-1">
                                         <div class="bg-white dark:bg-gray-800 shadow-xs rounded-xl border border-gray-200 dark:border-gray-700/60">
                                             <header class="px-5 py-4 border-b border-gray-100 dark:border-gray-700/60">
                                                 <h2 class="font-semibold text-gray-800 dark:text-gray-100">Run History</h2>
