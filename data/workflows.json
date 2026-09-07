@@ -1,0 +1,25 @@
+[
+  {
+    "id": "workflow_1788815162864",
+    "name": "Test",
+    "steps": [
+      {
+        "profile_id": "profile_1788814820708",
+        "execution_mode": "parallel",
+        "args": []
+      },
+      {
+        "profile_id": "profile_1788815254863",
+        "execution_mode": "parallel",
+        "args": []
+      },
+      {
+        "profile_id": "profile_1788816224865",
+        "execution_mode": "sequential",
+        "args": []
+      }
+    ],
+    "extra_args": [],
+    "continue_on_error": false
+  }
+]

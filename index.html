@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Python Web Launcher</title>
+<style>
+    :root {
+        --bg: #1a1a2e;
+        --surface: #16213e;
+        --surface2: #0f3460;
+        --accent: #e94560;
+        --accent2: #533483;
+        --text: #eee;
+        --text-dim: #999;
+        --success: #4caf50;
+        --fail: #f44336;
+        --border: #333;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+    }
+    header {
+        background: var(--surface);
+        padding: 16px 24px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        border-bottom: 2px solid var(--accent);
+    }
+    header h1 { font-size: 1.4rem; font-weight: 600; }
+    header h1 span { color: var(--accent); }
+    nav {
+        display: flex;
+        gap: 4px;
+        margin-left: auto;
+    }
+    nav button {
+        background: transparent;
+        color: var(--text-dim);
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: all 0.2s;
+    }
+    nav button:hover { background: var(--surface2); color: var(--text); }
+    nav button.active { background: var(--accent); color: #fff; }
+
+    .container { max-width: 100%; margin: 0 auto; padding: 16px 24px; }
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    .toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+    }
+    .toolbar h2 { font-size: 1.2rem; }
+
+    button.btn {
+        background: var(--accent);
+        color: #fff;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.85rem;
+        transition: background 0.2s;
+    }
+    button.btn:hover { background: #c73550; }
+    button.btn.secondary { background: var(--surface2); }
+    button.btn.secondary:hover { background: var(--accent2); }
+    button.btn.success { background: var(--success); }
+    button.btn.success:hover { background: #43a047; }
+    button.btn.fail { background: var(--fail); }
+    button.btn.small { padding: 4px 10px; font-size: 0.8rem; }
+    button.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 12px;
+        transition: border-color 0.2s;
+    }
+    .card:hover { border-color: var(--accent2); }
+    .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+    .card-header h3 { font-size: 1rem; }
+    .card-meta { color: var(--text-dim); font-size: 0.82rem; }
+    .card-actions { display: flex; gap: 6px; }
+
+    .tag {
+        display: inline-block;
+        background: var(--surface2);
+        color: var(--text-dim);
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        margin-right: 4px;
+    }
+    .tag.green { background: #1b5e20; color: #a5d6a7; }
+    .tag.red { background: #b71c1c; color: #ef9a9a; }
+    .tag.blue { background: #0d47a1; color: #90caf9; }
+
+    /* Modal */
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.7);
+        z-index: 100;
+        justify-content: center;
+        align-items: center;
+    }
+    .modal-overlay.show { display: flex; }
+    .modal {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 24px;
+        width: 90%;
+        max-width: 600px;
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+    .modal h2 { margin-bottom: 16px; font-size: 1.15rem; }
+    .modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 16px;
+    }
+
+    /* Form */
+    label {
+        display: block;
+        font-size: 0.85rem;
+        color: var(--text-dim);
+        margin-bottom: 4px;
+        margin-top: 12px;
+    }
+    label:first-child { margin-top: 0; }
+    input[type="text"], input[type="number"], textarea, select {
+        width: 100%;
+        background: var(--bg);
+        color: var(--text);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 8px 12px;
+        font-size: 0.9rem;
+        font-family: inherit;
+    }
+    input:focus, textarea:focus, select:focus {
+        outline: none;
+        border-color: var(--accent);
+    }
+    textarea { resize: vertical; min-height: 60px; font-family: monospace; }
+
+    .input-row {
+        display: flex;
+        gap: 8px;
+    }
+    .input-row input { flex: 1; }
+
+    /* File browser */
+    .file-browser {
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        overflow: hidden;
+    }
+    .file-browser-header {
+        background: var(--bg);
+        padding: 8px 12px;
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        border-bottom: 1px solid var(--border);
+    }
+    .file-browser-header input { flex: 1; }
+    .file-list {
+        max-height: 300px;
+        overflow-y: auto;
+        background: var(--bg);
+    }
+    .file-item {
+        padding: 8px 12px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.88rem;
+        border-bottom: 1px solid #222;
+    }
+    .file-item:hover { background: var(--surface2); }
+    .file-item.selected { background: var(--accent2); }
+    .file-item .icon { width: 18px; text-align: center; }
+    .file-item.dir .icon { color: #ffc107; }
+    .file-item.file .icon { color: var(--text-dim); }
+
+    /* Workflow steps */
+    .step-list { margin-top: 8px; }
+    .step-item {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 10px 12px;
+        margin-bottom: 6px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .step-item .step-num {
+        background: var(--accent2);
+        color: #fff;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        flex-shrink: 0;
+    }
+    .step-item .step-info { flex: 1; }
+    .step-item .step-info .name { font-size: 0.9rem; }
+    .step-item .step-info .path { font-size: 0.78rem; color: var(--text-dim); }
+    .step-item .step-controls { display: flex; gap: 4px; }
+    .step-item select {
+        width: auto;
+        padding: 4px 8px;
+        font-size: 0.8rem;
+    }
+
+    /* Output */
+    .output-box {
+        background: #000;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 12px;
+        font-family: 'Cascadia Code', 'Fira Code', monospace;
+        font-size: 0.82rem;
+        max-height: 500px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        word-break: break-all;
+        line-height: 1.5;
+    }
+    .output-box .line-fail { color: var(--fail); }
+    .output-box .line-success { color: var(--success); }
+    .output-box .line-info { color: #64b5f6; }
+
+    .run-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.82rem;
+        font-weight: 500;
+    }
+    .run-status.running { background: #1a237e; color: #90caf9; }
+    .run-status.completed { background: #1b5e20; color: #a5d6a7; }
+    .run-status.failed { background: #b71c1c; color: #ef9a9a; }
+    .run-status.starting { background: #4a148c; color: #ce93d8; }
+
+    .dot {
+        width: 8px; height: 8px;
+        border-radius: 50%;
+        background: currentColor;
+        animation: pulse 1s infinite;
+    }
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.3; }
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 48px 24px;
+        color: var(--text-dim);
+    }
+    .empty-state .icon { font-size: 2.5rem; margin-bottom: 12px; }
+    .empty-state p { font-size: 0.9rem; }
+
+    .checkbox-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 12px;
+    }
+    .checkbox-row input[type="checkbox"] {
+        width: auto;
+        accent-color: var(--accent);
+    }
+    .checkbox-row label { margin: 0; }
+
+    .custom-arg-row {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        margin-bottom: 6px;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 8px;
+    }
+    .custom-arg-row input, .custom-arg-row select {
+        padding: 5px 8px;
+        font-size: 0.82rem;
+    }
+    .custom-arg-row input[type="text"] { flex: 1; }
+    .custom-arg-row select { width: 90px; }
+
+    .arg-field {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+    }
+    .arg-field label {
+        min-width: 120px;
+        margin: 0;
+        font-size: 0.85rem;
+        color: var(--text);
+    }
+    .arg-field input[type="text"] { flex: 1; }
+    .arg-field input[type="checkbox"] { width: auto; accent-color: var(--accent); }
+
+    .history-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.82rem;
+    }
+    .history-table th {
+        background: var(--bg);
+        padding: 8px;
+        text-align: left;
+        border-bottom: 1px solid var(--border);
+        color: var(--text-dim);
+        font-weight: 500;
+    }
+    .history-table td {
+        padding: 8px;
+        border-bottom: 1px solid #222;
+    }
+    .history-table tr:hover { background: var(--surface2); }
+    .history-table .status-completed { color: var(--success); }
+    .history-table .status-failed { color: var(--fail); }
+    .history-table .status-running { color: #64b5f6; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+</style>
+</head>
+<body>
+<header>
+    <h1><span>&#9654;</span> Python Web Launcher</h1>
+    <nav>
+        <button class="active" onclick="showPanel('profiles')">Profiles</button>
+        <button onclick="showPanel('workflows')">Workflows</button>
+        <button onclick="showPanel('runs')">Runs</button>
+    </nav>
+</header>
+
+<div class="container">
+    <!-- PROFILES PANEL -->
+    <div id="panel-profiles" class="panel active">
+        <div class="toolbar">
+            <h2>Profiles</h2>
+            <button class="btn" onclick="openProfileModal()">+ New Profile</button>
+        </div>
+        <div id="profiles-list"></div>
+    </div>
+
+    <!-- WORKFLOWS PANEL -->
+    <div id="panel-workflows" class="panel">
+        <div style="display:flex;gap:24px;">
+            <div style="flex:1;min-width:0;">
+                <div class="toolbar">
+                    <h2>Workflows</h2>
+                    <button class="btn" onclick="openWorkflowModal()">+ New Workflow</button>
+                </div>
+                <div id="workflows-list"></div>
+            </div>
+            <div style="flex:2;min-width:0;">
+                <div class="toolbar">
+                    <h2>Run History</h2>
+                    <button class="btn small secondary" onclick="loadHistory()">Refresh</button>
+                </div>
+                <div id="history-table-wrap"></div>
+                <div id="history-pagination" style="margin-top:8px;display:flex;gap:4px;align-items:center;justify-content:center;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RUNS PANEL -->
+    <div id="panel-runs" class="panel">
+        <div class="toolbar">
+            <h2>Active &amp; Recent Runs</h2>
+            <button class="btn secondary" onclick="refreshRuns()">Refresh</button>
+        </div>
+        <div id="runs-list"></div>
+    </div>
+</div>
+
+<!-- PROFILE MODAL -->
+<div id="profile-modal" class="modal-overlay">
+    <div class="modal">
+        <h2 id="profile-modal-title">New Profile</h2>
+
+        <label for="profile-name">Profile Name</label>
+        <input type="text" id="profile-name" placeholder="e.g. Data Pipeline">
+
+        <label>Script Path</label>
+        <div class="input-row">
+            <input type="text" id="profile-script-path" placeholder="No file selected" readonly style="flex:1;background:var(--bg);">
+            <button class="btn" onclick="openNativeFileDialog()">Browse</button>
+        </div>
+        <div class="file-browser" style="margin-top:8px;">
+            <div class="file-browser-header">
+                <input type="text" id="file-path-input" placeholder="Or enter path manually...">
+                <button class="btn small" onclick="browseTo()">Go</button>
+            </div>
+            <div id="file-list" class="file-list"></div>
+        </div>
+
+        <label for="profile-args">Arguments (one per line)</label>
+        <textarea id="profile-args" rows="3" placeholder="--input data.csv&#10;--verbose"></textarea>
+
+        <label>Custom Argument Fields</label>
+        <p style="font-size:0.8rem;color:var(--text-dim);margin-bottom:8px;">Define named fields that appear as editable inputs on the profile card.</p>
+        <div id="custom-args-list"></div>
+        <button class="btn small secondary" onclick="addCustomArgDef()" style="margin-top:8px;">+ Add Argument Field</button>
+
+        <div class="modal-actions">
+            <button class="btn secondary" onclick="closeModal('profile-modal')">Cancel</button>
+            <button class="btn success" onclick="saveProfile()">Save Profile</button>
+        </div>
+    </div>
+</div>
+
+<!-- WORKFLOW MODAL -->
+<div id="workflow-modal" class="modal-overlay">
+    <div class="modal">
+        <h2 id="workflow-modal-title">New Workflow</h2>
+
+        <label for="workflow-name">Workflow Name</label>
+        <input type="text" id="workflow-name" placeholder="e.g. ETL Pipeline">
+
+        <label>Add Step</label>
+        <div class="input-row">
+            <select id="workflow-step-profile"></select>
+            <select id="workflow-step-mode">
+                <option value="sequential">Sequential</option>
+                <option value="parallel">Parallel</option>
+            </select>
+            <button class="btn small" onclick="addWorkflowStep()">Add</button>
+        </div>
+
+        <label>Steps</label>
+        <div id="workflow-steps" class="step-list"></div>
+
+        <label for="workflow-extra-args">Extra Args for All Steps (one per line)</label>
+        <textarea id="workflow-extra-args" rows="2" placeholder="--debug"></textarea>
+
+        <div class="checkbox-row">
+            <input type="checkbox" id="workflow-continue-on-error">
+            <label for="workflow-continue-on-error">Continue on error</label>
+        </div>
+
+        <div class="modal-actions">
+            <button class="btn secondary" onclick="closeModal('workflow-modal')">Cancel</button>
+            <button class="btn success" onclick="saveWorkflow()">Save Workflow</button>
+        </div>
+    </div>
+</div>
+
+<!-- RUN MODAL -->
+<div id="run-modal" class="modal-overlay">
+    <div class="modal" style="max-width: 750px;">
+        <h2 id="run-modal-title">Run Output</h2>
+        <div style="margin-bottom: 12px;">
+            <span id="run-status-badge" class="run-status starting"><span class="dot"></span> <span id="run-status-text">Starting...</span></span>
+        </div>
+        <div id="run-output" class="output-box"></div>
+        <div class="modal-actions">
+            <button class="btn secondary" onclick="closeModal('run-modal')">Close</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// ---- State ----
+let profiles = [];
+let workflows = [];
+let editingProfileId = null;
+let editingWorkflowId = null;
+let workflowSteps = [];
+let currentRunId = null;
+let runPollTimer = null;
+let customArgDefs = [];
+
+// ---- Init ----
+async function init() {
+    await loadProfiles();
+    await loadWorkflows();
+    renderProfiles();
+    renderWorkflows();
+    loadHistory();
+}
+
+// ---- API helpers ----
+async function api(method, path, body) {
+    const opts = { method, headers: { 'Content-Type': 'application/json' } };
+    if (body) opts.body = JSON.stringify(body);
+    const res = await fetch(path, opts);
+    return res.json();
+}
+
+async function loadProfiles() { profiles = await api('GET', '/api/profiles'); }
+async function loadWorkflows() { workflows = await api('GET', '/api/workflows'); }
+
+// ---- Navigation ----
+function showPanel(name) {
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('panel-' + name).classList.add('active');
+    document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+    document.querySelector(`nav button[onclick="showPanel('${name}')"]`).classList.add('active');
+    if (name === 'runs') refreshRuns();
+    if (name === 'workflows') {
+        loadHistory();
+        if (!historyRefreshTimer) historyRefreshTimer = setInterval(loadHistory, 3000);
+    } else {
+        if (historyRefreshTimer) { clearInterval(historyRefreshTimer); historyRefreshTimer = null; }
+    }
+}
+
+// ---- Modal helpers ----
+function openModal(id) { document.getElementById(id).classList.add('show'); }
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+// ---- Profiles ----
+function renderProfiles() {
+    const el = document.getElementById('profiles-list');
+    if (!profiles.length) {
+        el.innerHTML = '<div class="empty-state"><div class="icon">&#128196;</div><p>No profiles yet. Create one to get started.</p></div>';
+        return;
+    }
+    el.innerHTML = profiles.map(p => {
+        const customArgs = p.custom_args || [];
+        const staticArgs = p.args || [];
+        return `
+        <div class="card">
+            <div class="card-header">
+                <h3>${esc(p.name)}</h3>
+                <div class="card-actions">
+                    <button class="btn small success" onclick="runProfile('${p.id}')">&#9654; Run</button>
+                    <button class="btn small secondary" onclick="editProfile('${p.id}')">Edit</button>
+                    <button class="btn small fail" onclick="deleteProfile('${p.id}')">Del</button>
+                </div>
+            </div>
+            <div class="card-meta">
+                <span class="tag">${esc(p.script_path)}</span>
+                ${staticArgs.map(a => `<span class="tag blue">${esc(a)}</span>`).join('')}
+            </div>
+            ${customArgs.length ? `
+            <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+                ${customArgs.map((ca, i) => {
+                    if (ca.type === 'checkbox') {
+                        return `<div class="arg-field" style="margin:0;">
+                            <label><input type="checkbox" id="arg-${p.id}-${i}" data-profile="${p.id}" data-idx="${i}" onchange="updateProfileArg(this)"> ${esc(ca.label || ca.name)}</label>
+                        </div>`;
+                    }
+                    return `<div class="arg-field" style="margin:0;">
+                        <label>${esc(ca.label || ca.name)}</label>
+                        <input type="text" id="arg-${p.id}-${i}" data-profile="${p.id}" data-idx="${i}" value="${esc(ca.value || ca.default || '')}" onchange="updateProfileArg(this)" placeholder="${esc(ca.name)}" style="max-width:200px;">
+                    </div>`;
+                }).join('')}
+            </div>` : ''}
+        </div>`;
+    }).join('');
+}
+
+function openProfileModal(profile) {
+    editingProfileId = profile ? profile.id : null;
+    document.getElementById('profile-modal-title').textContent = profile ? 'Edit Profile' : 'New Profile';
+    document.getElementById('profile-name').value = profile ? profile.name : '';
+    document.getElementById('profile-args').value = profile ? (profile.args || []).join('\n') : '';
+    document.getElementById('profile-script-path').value = profile ? profile.script_path : '';
+    document.getElementById('file-path-input').value = profile ? profile.script_path : '';
+    document.getElementById('file-list').innerHTML = '';
+    customArgDefs = profile ? JSON.parse(JSON.stringify(profile.custom_args || [])) : [];
+    renderCustomArgDefs();
+    openModal('profile-modal');
+    if (!profile) browseTo('/');
+}
+
+function renderCustomArgDefs() {
+    const el = document.getElementById('custom-args-list');
+    if (!customArgDefs.length) {
+        el.innerHTML = '<div style="color:var(--text-dim);font-size:0.82rem;padding:4px;">No custom fields defined.</div>';
+        return;
+    }
+    el.innerHTML = customArgDefs.map((ca, i) => `
+        <div class="custom-arg-row">
+            <input type="text" value="${esc(ca.name)}" placeholder="Flag (--name)" onchange="customArgDefs[${i}].name=this.value" style="flex:1;">
+            <input type="text" value="${esc(ca.label || '')}" placeholder="Label" onchange="customArgDefs[${i}].label=this.value" style="flex:1;">
+            <select onchange="customArgDefs[${i}].type=this.value;renderCustomArgDefs()">
+                <option value="text" ${ca.type==='text'?'selected':''}>Text</option>
+                <option value="checkbox" ${ca.type==='checkbox'?'selected':''}>Checkbox</option>
+            </select>
+            ${ca.type !== 'checkbox' ? `<input type="text" value="${esc(ca.default || '')}" placeholder="Default" onchange="customArgDefs[${i}].default=this.value" style="flex:1;">` : ''}
+            <button class="btn small fail" onclick="customArgDefs.splice(${i},1);renderCustomArgDefs()">&#10005;</button>
+        </div>
+    `).join('');
+}
+
+function addCustomArgDef() {
+    customArgDefs.push({ name: '', label: '', type: 'text', default: '', value: '' });
+    renderCustomArgDefs();
+    // Focus the new name input
+    const inputs = document.querySelectorAll('#custom-args-list .custom-arg-row input[type="text"]');
+    if (inputs.length) inputs[inputs.length - 3].focus();
+}
+
+async function updateProfileArg(el) {
+    const profileId = el.dataset.profile;
+    const idx = parseInt(el.dataset.idx);
+    const profile = profiles.find(p => p.id === profileId);
+    if (!profile) return;
+    const ca = profile.custom_args[idx];
+    if (!ca) return;
+    if (ca.type === 'checkbox') {
+        ca.value = el.checked ? 'true' : 'false';
+    } else {
+        ca.value = el.value;
+    }
+    await api('POST', '/api/profiles', profile);
+    await loadProfiles();
+}
+
+function editProfile(id) {
+    const p = profiles.find(x => x.id === id);
+    if (p) openProfileModal(p);
+}
+
+async function deleteProfile(id) {
+    if (!confirm('Delete this profile?')) return;
+    await api('DELETE', '/api/profiles/' + id);
+    await loadProfiles();
+    renderProfiles();
+}
+
+async function saveProfile() {
+    const name = document.getElementById('profile-name').value.trim();
+    const scriptPath = document.getElementById('profile-script-path').value.trim();
+    const argsText = document.getElementById('profile-args').value.trim();
+    if (!name || !scriptPath) { alert('Name and script path are required.'); return; }
+    const args = argsText ? argsText.split('\n').map(s => s.trim()).filter(Boolean) : [];
+    // Sync custom arg defs - ensure each has proper fields
+    const customArgs = customArgDefs.map(ca => ({
+        name: ca.name.trim(),
+        label: (ca.label || ca.name).trim(),
+        type: ca.type || 'text',
+        default: ca.default || '',
+        value: ca.value || ca.default || '',
+    })).filter(ca => ca.name);
+    const profile = { id: editingProfileId, name, script_path: scriptPath, args, custom_args: customArgs };
+    await api('POST', '/api/profiles', profile);
+    await loadProfiles();
+    renderProfiles();
+    closeModal('profile-modal');
+}
+
+async function runProfile(id) {
+    // Collect current values from the profile card's editable fields
+    const profile = profiles.find(p => p.id === id);
+    const argValues = {};
+    if (profile && profile.custom_args) {
+        profile.custom_args.forEach((ca, i) => {
+            const el = document.getElementById(`arg-${id}-${i}`);
+            if (!el) return;
+            if (ca.type === 'checkbox') {
+                argValues[ca.name] = el.checked ? 'true' : 'false';
+            } else {
+                argValues[ca.name] = el.value;
+            }
+        });
+    }
+    const res = await api('POST', '/api/run/profile', { profile_id: id, arg_values: argValues });
+    if (res.run_id) openRunModal(res.run_id, 'Profile Run');
+}
+
+// ---- File Browser ----
+async function browseTo(path) {
+    if (!path) path = document.getElementById('file-path-input').value || '/';
+    const data = await api('GET', '/api/browse?path=' + encodeURIComponent(path));
+    if (data.error) { alert(data.error); return; }
+    document.getElementById('file-path-input').value = data.path;
+    const list = document.getElementById('file-list');
+    // If server returned a selected file (user entered a file path), auto-select it
+    if (data.selected_file) {
+        const f = data.selected_file;
+        document.getElementById('profile-script-path').value = f.path;
+        list.innerHTML = `<div class="file-item file selected" data-path="${esc(f.path)}" data-isdir="false">
+            <span class="icon">&#128196;</span>
+            <span>${esc(f.name)} <span style="color:var(--success)">(selected)</span></span>
+        </div>`;
+        return;
+    }
+    if (!data.entries.length) {
+        list.innerHTML = '<div style="padding:12px;color:var(--text-dim);font-size:0.85rem;">Empty directory</div>';
+        return;
+    }
+    list.innerHTML = data.entries.map(e => `
+        <div class="file-item ${e.is_dir ? 'dir' : 'file'}" data-path="${esc(e.path)}" data-isdir="${e.is_dir}">
+            <span class="icon">${e.is_dir ? '&#128193;' : '&#128196;'}</span>
+            <span>${esc(e.name)}</span>
+        </div>
+    `).join('');
+}
+
+document.getElementById('file-list').addEventListener('click', function(e) {
+    const item = e.target.closest('.file-item');
+    if (!item) return;
+    const isDir = item.dataset.isdir === 'true';
+    const path = item.dataset.path;
+    if (isDir) {
+        browseTo(path);
+    } else {
+        document.getElementById('profile-script-path').value = path;
+        document.getElementById('file-path-input').value = path;
+        document.querySelectorAll('.file-item').forEach(el => el.classList.remove('selected'));
+        item.classList.add('selected');
+    }
+});
+
+document.getElementById('file-path-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+        const val = e.target.value.trim();
+        if (val.endsWith('.py') || val.endsWith('.pyw')) {
+            document.getElementById('profile-script-path').value = val;
+        } else {
+            browseTo(val);
+        }
+    }
+});
+
+async function openNativeFileDialog() {
+    const data = await api('GET', '/api/filedialog');
+    if (data.error) { alert(data.error); return; }
+    if (data.path) {
+        document.getElementById('profile-script-path').value = data.path;
+        document.getElementById('file-path-input').value = data.path;
+    }
+}
+
+// ---- Workflows ----
+function renderWorkflows() {
+    const el = document.getElementById('workflows-list');
+    if (!workflows.length) {
+        el.innerHTML = '<div class="empty-state"><div class="icon">&#128268;</div><p>No workflows yet. Create one to chain profiles together.</p></div>';
+        return;
+    }
+    el.innerHTML = workflows.map(w => {
+        const steps = (w.steps || []);
+        const modes = [...new Set(steps.map(s => s.execution_mode || 'sequential'))];
+        return `
+        <div class="card">
+            <div class="card-header">
+                <h3>${esc(w.name)}</h3>
+                <div class="card-actions">
+                    <button class="btn small success" onclick="runWorkflow('${w.id}')">&#9654; Run</button>
+                    <button class="btn small secondary" onclick="editWorkflow('${w.id}')">Edit</button>
+                    <button class="btn small fail" onclick="deleteWorkflow('${w.id}')">Del</button>
+                </div>
+            </div>
+            <div class="card-meta">
+                <span class="tag">${steps.length} step${steps.length !== 1 ? 's' : ''}</span>
+                ${modes.map(m => `<span class="tag ${m === 'parallel' ? 'green' : ''}">${m}</span>`).join('')}
+                ${w.continue_on_error ? '<span class="tag red">continue on error</span>' : ''}
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function openWorkflowModal(workflow) {
+    editingWorkflowId = workflow ? workflow.id : null;
+    document.getElementById('workflow-modal-title').textContent = workflow ? 'Edit Workflow' : 'New Workflow';
+    document.getElementById('workflow-name').value = workflow ? workflow.name : '';
+    document.getElementById('workflow-extra-args').value = workflow ? (workflow.extra_args || []).join('\n') : '';
+    document.getElementById('workflow-continue-on-error').checked = workflow ? !!workflow.continue_on_error : false;
+
+    // Populate profile dropdown
+    const sel = document.getElementById('workflow-step-profile');
+    sel.innerHTML = profiles.map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join('');
+
+    workflowSteps = workflow ? JSON.parse(JSON.stringify(workflow.steps || [])) : [];
+    renderWorkflowSteps();
+    openModal('workflow-modal');
+}
+
+function editWorkflow(id) {
+    const w = workflows.find(x => x.id === id);
+    if (w) openWorkflowModal(w);
+}
+
+async function deleteWorkflow(id) {
+    if (!confirm('Delete this workflow?')) return;
+    await api('DELETE', '/api/workflows/' + id);
+    await loadWorkflows();
+    renderWorkflows();
+}
+
+function addWorkflowStep() {
+    const profileId = document.getElementById('workflow-step-profile').value;
+    const mode = document.getElementById('workflow-step-mode').value;
+    if (!profileId) return;
+    workflowSteps.push({ profile_id: profileId, execution_mode: mode, args: [] });
+    renderWorkflowSteps();
+}
+
+function renderWorkflowSteps() {
+    const el = document.getElementById('workflow-steps');
+    if (!workflowSteps.length) {
+        el.innerHTML = '<div style="color: var(--text-dim); font-size: 0.85rem; padding: 8px;">No steps added yet.</div>';
+        return;
+    }
+    el.innerHTML = workflowSteps.map((s, i) => {
+        return `
+        <div class="step-item">
+            <div class="step-num">${i + 1}</div>
+            <div class="step-info" style="flex:1;">
+                <select onchange="updateStepProfile(${i}, this.value)" style="width:100%;padding:5px 8px;font-size:0.85rem;margin-bottom:4px;">
+                    ${profiles.map(p => `<option value="${p.id}" ${s.profile_id === p.id ? 'selected' : ''}>${esc(p.name)} — ${esc(p.script_path)}</option>`).join('')}
+                </select>
+            </div>
+            <select onchange="updateStepMode(${i}, this.value)" style="width:auto;padding:4px 8px;font-size:0.8rem;">
+                <option value="sequential" ${s.execution_mode === 'sequential' ? 'selected' : ''}>Sequential</option>
+                <option value="parallel" ${s.execution_mode === 'parallel' ? 'selected' : ''}>Parallel</option>
+            </select>
+            <div class="step-controls">
+                ${i > 0 ? `<button class="btn small secondary" onclick="moveStep(${i},-1)">&#9650;</button>` : ''}
+                ${i < workflowSteps.length - 1 ? `<button class="btn small secondary" onclick="moveStep(${i},1)">&#9660;</button>` : ''}
+                <button class="btn small fail" onclick="removeStep(${i})">&#10005;</button>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function updateStepProfile(i, profileId) { workflowSteps[i].profile_id = profileId; }
+function updateStepMode(i, mode) { workflowSteps[i].execution_mode = mode; }
+function moveStep(i, dir) {
+    const j = i + dir;
+    [workflowSteps[i], workflowSteps[j]] = [workflowSteps[j], workflowSteps[i]];
+    renderWorkflowSteps();
+}
+function removeStep(i) {
+    workflowSteps.splice(i, 1);
+    renderWorkflowSteps();
+}
+
+async function saveWorkflow() {
+    const name = document.getElementById('workflow-name').value.trim();
+    const extraArgs = document.getElementById('workflow-extra-args').value.trim();
+    const continueOnError = document.getElementById('workflow-continue-on-error').checked;
+    if (!name) { alert('Name is required.'); return; }
+    if (!workflowSteps.length) { alert('Add at least one step.'); return; }
+    const workflow = {
+        id: editingWorkflowId,
+        name,
+        steps: workflowSteps,
+        extra_args: extraArgs ? extraArgs.split('\n').map(s => s.trim()).filter(Boolean) : [],
+        continue_on_error: continueOnError,
+    };
+    await api('POST', '/api/workflows', workflow);
+    await loadWorkflows();
+    renderWorkflows();
+    closeModal('workflow-modal');
+}
+
+async function runWorkflow(id) {
+    const res = await api('POST', '/api/run/workflow', { workflow_id: id });
+    if (res.run_id) openRunModal(res.run_id, 'Workflow Run');
+}
+
+// ---- History ----
+let historyPage = 1;
+const HISTORY_PER_PAGE = 15;
+let historyRefreshTimer = null;
+
+async function loadHistory() {
+    const data = await api('GET', `/api/history?page=${historyPage}&per_page=${HISTORY_PER_PAGE}`);
+    const wrap = document.getElementById('history-table-wrap');
+    const pag = document.getElementById('history-pagination');
+
+    if (!data.entries || !data.entries.length) {
+        wrap.innerHTML = '<div style="color:var(--text-dim);font-size:0.85rem;padding:16px;text-align:center;">No run history yet.</div>';
+        pag.innerHTML = '';
+        return;
+    }
+
+    wrap.innerHTML = `
+        <table class="history-table">
+            <thead>
+                <tr>
+                    <th style="width:30px;">#</th>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>Output Preview</th>
+                    <th>Time</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${data.entries.map((e, idx) => {
+                    const time = e.started_at ? new Date(e.started_at * 1000).toLocaleString() : '-';
+                    const preview = (e.output_preview || '').replace(/\n/g, ' ').substring(0, 80);
+                    return `<tr onclick="openRunModal('${esc(e.run_id)}', '${esc(e.name)}')" style="cursor:pointer;" title="${esc(e.output_preview || '')}">
+                        <td style="color:var(--text-dim);">${data.total - (data.page - 1) * data.per_page - idx}</td>
+                        <td>${esc(e.name)}</td>
+                        <td><span class="tag">${e.type}</span></td>
+                        <td><span class="status-${e.status}">${e.status}</span></td>
+                        <td style="color:var(--text-dim);font-family:monospace;font-size:0.78rem;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(preview)}</td>
+                        <td style="white-space:nowrap;">${time}</td>
+                    </tr>`;
+                }).join('')}
+            </tbody>
+        </table>
+    `;
+
+    // Pagination
+    if (data.pages <= 1) {
+        pag.innerHTML = '';
+        return;
+    }
+    let btns = '';
+    btns += `<button class="btn small secondary" onclick="historyPage=1;loadHistory()" ${data.page===1?'disabled':''}>&laquo;</button>`;
+    btns += `<button class="btn small secondary" onclick="historyPage=Math.max(1,historyPage-1);loadHistory()" ${data.page===1?'disabled':''}>&lsaquo;</button>`;
+    const start = Math.max(1, data.page - 2);
+    const end = Math.min(data.pages, data.page + 2);
+    for (let i = start; i <= end; i++) {
+        btns += `<button class="btn small ${i===data.page?'':'secondary'}" onclick="historyPage=${i};loadHistory()">${i}</button>`;
+    }
+    btns += `<button class="btn small secondary" onclick="historyPage=Math.min(${data.pages},historyPage+1);loadHistory()" ${data.page===data.pages?'disabled':''}>&rsaquo;</button>`;
+    btns += `<button class="btn small secondary" onclick="historyPage=${data.pages};loadHistory()" ${data.page===data.pages?'disabled':''}>&raquo;</button>`;
+    btns += `<span style="color:var(--text-dim);font-size:0.8rem;margin-left:8px;">${data.total} total</span>`;
+    pag.innerHTML = btns;
+}
+
+// ---- Runs ----
+async function refreshRuns() {
+    const data = await api('GET', '/api/runs');
+    const el = document.getElementById('runs-list');
+    const ids = Object.keys(data);
+    if (!ids.length) {
+        el.innerHTML = '<div class="empty-state"><div class="icon">&#9654;</div><p>No runs yet.</p></div>';
+        return;
+    }
+    el.innerHTML = ids.reverse().map(id => {
+        const r = data[id];
+        return `
+        <div class="card" onclick="openRunModal('${id}', 'Run')" style="cursor:pointer;">
+            <div class="card-header">
+                <h3 style="font-size:0.95rem;">${esc(id)}</h3>
+                <span class="run-status ${r.status}"><span class="dot"></span> ${r.status}</span>
+            </div>
+            <div class="card-meta" style="max-height:40px;overflow:hidden;">
+                ${(r.output || []).slice(-2).map(l => esc(l)).join('')}
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function openRunModal(runId, title) {
+    currentRunId = runId;
+    document.getElementById('run-modal-title').textContent = title || 'Run Output';
+    document.getElementById('run-output').innerHTML = '';
+    document.getElementById('run-status-badge').className = 'run-status starting';
+    document.getElementById('run-status-text').textContent = 'Starting...';
+    openModal('run-modal');
+    pollRun(runId);
+}
+
+async function pollRun(runId) {
+    if (runPollTimer) clearInterval(runPollTimer);
+    runPollTimer = setInterval(async () => {
+        const data = await api('GET', '/api/runs/' + runId);
+        const el = document.getElementById('run-output');
+        el.innerHTML = (data.output || []).map(l => {
+            if (l.startsWith('[FAIL') || l.startsWith('[ABORT') || l.startsWith('ERROR')) return `<div class="line-fail">${esc(l)}</div>`;
+            if (l.startsWith('[DONE') || l.startsWith('[SKIP')) return `<div class="line-success">${esc(l)}</div>`;
+            if (l.startsWith('[RUN') || l.startsWith('=')) return `<div class="line-info">${esc(l)}</div>`;
+            return esc(l);
+        }).join('');
+        el.scrollTop = el.scrollHeight;
+
+        const badge = document.getElementById('run-status-badge');
+        const text = document.getElementById('run-status-text');
+        badge.className = 'run-status ' + data.status;
+        text.textContent = data.status === 'completed' ? 'Completed' :
+                          data.status === 'failed' ? 'Failed' :
+                          data.status === 'running' ? 'Running...' : 'Starting...';
+
+        if (data.status === 'completed' || data.status === 'failed') {
+            clearInterval(runPollTimer);
+            runPollTimer = null;
+        }
+    }, 500);
+}
+
+// ---- Utils ----
+function esc(s) {
+    if (!s) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Close modals on overlay click
+document.querySelectorAll('.modal-overlay').forEach(el => {
+    el.addEventListener('click', e => { if (e.target === el) el.classList.remove('show'); });
+});
+
+// Init
+init();
+</script>
+</body>
+</html>
