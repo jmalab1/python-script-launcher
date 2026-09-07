@@ -1,0 +1,158 @@
+import os
+import sys
+import subprocess
+import threading
+from .storage import load_json, save_json, save_history
+from .config import PROFILES_FILE
+
+active_runs = {}
+run_counter = 0
+run_lock = threading.Lock()
+
+
+def run_script(script_path, args, run_id):
+    cmd = [sys.executable, script_path] + args
+    try:
+        proc = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1,
+        )
+        with run_lock:
+            active_runs[run_id]["process"] = proc
+
+        for line in iter(proc.stdout.readline, ""):
+            with run_lock:
+                active_runs[run_id]["output"].append(line)
+            yield line
+
+        proc.wait()
+        with run_lock:
+            active_runs[run_id]["returncode"] = proc.returncode
+    except Exception as e:
+        with run_lock:
+            active_runs[run_id]["output"].append(f"ERROR: {e}\n")
+            active_runs[run_id]["returncode"] = -1
+
+
+def execute_workflow(workflow, run_id, started_at):
+    profiles = load_json(PROFILES_FILE)
+    profile_map = {p["id"]: p for p in profiles}
+
+    steps = workflow.get("steps", [])
+    continue_on_error = workflow.get("continue_on_error", False)
+
+    with run_lock:
+        active_runs[run_id]["workflow_log"] = [f"Starting workflow: {workflow.get('name', 'Unnamed')}"]
+        active_runs[run_id]["status"] = "running"
+
+    for step in steps:
+        step_type = step.get("type", "sequential")
+
+        if step_type == "parallel":
+            group_profiles = step.get("profiles", [])
+            if not group_profiles:
+                continue
+
+            with run_lock:
+                step_names = [profile_map.get(p["profile_id"], {}).get("name", p["profile_id"]) for p in group_profiles]
+                active_runs[run_id]["workflow_log"].append(f"[PARALLEL] Running {len(group_profiles)} steps: {', '.join(step_names)}")
+            threads = []
+            for profile_entry in group_profiles:
+                profile = profile_map.get(profile_entry["profile_id"])
+                if not profile:
+                    with run_lock:
+                        active_runs[run_id]["workflow_log"].append(f"[SKIP] Profile not found: {profile_entry['profile_id']}")
+                    if not continue_on_error:
+                        break
+                    continue
+
+                t = threading.Thread(
+                    target=_run_step,
+                    args=(profile, profile_entry.get("args", []), run_id, continue_on_error),
+                )
+                threads.append(t)
+                t.start()
+
+            for t in threads:
+                t.join()
+
+            with run_lock:
+                if not continue_on_error and active_runs[run_id].get("failed"):
+                    break
+        else:
+            profile = profile_map.get(step["profile_id"])
+            if not profile:
+                with run_lock:
+                    active_runs[run_id]["workflow_log"].append(f"[SKIP] Profile not found: {step['profile_id']}")
+                if not continue_on_error:
+                    with run_lock:
+                        active_runs[run_id]["status"] = "failed"
+                    return
+                continue
+
+            _run_step(profile, step.get("args", []), run_id, continue_on_error)
+            with run_lock:
+                if not continue_on_error and active_runs[run_id].get("failed"):
+                    break
+
+    with run_lock:
+        status = "failed" if active_runs[run_id].get("failed") else "completed"
+        active_runs[run_id]["status"] = status
+        active_runs[run_id]["workflow_log"].append(f"Workflow {status}")
+    save_history(run_id, workflow.get("name", "Unnamed"), "workflow", status, None, active_runs[run_id]["workflow_log"], started_at, workflow_log=active_runs[run_id]["workflow_log"], steps=active_runs[run_id].get("steps", {}))
+
+
+def _run_step(profile, extra_args, run_id, continue_on_error):
+    script_path = profile.get("script_path", "")
+    step_name = profile.get("name", "Unnamed")
+
+    if not os.path.isfile(script_path):
+        with run_lock:
+            steps = active_runs[run_id].setdefault("steps", {})
+            steps[step_name] = {"output": [], "status": "failed", "returncode": -1}
+            active_runs[run_id]["workflow_log"].append(f"[SKIP] Script not found: {script_path}")
+            active_runs[run_id]["failed"] = True
+        return
+
+    custom_args = profile.get("custom_args", [])
+    built_args = []
+    for ca in custom_args:
+        flag = ca.get("name", "")
+        if not flag:
+            continue
+        val = ca.get("value", ca.get("default", ""))
+        if ca.get("type") == "checkbox":
+            if val == "true":
+                built_args.append(flag)
+        else:
+            if val:
+                built_args.append(flag)
+                built_args.append(str(val))
+
+    args = profile.get("args", []) + built_args + extra_args
+
+    with run_lock:
+        steps = active_runs[run_id].setdefault("steps", {})
+        steps[step_name] = {"output": [], "status": "running", "returncode": None}
+        active_runs[run_id]["workflow_log"].append(f"[RUN] {step_name}")
+        active_runs[run_id]["current_step"] = step_name
+
+    for line in run_script(script_path, args, run_id):
+        with run_lock:
+            steps[step_name]["output"].append(line)
+
+    with run_lock:
+        rc = active_runs[run_id].get("returncode", 0)
+        steps[step_name]["returncode"] = rc
+        if rc != 0:
+            steps[step_name]["status"] = "failed"
+            active_runs[run_id]["failed"] = True
+            active_runs[run_id]["workflow_log"].append(f"[FAIL] {step_name} exited with code {rc}")
+            if not continue_on_error:
+                active_runs[run_id]["workflow_log"].append("[ABORT] Workflow stopped due to error.")
+        else:
+            steps[step_name]["status"] = "completed"
+            active_runs[run_id]["workflow_log"].append(f"[DONE] {step_name} completed successfully")
