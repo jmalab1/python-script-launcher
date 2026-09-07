@@ -35,7 +35,7 @@ def save_json(path, data):
         json.dump(data, f, indent=2)
 
 
-def save_history(run_id, name, run_type, status, returncode, output, started_at):
+def save_history(run_id, name, run_type, status, returncode, output, started_at, workflow_log=None, steps=None):
     """Save a completed run to history."""
     import time
     entry = {
@@ -44,10 +44,15 @@ def save_history(run_id, name, run_type, status, returncode, output, started_at)
         "type": run_type,
         "status": status,
         "returncode": returncode,
+        "output": output,
         "output_preview": "".join(output[-20:]) if output else "",
         "started_at": started_at,
         "timestamp": time.time(),
     }
+    if workflow_log is not None:
+        entry["workflow_log"] = workflow_log
+    if steps is not None:
+        entry["steps"] = steps
     history = load_json(HISTORY_FILE)
     history.append(entry)
     save_json(HISTORY_FILE, history)
@@ -150,6 +155,11 @@ def execute_workflow(workflow, run_id, started_at):
     steps = workflow.get("steps", [])
     continue_on_error = workflow.get("continue_on_error", False)
 
+    # Initialize workflow log
+    with run_lock:
+        active_runs[run_id]["workflow_log"] = [f"Starting workflow: {workflow.get('name', 'Unnamed')}"]
+        active_runs[run_id]["status"] = "running"
+
     # Group steps by execution_group for parallel execution
     groups = []
     current_group = []
@@ -165,19 +175,17 @@ def execute_workflow(workflow, run_id, started_at):
     if current_group:
         groups.append((current_mode, current_group))
 
-    with run_lock:
-        active_runs[run_id]["status"] = "running"
-
     for mode, group in groups:
         if mode == "parallel":
+            with run_lock:
+                step_names = [profile_map.get(s["profile_id"], {}).get("name", s["profile_id"]) for s in group]
+                active_runs[run_id]["workflow_log"].append(f"[PARALLEL] Running {len(group)} steps: {', '.join(step_names)}")
             threads = []
             for step in group:
                 profile = profile_map.get(step["profile_id"])
                 if not profile:
                     with run_lock:
-                        active_runs[run_id]["output"].append(
-                            f"[SKIP] Profile not found: {step['profile_id']}\n"
-                        )
+                        active_runs[run_id]["workflow_log"].append(f"[SKIP] Profile not found: {step['profile_id']}")
                     if not continue_on_error:
                         break
                     continue
@@ -204,9 +212,7 @@ def execute_workflow(workflow, run_id, started_at):
                 profile = profile_map.get(step["profile_id"])
                 if not profile:
                     with run_lock:
-                        active_runs[run_id]["output"].append(
-                            f"[SKIP] Profile not found: {step['profile_id']}\n"
-                        )
+                        active_runs[run_id]["workflow_log"].append(f"[SKIP] Profile not found: {step['profile_id']}")
                     if not continue_on_error:
                         with run_lock:
                             active_runs[run_id]["status"] = "failed"
@@ -231,12 +237,22 @@ def execute_workflow(workflow, run_id, started_at):
     with run_lock:
         status = "failed" if active_runs[run_id].get("failed") else "completed"
         active_runs[run_id]["status"] = status
-    save_history(run_id, workflow.get("name", "Unnamed"), "workflow", status, None, active_runs[run_id]["output"], started_at)
+        active_runs[run_id]["workflow_log"].append(f"Workflow {status}")
+    save_history(run_id, workflow.get("name", "Unnamed"), "workflow", status, None, active_runs[run_id]["workflow_log"], started_at, workflow_log=active_runs[run_id]["workflow_log"], steps=active_runs[run_id].get("steps", {}))
 
 
 def _run_step(profile, extra_args, run_id, continue_on_error):
     """Run a single step in a workflow."""
     script_path = profile.get("script_path", "")
+    step_name = profile.get("name", "Unnamed")
+
+    if not os.path.isfile(script_path):
+        with run_lock:
+            steps = active_runs[run_id].setdefault("steps", {})
+            steps[step_name] = {"output": [], "status": "failed", "returncode": -1}
+            active_runs[run_id]["workflow_log"].append(f"[SKIP] Script not found: {script_path}")
+            active_runs[run_id]["failed"] = True
+        return
 
     # Build args from custom_arg definitions using stored values
     custom_args = profile.get("custom_args", [])
@@ -256,31 +272,29 @@ def _run_step(profile, extra_args, run_id, continue_on_error):
 
     args = profile.get("args", []) + built_args + extra_args
 
+    # Initialize step tracking
     with run_lock:
-        active_runs[run_id]["output"].append(
-            f"\n{'='*60}\n"
-            f"[RUN] {profile.get('name', 'Unnamed')} - {script_path}\n"
-            f"{'='*60}\n"
-        )
+        steps = active_runs[run_id].setdefault("steps", {})
+        steps[step_name] = {"output": [], "status": "running", "returncode": None}
+        active_runs[run_id]["workflow_log"].append(f"[RUN] {step_name}")
+        active_runs[run_id]["current_step"] = step_name
 
     for line in run_script(script_path, args, run_id):
-        pass  # Output already captured
+        with run_lock:
+            steps[step_name]["output"].append(line)
 
     with run_lock:
         rc = active_runs[run_id].get("returncode", 0)
+        steps[step_name]["returncode"] = rc
         if rc != 0:
+            steps[step_name]["status"] = "failed"
             active_runs[run_id]["failed"] = True
-            active_runs[run_id]["output"].append(
-                f"[FAIL] {profile.get('name')} exited with code {rc}\n"
-            )
+            active_runs[run_id]["workflow_log"].append(f"[FAIL] {step_name} exited with code {rc}")
             if not continue_on_error:
-                active_runs[run_id]["output"].append(
-                    "[ABORT] Workflow stopped due to error.\n"
-                )
+                active_runs[run_id]["workflow_log"].append("[ABORT] Workflow stopped due to error.")
         else:
-            active_runs[run_id]["output"].append(
-                f"[DONE] {profile.get('name')} completed successfully.\n"
-            )
+            steps[step_name]["status"] = "completed"
+            active_runs[run_id]["workflow_log"].append(f"[DONE] {step_name} completed successfully")
 
 
 class LauncherHandler(http.server.SimpleHTTPRequestHandler):
@@ -305,6 +319,11 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
             result = open_file_dialog()
             self._json_response(result)
 
+        elif path == "/api/script_exists":
+            script_path = query.get("path", [""])[0]
+            exists = os.path.isfile(script_path) if script_path else False
+            self._json_response({"exists": exists})
+
         elif path == "/api/profiles":
             self._json_response(load_json(PROFILES_FILE))
 
@@ -314,7 +333,10 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
         elif path == "/api/history":
             page = int(query.get("page", ["1"])[0])
             per_page = int(query.get("per_page", ["15"])[0])
+            type_filter = query.get("type", [None])[0]
             all_history = load_json(HISTORY_FILE)
+            if type_filter:
+                all_history = [e for e in all_history if e.get("type") == type_filter]
             all_history.sort(key=lambda x: x.get("timestamp", 0), reverse=True)
             total = len(all_history)
             start = (page - 1) * per_page
@@ -327,13 +349,32 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
                 "pages": (total + per_page - 1) // per_page,
             })
 
+        elif path.startswith("/api/history/"):
+            run_id = path.split("/")[-1]
+            history = load_json(HISTORY_FILE)
+            matches = [e for e in history if e.get("run_id") == run_id]
+            if len(matches) == 1:
+                entry = matches[0]
+            elif len(matches) > 1:
+                type_filter = query.get("type", [None])[0]
+                entry = next((e for e in matches if e.get("type") == type_filter), matches[0])
+            else:
+                entry = None
+            if entry:
+                self._json_response(entry)
+            else:
+                self._json_response({"error": "Not found"}, 404)
+
         elif path == "/api/runs":
             with run_lock:
                 runs = {
                     k: {
                         "output": v["output"],
+                        "workflow_log": v.get("workflow_log", []),
                         "status": v.get("status", "running"),
                         "returncode": v.get("returncode"),
+                        "steps": v.get("steps", {}),
+                        "current_step": v.get("current_step"),
                     }
                     for k, v in active_runs.items()
                 }
@@ -346,8 +387,11 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
             if run_data:
                 self._json_response({
                     "output": run_data["output"],
+                    "workflow_log": run_data.get("workflow_log", []),
                     "status": run_data.get("status", "running"),
                     "returncode": run_data.get("returncode"),
+                    "steps": run_data.get("steps", {}),
+                    "current_step": run_data.get("current_step"),
                 })
             else:
                 self._json_response({"error": "Run not found"}, 404)
@@ -427,6 +471,10 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
                 self._json_response({"error": "Profile not found"}, 404)
                 return
 
+            if not os.path.isfile(profile.get("script_path", "")):
+                self._json_response({"error": f"Script not found: {profile.get('script_path', '')}"}, 400)
+                return
+
             # Build args from custom_arg definitions using provided values
             custom_args = profile.get("custom_args", [])
             built_args = []
@@ -450,7 +498,7 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
 
             with run_lock:
                 run_counter += 1
-                run_id = f"run_{run_counter}"
+                run_id = f"prof_{run_counter}"
                 active_runs[run_id] = {
                     "output": [],
                     "status": "running",
@@ -468,7 +516,8 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
                 with run_lock:
                     status = "failed" if active_runs[run_id].get("returncode", 0) != 0 else "completed"
                     active_runs[run_id]["status"] = status
-                save_history(run_id, profile_name, "profile", status, active_runs[run_id].get("returncode"), active_runs[run_id]["output"], started_at)
+                    output_copy = list(active_runs[run_id]["output"])
+                save_history(run_id, profile_name, "profile", status, active_runs[run_id].get("returncode"), output_copy, started_at)
 
             threading.Thread(target=do_run, daemon=True).start()
             self._json_response({"run_id": run_id})
@@ -486,9 +535,10 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
 
             with run_lock:
                 run_counter += 1
-                run_id = f"run_{run_counter}"
+                run_id = f"wf_{run_counter}"
                 active_runs[run_id] = {
                     "output": [],
+                    "workflow_log": [],
                     "status": "starting",
                     "returncode": None,
                     "failed": False,
@@ -524,8 +574,12 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
             save_json(HISTORY_FILE, [])
             self._json_response({"ok": True})
 
-        else:
-            self.send_error(404)
+        elif path.startswith("/api/history/"):
+            run_id = path.split("/")[-1]
+            history = load_json(HISTORY_FILE)
+            history = [e for e in history if e.get("run_id") != run_id]
+            save_json(HISTORY_FILE, history)
+            self._json_response({"ok": True})
 
     def _json_response(self, data, status=200):
         self.send_response(status)

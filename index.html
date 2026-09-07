@@ -4,508 +4,306 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Python Web Launcher</title>
+<script>
+(function(){var t=localStorage.getItem('theme');if(t==='light')document.documentElement.classList.remove('dark');else if(t==='dark')document.documentElement.classList.add('dark');else if(window.matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.classList.add('dark');else document.documentElement.classList.add('dark');})();
+</script>
+<link rel="preload" href="/static/fonts/InterVariable.woff2" as="font" type="font/woff2" crossorigin>
 <style>
-    :root {
-        --bg: #1a1a2e;
-        --surface: #16213e;
-        --surface2: #0f3460;
-        --accent: #e94560;
-        --accent2: #533483;
-        --text: #eee;
-        --text-dim: #999;
-        --success: #4caf50;
-        --fail: #f44336;
-        --border: #333;
-    }
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+@font-face {
+    font-family: 'Inter';
+    src: url('/static/fonts/InterVariable.woff2') format('woff2');
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+}
+</style>
+<script src="/static/tailwindcss.js"></script>
+<script>
+tailwind.config = {
+    darkMode: 'class',
+    theme: {
+        extend: {
+            fontFamily: {
+                sans: ['Inter', 'system-ui', 'sans-serif'],
+            },
+        },
+    },
+}
+</script>
+<style type="text/tailwindcss">
+@layer base {
     body {
-        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-        background: var(--bg);
-        color: var(--text);
-        min-height: 100vh;
+        @apply font-sans bg-gray-950 text-gray-200 antialiased;
     }
-    header {
-        background: var(--surface);
-        padding: 16px 24px;
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        border-bottom: 2px solid var(--accent);
-    }
-    header h1 { font-size: 1.4rem; font-weight: 600; }
-    header h1 span { color: var(--accent); }
-    nav {
-        display: flex;
-        gap: 4px;
-        margin-left: auto;
-    }
-    nav button {
-        background: transparent;
-        color: var(--text-dim);
-        border: none;
-        padding: 8px 16px;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 0.9rem;
-        transition: all 0.2s;
-    }
-    nav button:hover { background: var(--surface2); color: var(--text); }
-    nav button.active { background: var(--accent); color: #fff; }
-
-    .container { max-width: 100%; margin: 0 auto; padding: 16px 24px; }
-    .panel { display: none; }
-    .panel.active { display: block; }
-
-    .toolbar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 16px;
-    }
-    .toolbar h2 { font-size: 1.2rem; }
-
-    button.btn {
-        background: var(--accent);
-        color: #fff;
-        border: none;
-        padding: 8px 16px;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 0.85rem;
-        transition: background 0.2s;
-    }
-    button.btn:hover { background: #c73550; }
-    button.btn.secondary { background: var(--surface2); }
-    button.btn.secondary:hover { background: var(--accent2); }
-    button.btn.success { background: var(--success); }
-    button.btn.success:hover { background: #43a047; }
-    button.btn.fail { background: var(--fail); }
-    button.btn.small { padding: 4px 10px; font-size: 0.8rem; }
-    button.btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-    .card {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        padding: 16px;
-        margin-bottom: 12px;
-        transition: border-color 0.2s;
-    }
-    .card:hover { border-color: var(--accent2); }
-    .card-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 8px;
-    }
-    .card-header h3 { font-size: 1rem; }
-    .card-meta { color: var(--text-dim); font-size: 0.82rem; }
-    .card-actions { display: flex; gap: 6px; }
-
-    .tag {
-        display: inline-block;
-        background: var(--surface2);
-        color: var(--text-dim);
-        padding: 2px 8px;
-        border-radius: 4px;
-        font-size: 0.75rem;
-        margin-right: 4px;
-    }
-    .tag.green { background: #1b5e20; color: #a5d6a7; }
-    .tag.red { background: #b71c1c; color: #ef9a9a; }
-    .tag.blue { background: #0d47a1; color: #90caf9; }
-
-    /* Modal */
-    .modal-overlay {
-        display: none;
-        position: fixed;
-        inset: 0;
-        background: rgba(0,0,0,0.7);
-        z-index: 100;
-        justify-content: center;
-        align-items: center;
-    }
-    .modal-overlay.show { display: flex; }
-    .modal {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        padding: 24px;
-        width: 90%;
-        max-width: 600px;
-        max-height: 80vh;
-        overflow-y: auto;
-    }
-    .modal h2 { margin-bottom: 16px; font-size: 1.15rem; }
-    .modal-actions {
-        display: flex;
-        justify-content: flex-end;
-        gap: 8px;
-        margin-top: 16px;
-    }
-
-    /* Form */
-    label {
-        display: block;
-        font-size: 0.85rem;
-        color: var(--text-dim);
-        margin-bottom: 4px;
-        margin-top: 12px;
-    }
-    label:first-child { margin-top: 0; }
-    input[type="text"], input[type="number"], textarea, select {
-        width: 100%;
-        background: var(--bg);
-        color: var(--text);
-        border: 1px solid var(--border);
-        border-radius: 6px;
-        padding: 8px 12px;
-        font-size: 0.9rem;
-        font-family: inherit;
-    }
-    input:focus, textarea:focus, select:focus {
-        outline: none;
-        border-color: var(--accent);
-    }
-    textarea { resize: vertical; min-height: 60px; font-family: monospace; }
-
-    .input-row {
-        display: flex;
-        gap: 8px;
-    }
-    .input-row input { flex: 1; }
-
-    /* File browser */
-    .file-browser {
-        border: 1px solid var(--border);
-        border-radius: 6px;
-        overflow: hidden;
-    }
-    .file-browser-header {
-        background: var(--bg);
-        padding: 8px 12px;
-        display: flex;
-        gap: 8px;
-        align-items: center;
-        border-bottom: 1px solid var(--border);
-    }
-    .file-browser-header input { flex: 1; }
-    .file-list {
-        max-height: 300px;
-        overflow-y: auto;
-        background: var(--bg);
-    }
-    .file-item {
-        padding: 8px 12px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 0.88rem;
-        border-bottom: 1px solid #222;
-    }
-    .file-item:hover { background: var(--surface2); }
-    .file-item.selected { background: var(--accent2); }
-    .file-item .icon { width: 18px; text-align: center; }
-    .file-item.dir .icon { color: #ffc107; }
-    .file-item.file .icon { color: var(--text-dim); }
-
-    /* Workflow steps */
-    .step-list { margin-top: 8px; }
-    .step-item {
-        background: var(--bg);
-        border: 1px solid var(--border);
-        border-radius: 6px;
-        padding: 10px 12px;
-        margin-bottom: 6px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-    .step-item .step-num {
-        background: var(--accent2);
-        color: #fff;
-        width: 24px;
-        height: 24px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.75rem;
-        flex-shrink: 0;
-    }
-    .step-item .step-info { flex: 1; }
-    .step-item .step-info .name { font-size: 0.9rem; }
-    .step-item .step-info .path { font-size: 0.78rem; color: var(--text-dim); }
-    .step-item .step-controls { display: flex; gap: 4px; }
-    .step-item select {
-        width: auto;
-        padding: 4px 8px;
-        font-size: 0.8rem;
-    }
-
-    /* Output */
-    .output-box {
-        background: #000;
-        border: 1px solid var(--border);
-        border-radius: 6px;
-        padding: 12px;
-        font-family: 'Cascadia Code', 'Fira Code', monospace;
-        font-size: 0.82rem;
-        max-height: 500px;
-        overflow-y: auto;
-        white-space: pre-wrap;
-        word-break: break-all;
-        line-height: 1.5;
-    }
-    .output-box .line-fail { color: var(--fail); }
-    .output-box .line-success { color: var(--success); }
-    .output-box .line-info { color: #64b5f6; }
-
-    .run-status {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-size: 0.82rem;
-        font-weight: 500;
-    }
-    .run-status.running { background: #1a237e; color: #90caf9; }
-    .run-status.completed { background: #1b5e20; color: #a5d6a7; }
-    .run-status.failed { background: #b71c1c; color: #ef9a9a; }
-    .run-status.starting { background: #4a148c; color: #ce93d8; }
-
-    .dot {
-        width: 8px; height: 8px;
-        border-radius: 50%;
-        background: currentColor;
-        animation: pulse 1s infinite;
-    }
-    @keyframes pulse {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.3; }
-    }
-
-    .empty-state {
-        text-align: center;
-        padding: 48px 24px;
-        color: var(--text-dim);
-    }
-    .empty-state .icon { font-size: 2.5rem; margin-bottom: 12px; }
-    .empty-state p { font-size: 0.9rem; }
-
-    .checkbox-row {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-top: 12px;
-    }
-    .checkbox-row input[type="checkbox"] {
-        width: auto;
-        accent-color: var(--accent);
-    }
-    .checkbox-row label { margin: 0; }
-
-    .custom-arg-row {
-        display: flex;
-        gap: 6px;
-        align-items: center;
-        margin-bottom: 6px;
-        background: var(--bg);
-        border: 1px solid var(--border);
-        border-radius: 6px;
-        padding: 8px;
-    }
-    .custom-arg-row input, .custom-arg-row select {
-        padding: 5px 8px;
-        font-size: 0.82rem;
-    }
-    .custom-arg-row input[type="text"] { flex: 1; }
-    .custom-arg-row select { width: 90px; }
-
-    .arg-field {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 8px;
-    }
-    .arg-field label {
-        min-width: 120px;
-        margin: 0;
-        font-size: 0.85rem;
-        color: var(--text);
-    }
-    .arg-field input[type="text"] { flex: 1; }
-    .arg-field input[type="checkbox"] { width: auto; accent-color: var(--accent); }
-
-    .history-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 0.82rem;
-    }
-    .history-table th {
-        background: var(--bg);
-        padding: 8px;
-        text-align: left;
-        border-bottom: 1px solid var(--border);
-        color: var(--text-dim);
-        font-weight: 500;
-    }
-    .history-table td {
-        padding: 8px;
-        border-bottom: 1px solid #222;
-    }
-    .history-table tr:hover { background: var(--surface2); }
-    .history-table .status-completed { color: var(--success); }
-    .history-table .status-failed { color: var(--fail); }
-    .history-table .status-running { color: #64b5f6; }
-
-    /* Scrollbar */
-    ::-webkit-scrollbar { width: 8px; }
-    ::-webkit-scrollbar-track { background: var(--bg); }
-    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+}
 </style>
 </head>
-<body>
-<header>
-    <h1><span>&#9654;</span> Python Web Launcher</h1>
-    <nav>
-        <button class="active" onclick="showPanel('profiles')">Profiles</button>
-        <button onclick="showPanel('workflows')">Workflows</button>
-        <button onclick="showPanel('runs')">Runs</button>
-    </nav>
-</header>
+<body class="overflow-hidden">
 
-<div class="container">
-    <!-- PROFILES PANEL -->
-    <div id="panel-profiles" class="panel active">
-        <div class="toolbar">
-            <h2>Profiles</h2>
-            <button class="btn" onclick="openProfileModal()">+ New Profile</button>
+<div class="flex h-screen">
+
+    <!-- Sidebar -->
+    <aside class="hidden lg:flex flex-col w-[220px] bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700/60 shrink-0">
+        <div class="flex items-center gap-2.5 px-5 py-4 border-b border-gray-200 dark:border-gray-700/60">
+            <svg class="w-7 h-7 text-violet-500 shrink-0" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><path d="M31.956 14.8C31.372 6.92 25.08.628 17.2.044V5.76a9.04 9.04 0 0 0 9.04 9.04h5.716ZM14.8 26.24v5.716C6.92 31.372.63 25.08.044 17.2H5.76a9.04 9.04 0 0 1 9.04 9.04Zm11.44-9.04h5.716c-.584 7.88-6.876 14.172-14.756 14.756V26.24a9.04 9.04 0 0 1 9.04-9.04ZM.044 14.8C.63 6.92 6.92.628 14.8.044V5.76a9.04 9.04 0 0 1-9.04 9.04H.044Z" fill="currentColor"/></svg>
+            <span class="text-[15px] font-bold text-gray-800 dark:text-gray-100 tracking-tight">Launcher</span>
         </div>
-        <div id="profiles-list"></div>
-    </div>
+        <nav class="flex-1 px-3 py-3 space-y-0.5">
+            <button onclick="showPanel('profiles')" id="nav-profiles" class="nav-btn active w-full text-left flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 0 1-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 0 1 4.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0 1 12 15a9.065 9.065 0 0 0-6.23.693L5 14.5m14.8.8 1.402 1.402c1.232 1.232.65 3.318-1.067 3.611A48.309 48.309 0 0 1 12 21c-2.773 0-5.491-.235-8.135-.687-1.718-.293-2.3-2.379-1.067-3.61L5 14.5"/></svg>
+                Profiles
+            </button>
+            <button onclick="showPanel('workflows')" id="nav-workflows" class="nav-btn w-full text-left flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 0 0-3.7-3.7 48.678 48.678 0 0 0-7.324 0 4.006 4.006 0 0 0-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 0 0 3.7 3.7 48.656 48.656 0 0 0 7.324 0 4.006 4.006 0 0 0 3.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3-3 3"/></svg>
+                Workflows
+            </button>
+        </nav>
+        <div class="px-3 py-3 border-t border-gray-200 dark:border-gray-700/60">
+            <button onclick="toggleTheme()" id="theme-toggle" class="nav-btn w-full text-left flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium">
+                <svg id="theme-icon-dark" class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z"/></svg>
+                <svg id="theme-icon-light" class="w-4 h-4 shrink-0 hidden" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z"/></svg>
+                <span id="theme-label">Light Mode</span>
+            </button>
+        </div>
+    </aside>
 
-    <!-- WORKFLOWS PANEL -->
-    <div id="panel-workflows" class="panel">
-        <div style="display:flex;gap:24px;">
-            <div style="flex:1;min-width:0;">
-                <div class="toolbar">
-                    <h2>Workflows</h2>
-                    <button class="btn" onclick="openWorkflowModal()">+ New Workflow</button>
-                </div>
-                <div id="workflows-list"></div>
+    <!-- Mobile sidebar overlay -->
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-40 lg:hidden hidden" onclick="toggleSidebar()"></div>
+
+    <!-- Main -->
+    <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+
+        <!-- Top bar (mobile) -->
+        <header class="flex items-center gap-3 px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700/60 lg:hidden shrink-0">
+            <button onclick="toggleSidebar()" class="p-1.5 rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/50">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/></svg>
+            </button>
+            <svg class="w-6 h-6 text-violet-500 shrink-0" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><path d="M31.956 14.8C31.372 6.92 25.08.628 17.2.044V5.76a9.04 9.04 0 0 0 9.04 9.04h5.716ZM14.8 26.24v5.716C6.92 31.372.63 25.08.044 17.2H5.76a9.04 9.04 0 0 1 9.04 9.04Zm11.44-9.04h5.716c-.584 7.88-6.876 14.172-14.756 14.756V26.24a9.04 9.04 0 0 1 9.04-9.04ZM.044 14.8C.63 6.92 6.92.628 14.8.044V5.76a9.04 9.04 0 0 1-9.04 9.04H.044Z" fill="currentColor"/></svg>
+            <span class="text-sm font-bold text-gray-800 dark:text-gray-100">Launcher</span>
+            <div class="flex-1"></div>
+            <button onclick="toggleTheme()" class="p-1.5 rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/50">
+                <svg id="mob-theme-icon-dark" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z"/></svg>
+                <svg id="mob-theme-icon-light" class="w-5 h-5 hidden" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z"/></svg>
+            </button>
+            <div class="flex gap-1">
+                <button onclick="showPanel('profiles')" class="mob-nav px-2.5 py-1 rounded-md text-xs font-medium text-violet-500 bg-violet-500/10">Profiles</button>
+                <button onclick="showPanel('workflows')" class="mob-nav px-2.5 py-1 rounded-md text-xs font-medium text-gray-500 dark:text-gray-400">Workflows</button>
             </div>
-            <div style="flex:2;min-width:0;">
-                <div class="toolbar">
-                    <h2>Run History</h2>
-                    <button class="btn small secondary" onclick="loadHistory()">Refresh</button>
-                </div>
-                <div id="history-table-wrap"></div>
-                <div id="history-pagination" style="margin-top:8px;display:flex;gap:4px;align-items:center;justify-content:center;"></div>
-            </div>
-        </div>
-    </div>
+        </header>
 
-    <!-- RUNS PANEL -->
-    <div id="panel-runs" class="panel">
-        <div class="toolbar">
-            <h2>Active &amp; Recent Runs</h2>
-            <button class="btn secondary" onclick="refreshRuns()">Refresh</button>
-        </div>
-        <div id="runs-list"></div>
+        <!-- Content -->
+        <main class="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900">
+            <div class="flex flex-col px-4 sm:px-6 lg:px-8 py-6 w-full min-h-full">
+
+                <!-- PROFILES -->
+                <div id="panel-profiles" class="panel">
+                    <div class="flex items-center justify-between mb-6">
+                        <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Profiles</h1>
+                        <button onclick="openProfileModal()" class="bg-gray-900 text-gray-100 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-800 dark:hover:bg-white text-sm font-medium px-3 py-2 rounded-lg inline-flex items-center gap-1.5 transition">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                            New Profile
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-1 xl:grid-cols-5 gap-6">
+                        <div class="xl:col-span-2">
+                            <div id="profiles-list" class="space-y-3"></div>
+                        </div>
+                        <div class="xl:col-span-3">
+                            <div class="bg-white dark:bg-gray-800 shadow-xs rounded-xl border border-gray-200 dark:border-gray-700/60">
+                                <header class="px-5 py-4 border-b border-gray-100 dark:border-gray-700/60">
+                                    <h2 class="font-semibold text-gray-800 dark:text-gray-100">Profile Run History</h2>
+                                </header>
+                                <div class="p-3">
+                                    <div id="profile-history-table-wrap"></div>
+                                    <div id="profile-history-pagination" class="mt-3 flex items-center justify-center gap-1"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- WORKFLOWS -->
+                <div id="panel-workflows" class="panel hidden">
+                    <div class="flex items-center justify-between mb-6">
+                        <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Workflows</h1>
+                        <button onclick="openWorkflowModal()" class="bg-gray-900 text-gray-100 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-800 dark:hover:bg-white text-sm font-medium px-3 py-2 rounded-lg inline-flex items-center gap-1.5 transition">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                            New Workflow
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-1 xl:grid-cols-5 gap-6">
+                        <div class="xl:col-span-2">
+                            <div id="workflows-list" class="space-y-3"></div>
+                        </div>
+                        <div class="xl:col-span-3">
+                            <div class="bg-white dark:bg-gray-800 shadow-xs rounded-xl border border-gray-200 dark:border-gray-700/60">
+                                <header class="px-5 py-4 border-b border-gray-100 dark:border-gray-700/60">
+                                    <h2 class="font-semibold text-gray-800 dark:text-gray-100">Run History</h2>
+                                </header>
+                                <div class="p-3">
+                                    <div id="history-table-wrap"></div>
+                                    <div id="history-pagination" class="mt-3 flex items-center justify-center gap-1"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
     </div>
 </div>
 
 <!-- PROFILE MODAL -->
-<div id="profile-modal" class="modal-overlay">
-    <div class="modal">
-        <h2 id="profile-modal-title">New Profile</h2>
-
-        <label for="profile-name">Profile Name</label>
-        <input type="text" id="profile-name" placeholder="e.g. Data Pipeline">
-
-        <label>Script Path</label>
-        <div class="input-row">
-            <input type="text" id="profile-script-path" placeholder="No file selected" readonly style="flex:1;background:var(--bg);">
-            <button class="btn" onclick="openNativeFileDialog()">Browse</button>
-        </div>
-        <div class="file-browser" style="margin-top:8px;">
-            <div class="file-browser-header">
-                <input type="text" id="file-path-input" placeholder="Or enter path manually...">
-                <button class="btn small" onclick="browseTo()">Go</button>
+<div id="profile-modal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal('profile-modal')"></div>
+    <div class="relative flex items-center justify-center min-h-full p-4">
+        <div class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[85vh] overflow-y-auto border border-gray-200 dark:border-gray-700/60">
+            <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700/60 px-6 py-4 rounded-t-2xl z-10">
+                <div class="flex items-center justify-between">
+                    <h2 id="profile-modal-title" class="text-lg font-semibold text-gray-800 dark:text-gray-100">New Profile</h2>
+                    <button onclick="closeModal('profile-modal')" class="p-1 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
             </div>
-            <div id="file-list" class="file-list"></div>
-        </div>
-
-        <label for="profile-args">Arguments (one per line)</label>
-        <textarea id="profile-args" rows="3" placeholder="--input data.csv&#10;--verbose"></textarea>
-
-        <label>Custom Argument Fields</label>
-        <p style="font-size:0.8rem;color:var(--text-dim);margin-bottom:8px;">Define named fields that appear as editable inputs on the profile card.</p>
-        <div id="custom-args-list"></div>
-        <button class="btn small secondary" onclick="addCustomArgDef()" style="margin-top:8px;">+ Add Argument Field</button>
-
-        <div class="modal-actions">
-            <button class="btn secondary" onclick="closeModal('profile-modal')">Cancel</button>
-            <button class="btn success" onclick="saveProfile()">Save Profile</button>
+            <div class="px-6 py-5 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Profile Name</label>
+                    <input type="text" id="profile-name" placeholder="e.g. Data Pipeline" class="w-full bg-white dark:bg-gray-900/30 border border-gray-300 dark:border-gray-700/60 rounded-lg px-3 py-2 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-violet-500 focus:ring-0 focus:ring-offset-0 transition">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Script Path</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="profile-script-path" placeholder="No file selected" readonly class="flex-1 bg-white dark:bg-gray-900/30 border border-gray-300 dark:border-gray-700/60 rounded-lg px-3 py-2 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 cursor-default">
+                        <button onclick="openNativeFileDialog()" class="bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm font-medium px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700/60 transition whitespace-nowrap">Browse</button>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Arguments <span class="text-gray-400 font-normal">(one per line)</span></label>
+                    <textarea id="profile-args" rows="3" placeholder="--input data.csv&#10;--verbose" class="w-full bg-white dark:bg-gray-900/30 border border-gray-300 dark:border-gray-700/60 rounded-lg px-3 py-2 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 font-mono focus:border-violet-500 focus:ring-0 focus:ring-offset-0 transition resize-y"></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Custom Argument Fields</label>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">Define named fields that appear as editable inputs on the profile card.</p>
+                    <div id="custom-args-list" class="space-y-2"></div>
+                    <button onclick="addCustomArgDef()" class="mt-2 text-xs text-violet-500 hover:text-violet-600 font-medium">+ Add Argument Field</button>
+                </div>
+            </div>
+            <div class="sticky bottom-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700/60 px-6 py-4 rounded-b-2xl flex justify-end gap-2">
+                <button onclick="closeModal('profile-modal')" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg transition">Cancel</button>
+                <button onclick="saveProfile()" class="bg-gray-900 text-gray-100 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-800 dark:hover:bg-white text-sm font-medium px-4 py-2 rounded-lg transition">Save Profile</button>
+            </div>
         </div>
     </div>
 </div>
 
 <!-- WORKFLOW MODAL -->
-<div id="workflow-modal" class="modal-overlay">
-    <div class="modal">
-        <h2 id="workflow-modal-title">New Workflow</h2>
-
-        <label for="workflow-name">Workflow Name</label>
-        <input type="text" id="workflow-name" placeholder="e.g. ETL Pipeline">
-
-        <label>Add Step</label>
-        <div class="input-row">
-            <select id="workflow-step-profile"></select>
-            <select id="workflow-step-mode">
-                <option value="sequential">Sequential</option>
-                <option value="parallel">Parallel</option>
-            </select>
-            <button class="btn small" onclick="addWorkflowStep()">Add</button>
-        </div>
-
-        <label>Steps</label>
-        <div id="workflow-steps" class="step-list"></div>
-
-        <label for="workflow-extra-args">Extra Args for All Steps (one per line)</label>
-        <textarea id="workflow-extra-args" rows="2" placeholder="--debug"></textarea>
-
-        <div class="checkbox-row">
-            <input type="checkbox" id="workflow-continue-on-error">
-            <label for="workflow-continue-on-error">Continue on error</label>
-        </div>
-
-        <div class="modal-actions">
-            <button class="btn secondary" onclick="closeModal('workflow-modal')">Cancel</button>
-            <button class="btn success" onclick="saveWorkflow()">Save Workflow</button>
+<div id="workflow-modal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal('workflow-modal')"></div>
+    <div class="relative flex items-center justify-center min-h-full p-4">
+        <div class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[85vh] overflow-y-auto border border-gray-200 dark:border-gray-700/60">
+            <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700/60 px-6 py-4 rounded-t-2xl z-10">
+                <div class="flex items-center justify-between">
+                    <h2 id="workflow-modal-title" class="text-lg font-semibold text-gray-800 dark:text-gray-100">New Workflow</h2>
+                    <button onclick="closeModal('workflow-modal')" class="p-1 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="px-6 py-5 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Workflow Name</label>
+                    <input type="text" id="workflow-name" placeholder="e.g. ETL Pipeline" class="w-full bg-white dark:bg-gray-900/30 border border-gray-300 dark:border-gray-700/60 rounded-lg px-3 py-2 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-violet-500 focus:ring-0 focus:ring-offset-0 transition">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Add Step</label>
+                    <div class="flex gap-2">
+                        <select id="workflow-step-profile" class="flex-1 bg-white dark:bg-gray-900/30 border border-gray-300 dark:border-gray-700/60 rounded-lg px-3 py-2 text-sm text-gray-800 dark:text-gray-100 focus:border-violet-500 focus:ring-0 focus:ring-offset-0 transition"></select>
+                        <select id="workflow-step-mode" class="bg-white dark:bg-gray-900/30 border border-gray-300 dark:border-gray-700/60 rounded-lg px-3 py-2 text-sm text-gray-800 dark:text-gray-100 focus:border-violet-500 focus:ring-0 focus:ring-offset-0 transition">
+                            <option value="sequential">Sequential</option>
+                            <option value="parallel">Parallel</option>
+                        </select>
+                        <button onclick="addWorkflowStep()" class="bg-gray-900 text-gray-100 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-800 dark:hover:bg-white text-sm font-medium px-3 py-2 rounded-lg transition">Add</button>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Steps</label>
+                    <div id="workflow-steps" class="space-y-2"></div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <input type="checkbox" id="workflow-continue-on-error" class="w-4 h-4 rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900/30 text-violet-500 focus:ring-violet-500/50 focus:ring-offset-0">
+                    <label for="workflow-continue-on-error" class="text-sm text-gray-700 dark:text-gray-300">Continue on error</label>
+                </div>
+            </div>
+            <div class="sticky bottom-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700/60 px-6 py-4 rounded-b-2xl flex justify-end gap-2">
+                <button onclick="closeModal('workflow-modal')" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg transition">Cancel</button>
+                <button onclick="saveWorkflow()" class="bg-gray-900 text-gray-100 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-800 dark:hover:bg-white text-sm font-medium px-4 py-2 rounded-lg transition">Save Workflow</button>
+            </div>
         </div>
     </div>
 </div>
 
 <!-- RUN MODAL -->
-<div id="run-modal" class="modal-overlay">
-    <div class="modal" style="max-width: 750px;">
-        <h2 id="run-modal-title">Run Output</h2>
-        <div style="margin-bottom: 12px;">
-            <span id="run-status-badge" class="run-status starting"><span class="dot"></span> <span id="run-status-text">Starting...</span></span>
-        </div>
-        <div id="run-output" class="output-box"></div>
-        <div class="modal-actions">
-            <button class="btn secondary" onclick="closeModal('run-modal')">Close</button>
+<div id="run-modal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal('run-modal')"></div>
+    <div class="relative flex items-center justify-center min-h-full p-4">
+        <div class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-5xl max-h-[85vh] flex flex-col border border-gray-200 dark:border-gray-700/60">
+            <div class="shrink-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700/60 px-6 py-4 rounded-t-2xl">
+                <div class="flex items-center justify-between">
+                    <h2 id="run-modal-title" class="text-lg font-semibold text-gray-800 dark:text-gray-100">Run Output</h2>
+                    <button onclick="closeModal('run-modal')" class="p-1 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+                <div class="mt-3 flex items-center gap-3">
+                    <span id="run-status-badge" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700/50 text-gray-600 dark:text-gray-400">
+                        <span id="run-status-dot" class="w-1.5 h-1.5 rounded-full bg-gray-400 animate-pulse"></span>
+                        <span id="run-status-text">Starting...</span>
+                    </span>
+                    <span id="run-current-step" class="text-xs text-gray-500 dark:text-gray-400 hidden"></span>
+                </div>
+            </div>
+            <div id="run-tabs" class="shrink-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700/60 px-6 hidden">
+                <div class="flex gap-1 -mb-px overflow-x-auto" id="run-tab-list"></div>
+            </div>
+            <div class="flex-1 overflow-hidden p-4">
+                <div id="run-output" class="h-full bg-gray-950 rounded-xl p-4 font-mono text-xs leading-relaxed overflow-y-auto text-gray-300 whitespace-pre-wrap break-all"></div>
+            </div>
+            <div class="shrink-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700/60 px-6 py-3 rounded-b-2xl flex justify-end">
+                <button onclick="closeModal('run-modal')" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg transition">Close</button>
+            </div>
         </div>
     </div>
 </div>
 
+<style>
+.nav-btn {
+    color: #6b7280;
+    transition: all 150ms ease;
+}
+.dark .nav-btn { color: #9ca3af; }
+.nav-btn:hover { color: #111827; background-color: #f3f4f6; }
+.dark .nav-btn:hover { color: #f3f4f6; background-color: rgba(55,65,81,.5); }
+.nav-btn.active {
+    color: #7c3aed;
+    background-color: rgba(124,58,237,.1);
+}
+.dark .nav-btn.active {
+    color: #a78bfa;
+    background-color: rgba(124,58,237,.15);
+    box-shadow: inset 3px 0 0 #7c3aed;
+}
+.nav-btn.active:hover {
+    background-color: rgba(124,58,237,.15);
+}
+.dark .nav-btn.active:hover {
+    background-color: rgba(124,58,237,.2);
+}
+.mob-nav { transition: all 150ms ease; }
+</style>
+
 <script>
-// ---- State ----
 let profiles = [];
 let workflows = [];
 let editingProfileId = null;
@@ -514,17 +312,34 @@ let workflowSteps = [];
 let currentRunId = null;
 let runPollTimer = null;
 let customArgDefs = [];
+let scriptStatusCache = {};
 
-// ---- Init ----
+async function checkScriptExists(path) {
+    if (scriptStatusCache[path] !== undefined) return scriptStatusCache[path];
+    const res = await api('GET', '/api/script_exists?path=' + encodeURIComponent(path));
+    scriptStatusCache[path] = res.exists;
+    return res.exists;
+}
+
+async function checkAllScripts() {
+    for (const p of profiles) {
+        if (p.script_path) {
+            scriptStatusCache[p.script_path] = await api('GET', '/api/script_exists?path=' + encodeURIComponent(p.script_path)).then(r => r.exists);
+        }
+    }
+}
+
 async function init() {
     await loadProfiles();
     await loadWorkflows();
+    await checkAllScripts();
     renderProfiles();
     renderWorkflows();
-    loadHistory();
+    loadProfileHistory();
+    profileHistoryTimer = setInterval(loadProfileHistory, 3000);
+    updateThemeUI();
 }
 
-// ---- API helpers ----
 async function api(method, path, body) {
     const opts = { method, headers: { 'Content-Type': 'application/json' } };
     if (body) opts.body = JSON.stringify(body);
@@ -535,63 +350,94 @@ async function api(method, path, body) {
 async function loadProfiles() { profiles = await api('GET', '/api/profiles'); }
 async function loadWorkflows() { workflows = await api('GET', '/api/workflows'); }
 
-// ---- Navigation ----
+function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('hidden');
+    document.getElementById('sidebar').classList.toggle('flex');
+    document.getElementById('sidebar-overlay').classList.toggle('hidden');
+}
+
+function toggleTheme() {
+    const html = document.documentElement;
+    const isDark = html.classList.contains('dark');
+    if (isDark) {
+        html.classList.remove('dark');
+        localStorage.setItem('theme', 'light');
+    } else {
+        html.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+    }
+    updateThemeUI();
+}
+
+function updateThemeUI() {
+    const isDark = document.documentElement.classList.contains('dark');
+    document.getElementById('theme-icon-dark').classList.toggle('hidden', !isDark);
+    document.getElementById('theme-icon-light').classList.toggle('hidden', isDark);
+    document.getElementById('theme-label').textContent = isDark ? 'Light Mode' : 'Dark Mode';
+    document.getElementById('mob-theme-icon-dark').classList.toggle('hidden', !isDark);
+    document.getElementById('mob-theme-icon-light').classList.toggle('hidden', isDark);
+}
+
 function showPanel(name) {
-    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-    document.getElementById('panel-' + name).classList.add('active');
-    document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
-    document.querySelector(`nav button[onclick="showPanel('${name}')"]`).classList.add('active');
-    if (name === 'runs') refreshRuns();
+    document.querySelectorAll('.panel').forEach(p => p.classList.add('hidden'));
+    document.getElementById('panel-' + name).classList.remove('hidden');
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    const navBtn = document.getElementById('nav-' + name);
+    if (navBtn) navBtn.classList.add('active');
+    document.querySelectorAll('.mob-nav').forEach(b => {
+        b.className = 'mob-nav px-2.5 py-1 rounded-md text-xs font-medium text-gray-500 dark:text-gray-400 transition';
+    });
+    // Stop all refresh timers
+    if (profileHistoryTimer) { clearInterval(profileHistoryTimer); profileHistoryTimer = null; }
+    if (workflowHistoryTimer) { clearInterval(workflowHistoryTimer); workflowHistoryTimer = null; }
+    if (name === 'profiles') {
+        loadProfileHistory();
+        profileHistoryTimer = setInterval(loadProfileHistory, 3000);
+    }
     if (name === 'workflows') {
         loadHistory();
-        if (!historyRefreshTimer) historyRefreshTimer = setInterval(loadHistory, 3000);
-    } else {
-        if (historyRefreshTimer) { clearInterval(historyRefreshTimer); historyRefreshTimer = null; }
+        workflowHistoryTimer = setInterval(loadHistory, 3000);
     }
 }
 
-// ---- Modal helpers ----
-function openModal(id) { document.getElementById(id).classList.add('show'); }
-function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 
-// ---- Profiles ----
 function renderProfiles() {
     const el = document.getElementById('profiles-list');
     if (!profiles.length) {
-        el.innerHTML = '<div class="empty-state"><div class="icon">&#128196;</div><p>No profiles yet. Create one to get started.</p></div>';
+        el.innerHTML = '<div class="text-center py-16 text-gray-500 dark:text-gray-400"><div class="text-4xl mb-3">&#128196;</div><p>No profiles yet. Create one to get started.</p></div>';
         return;
     }
     el.innerHTML = profiles.map(p => {
-        const customArgs = p.custom_args || [];
-        const staticArgs = p.args || [];
+        const ca = p.custom_args || [];
+        const sa = p.args || [];
+        const scriptMissing = scriptStatusCache[p.script_path] === false;
+        const scriptBadge = scriptMissing
+            ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-500/20" title="Script not found"><svg class="w-3 h-3 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 6a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 6zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/></svg>${esc(p.script_path)}</span>`
+            : `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700/50 text-gray-600 dark:text-gray-400">${esc(p.script_path)}</span>`;
         return `
-        <div class="card">
-            <div class="card-header">
-                <h3>${esc(p.name)}</h3>
-                <div class="card-actions">
-                    <button class="btn small success" onclick="runProfile('${p.id}')">&#9654; Run</button>
-                    <button class="btn small secondary" onclick="editProfile('${p.id}')">Edit</button>
-                    <button class="btn small fail" onclick="deleteProfile('${p.id}')">Del</button>
+        <div class="bg-white dark:bg-gray-800 shadow-xs rounded-xl p-4 border ${scriptMissing ? 'border-red-200 dark:border-red-500/30' : 'border-gray-200 dark:border-gray-700/60'} hover:border-gray-300 dark:hover:border-gray-600 transition group">
+            <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0 flex-1">
+                    <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-100">${esc(p.name)}</h3>
+                    <div class="flex flex-wrap items-center gap-1.5 mt-2">
+                        ${scriptBadge}
+                        ${sa.map(a => `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-violet-500/10 text-violet-600 dark:text-violet-400">${esc(a)}</span>`).join('')}
+                    </div>
+                    ${ca.length ? `<div class="flex flex-wrap items-center gap-3 mt-3">${ca.map((c, i) => {
+                        if (c.type === 'checkbox') return `<label class="inline-flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300 cursor-pointer"><input type="checkbox" id="arg-${p.id}-${i}" data-profile="${p.id}" data-idx="${i}" onchange="updateProfileArg(this)" class="w-3.5 h-3.5 rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900/30 text-violet-500 focus:ring-violet-500/50 focus:ring-offset-0">${esc(c.label || c.name)}</label>`;
+                        return `<div class="flex items-center gap-1.5"><label class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">${esc(c.label || c.name)}</label><input type="text" id="arg-${p.id}-${i}" data-profile="${p.id}" data-idx="${i}" value="${esc(c.value || c.default || '')}" onchange="updateProfileArg(this)" placeholder="${esc(c.name)}" class="w-32 bg-white dark:bg-gray-900/30 border border-gray-300 dark:border-gray-700/60 rounded px-2 py-1 text-xs text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-violet-500 focus:ring-0 focus:ring-offset-0 transition"></div>`;
+                    }).join('')}</div>` : ''}
+                </div>
+                <div class="flex items-center gap-1 shrink-0">
+                    <button onclick="runProfile('${p.id}')" ${scriptMissing ? 'disabled title="Script not found"' : ''} class="inline-flex items-center gap-1 px-2.5 py-1.5 ${scriptMissing ? 'bg-gray-100 dark:bg-gray-700/50 text-gray-400 dark:text-gray-500 border border-gray-200 dark:border-gray-700/60 cursor-not-allowed' : 'bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-500/20 hover:bg-green-100 dark:hover:bg-green-500/20'} text-xs font-medium rounded-lg transition">
+                        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg> Run
+                    </button>
+                    <button onclick="editProfile('${p.id}')" class="px-2.5 py-1.5 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-xs font-medium rounded-lg border border-gray-200 dark:border-gray-700/60 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Edit</button>
+                    <button onclick="deleteProfile('${p.id}')" class="px-2.5 py-1.5 bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400 text-xs font-medium rounded-lg border border-red-200 dark:border-red-500/20 hover:bg-red-100 dark:hover:bg-red-500/20 transition">Del</button>
                 </div>
             </div>
-            <div class="card-meta">
-                <span class="tag">${esc(p.script_path)}</span>
-                ${staticArgs.map(a => `<span class="tag blue">${esc(a)}</span>`).join('')}
-            </div>
-            ${customArgs.length ? `
-            <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
-                ${customArgs.map((ca, i) => {
-                    if (ca.type === 'checkbox') {
-                        return `<div class="arg-field" style="margin:0;">
-                            <label><input type="checkbox" id="arg-${p.id}-${i}" data-profile="${p.id}" data-idx="${i}" onchange="updateProfileArg(this)"> ${esc(ca.label || ca.name)}</label>
-                        </div>`;
-                    }
-                    return `<div class="arg-field" style="margin:0;">
-                        <label>${esc(ca.label || ca.name)}</label>
-                        <input type="text" id="arg-${p.id}-${i}" data-profile="${p.id}" data-idx="${i}" value="${esc(ca.value || ca.default || '')}" onchange="updateProfileArg(this)" placeholder="${esc(ca.name)}" style="max-width:200px;">
-                    </div>`;
-                }).join('')}
-            </div>` : ''}
         </div>`;
     }).join('');
 }
@@ -602,30 +448,27 @@ function openProfileModal(profile) {
     document.getElementById('profile-name').value = profile ? profile.name : '';
     document.getElementById('profile-args').value = profile ? (profile.args || []).join('\n') : '';
     document.getElementById('profile-script-path').value = profile ? profile.script_path : '';
-    document.getElementById('file-path-input').value = profile ? profile.script_path : '';
-    document.getElementById('file-list').innerHTML = '';
     customArgDefs = profile ? JSON.parse(JSON.stringify(profile.custom_args || [])) : [];
     renderCustomArgDefs();
     openModal('profile-modal');
-    if (!profile) browseTo('/');
 }
 
 function renderCustomArgDefs() {
     const el = document.getElementById('custom-args-list');
     if (!customArgDefs.length) {
-        el.innerHTML = '<div style="color:var(--text-dim);font-size:0.82rem;padding:4px;">No custom fields defined.</div>';
+        el.innerHTML = '<div class="text-xs text-gray-400 py-2">No custom fields defined.</div>';
         return;
     }
     el.innerHTML = customArgDefs.map((ca, i) => `
-        <div class="custom-arg-row">
-            <input type="text" value="${esc(ca.name)}" placeholder="Flag (--name)" onchange="customArgDefs[${i}].name=this.value" style="flex:1;">
-            <input type="text" value="${esc(ca.label || '')}" placeholder="Label" onchange="customArgDefs[${i}].label=this.value" style="flex:1;">
-            <select onchange="customArgDefs[${i}].type=this.value;renderCustomArgDefs()">
+        <div class="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg">
+            <input type="text" value="${esc(ca.name)}" placeholder="Flag (--name)" onchange="customArgDefs[${i}].name=this.value" class="flex-1 bg-white dark:bg-gray-900/30 border border-gray-300 dark:border-gray-700/60 rounded px-2 py-1 text-xs text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-violet-500 focus:ring-0 focus:ring-offset-0 transition">
+            <input type="text" value="${esc(ca.label || '')}" placeholder="Label" onchange="customArgDefs[${i}].label=this.value" class="flex-1 bg-white dark:bg-gray-900/30 border border-gray-300 dark:border-gray-700/60 rounded px-2 py-1 text-xs text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-violet-500 focus:ring-0 focus:ring-offset-0 transition">
+            <select onchange="customArgDefs[${i}].type=this.value;renderCustomArgDefs()" class="bg-white dark:bg-gray-900/30 border border-gray-300 dark:border-gray-700/60 rounded px-2 py-1 text-xs text-gray-800 dark:text-gray-100 focus:border-violet-500 focus:ring-0 focus:ring-offset-0 transition">
                 <option value="text" ${ca.type==='text'?'selected':''}>Text</option>
                 <option value="checkbox" ${ca.type==='checkbox'?'selected':''}>Checkbox</option>
             </select>
-            ${ca.type !== 'checkbox' ? `<input type="text" value="${esc(ca.default || '')}" placeholder="Default" onchange="customArgDefs[${i}].default=this.value" style="flex:1;">` : ''}
-            <button class="btn small fail" onclick="customArgDefs.splice(${i},1);renderCustomArgDefs()">&#10005;</button>
+            ${ca.type !== 'checkbox' ? `<input type="text" value="${esc(ca.default || '')}" placeholder="Default" onchange="customArgDefs[${i}].default=this.value" class="flex-1 bg-white dark:bg-gray-900/30 border border-gray-300 dark:border-gray-700/60 rounded px-2 py-1 text-xs text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-violet-500 focus:ring-0 focus:ring-offset-0 transition">` : ''}
+            <button onclick="customArgDefs.splice(${i},1);renderCustomArgDefs()" class="p-1 text-gray-400 hover:text-red-500 transition"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg></button>
         </div>
     `).join('');
 }
@@ -633,8 +476,7 @@ function renderCustomArgDefs() {
 function addCustomArgDef() {
     customArgDefs.push({ name: '', label: '', type: 'text', default: '', value: '' });
     renderCustomArgDefs();
-    // Focus the new name input
-    const inputs = document.querySelectorAll('#custom-args-list .custom-arg-row input[type="text"]');
+    const inputs = document.querySelectorAll('#custom-args-list input[type="text"]');
     if (inputs.length) inputs[inputs.length - 3].focus();
 }
 
@@ -645,19 +487,12 @@ async function updateProfileArg(el) {
     if (!profile) return;
     const ca = profile.custom_args[idx];
     if (!ca) return;
-    if (ca.type === 'checkbox') {
-        ca.value = el.checked ? 'true' : 'false';
-    } else {
-        ca.value = el.value;
-    }
+    ca.value = ca.type === 'checkbox' ? (el.checked ? 'true' : 'false') : el.value;
     await api('POST', '/api/profiles', profile);
     await loadProfiles();
 }
 
-function editProfile(id) {
-    const p = profiles.find(x => x.id === id);
-    if (p) openProfileModal(p);
-}
+function editProfile(id) { const p = profiles.find(x => x.id === id); if (p) openProfileModal(p); }
 
 async function deleteProfile(id) {
     if (!confirm('Delete this profile?')) return;
@@ -672,128 +507,98 @@ async function saveProfile() {
     const argsText = document.getElementById('profile-args').value.trim();
     if (!name || !scriptPath) { alert('Name and script path are required.'); return; }
     const args = argsText ? argsText.split('\n').map(s => s.trim()).filter(Boolean) : [];
-    // Sync custom arg defs - ensure each has proper fields
     const customArgs = customArgDefs.map(ca => ({
-        name: ca.name.trim(),
-        label: (ca.label || ca.name).trim(),
-        type: ca.type || 'text',
-        default: ca.default || '',
-        value: ca.value || ca.default || '',
+        name: ca.name.trim(), label: (ca.label || ca.name).trim(),
+        type: ca.type || 'text', default: ca.default || '', value: ca.value || ca.default || '',
     })).filter(ca => ca.name);
-    const profile = { id: editingProfileId, name, script_path: scriptPath, args, custom_args: customArgs };
-    await api('POST', '/api/profiles', profile);
-    await loadProfiles();
-    renderProfiles();
-    closeModal('profile-modal');
+    await api('POST', '/api/profiles', { id: editingProfileId, name, script_path: scriptPath, args, custom_args: customArgs });
+    delete scriptStatusCache[scriptPath];
+    await loadProfiles(); await checkAllScripts(); renderProfiles(); closeModal('profile-modal');
 }
 
 async function runProfile(id) {
-    // Collect current values from the profile card's editable fields
     const profile = profiles.find(p => p.id === id);
-    const argValues = {};
-    if (profile && profile.custom_args) {
-        profile.custom_args.forEach((ca, i) => {
-            const el = document.getElementById(`arg-${id}-${i}`);
-            if (!el) return;
-            if (ca.type === 'checkbox') {
-                argValues[ca.name] = el.checked ? 'true' : 'false';
-            } else {
-                argValues[ca.name] = el.value;
-            }
-        });
+    if (!profile) return;
+    if (scriptStatusCache[profile.script_path] === false) {
+        alert(`Script not found: ${profile.script_path}`);
+        return;
     }
+    const argValues = {};
+    if (profile?.custom_args) profile.custom_args.forEach((ca, i) => {
+        const el = document.getElementById(`arg-${id}-${i}`);
+        if (el) argValues[ca.name] = ca.type === 'checkbox' ? (el.checked ? 'true' : 'false') : el.value;
+    });
     const res = await api('POST', '/api/run/profile', { profile_id: id, arg_values: argValues });
     if (res.run_id) openRunModal(res.run_id, 'Profile Run');
 }
 
-// ---- File Browser ----
-async function browseTo(path) {
-    if (!path) path = document.getElementById('file-path-input').value || '/';
-    const data = await api('GET', '/api/browse?path=' + encodeURIComponent(path));
-    if (data.error) { alert(data.error); return; }
-    document.getElementById('file-path-input').value = data.path;
-    const list = document.getElementById('file-list');
-    // If server returned a selected file (user entered a file path), auto-select it
-    if (data.selected_file) {
-        const f = data.selected_file;
-        document.getElementById('profile-script-path').value = f.path;
-        list.innerHTML = `<div class="file-item file selected" data-path="${esc(f.path)}" data-isdir="false">
-            <span class="icon">&#128196;</span>
-            <span>${esc(f.name)} <span style="color:var(--success)">(selected)</span></span>
-        </div>`;
-        return;
-    }
-    if (!data.entries.length) {
-        list.innerHTML = '<div style="padding:12px;color:var(--text-dim);font-size:0.85rem;">Empty directory</div>';
-        return;
-    }
-    list.innerHTML = data.entries.map(e => `
-        <div class="file-item ${e.is_dir ? 'dir' : 'file'}" data-path="${esc(e.path)}" data-isdir="${e.is_dir}">
-            <span class="icon">${e.is_dir ? '&#128193;' : '&#128196;'}</span>
-            <span>${esc(e.name)}</span>
-        </div>
-    `).join('');
-}
-
-document.getElementById('file-list').addEventListener('click', function(e) {
-    const item = e.target.closest('.file-item');
-    if (!item) return;
-    const isDir = item.dataset.isdir === 'true';
-    const path = item.dataset.path;
-    if (isDir) {
-        browseTo(path);
-    } else {
-        document.getElementById('profile-script-path').value = path;
-        document.getElementById('file-path-input').value = path;
-        document.querySelectorAll('.file-item').forEach(el => el.classList.remove('selected'));
-        item.classList.add('selected');
-    }
-});
-
-document.getElementById('file-path-input').addEventListener('keydown', e => {
-    if (e.key === 'Enter') {
-        const val = e.target.value.trim();
-        if (val.endsWith('.py') || val.endsWith('.pyw')) {
-            document.getElementById('profile-script-path').value = val;
-        } else {
-            browseTo(val);
-        }
-    }
-});
-
 async function openNativeFileDialog() {
     const data = await api('GET', '/api/filedialog');
     if (data.error) { alert(data.error); return; }
-    if (data.path) {
-        document.getElementById('profile-script-path').value = data.path;
-        document.getElementById('file-path-input').value = data.path;
-    }
+    if (data.path) { document.getElementById('profile-script-path').value = data.path; }
 }
 
-// ---- Workflows ----
 function renderWorkflows() {
     const el = document.getElementById('workflows-list');
     if (!workflows.length) {
-        el.innerHTML = '<div class="empty-state"><div class="icon">&#128268;</div><p>No workflows yet. Create one to chain profiles together.</p></div>';
+        el.innerHTML = '<div class="text-center py-16 text-gray-500 dark:text-gray-400"><div class="text-4xl mb-3">&#128268;</div><p>No workflows yet. Create one to chain profiles.</p></div>';
         return;
     }
     el.innerHTML = workflows.map(w => {
-        const steps = (w.steps || []);
-        const modes = [...new Set(steps.map(s => s.execution_mode || 'sequential'))];
+        const steps = w.steps || [];
+        const profileMap = Object.fromEntries(profiles.map(p => [p.id, p]));
+        const hasMissingScripts = steps.some(s => {
+            const prof = profileMap[s.profile_id] || {};
+            return scriptStatusCache[prof.script_path] === false;
+        });
         return `
-        <div class="card">
-            <div class="card-header">
-                <h3>${esc(w.name)}</h3>
-                <div class="card-actions">
-                    <button class="btn small success" onclick="runWorkflow('${w.id}')">&#9654; Run</button>
-                    <button class="btn small secondary" onclick="editWorkflow('${w.id}')">Edit</button>
-                    <button class="btn small fail" onclick="deleteWorkflow('${w.id}')">Del</button>
+        <div class="bg-white dark:bg-gray-800 shadow-xs rounded-xl border ${hasMissingScripts ? 'border-amber-200 dark:border-amber-500/30' : 'border-gray-200 dark:border-gray-700/60'} hover:border-gray-300 dark:hover:border-gray-600 transition group">
+            <div class="p-4">
+                <div class="flex items-start justify-between gap-3 mb-3">
+                    <div class="min-w-0 flex-1">
+                        <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-100">${esc(w.name)}</h3>
+                        <div class="flex flex-wrap items-center gap-1.5 mt-1.5">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700/50 text-gray-600 dark:text-gray-400">${steps.length} step${steps.length !== 1 ? 's' : ''}</span>
+                            ${hasMissingScripts ? '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 6a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 6zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/></svg>Missing script</span>' : ''}
+                            ${w.continue_on_error ? '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400">continues on error</span>' : ''}
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1 shrink-0">
+                        <button onclick="runWorkflow('${w.id}')" class="inline-flex items-center gap-1 px-2.5 py-1.5 bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400 text-xs font-medium rounded-lg border border-green-200 dark:border-green-500/20 hover:bg-green-100 dark:hover:bg-green-500/20 transition">
+                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg> Run
+                        </button>
+                        <button onclick="editWorkflow('${w.id}')" class="px-2.5 py-1.5 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-xs font-medium rounded-lg border border-gray-200 dark:border-gray-700/60 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Edit</button>
+                        <button onclick="deleteWorkflow('${w.id}')" class="px-2.5 py-1.5 bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400 text-xs font-medium rounded-lg border border-red-200 dark:border-red-500/20 hover:bg-red-100 dark:hover:bg-red-500/20 transition">Del</button>
+                    </div>
                 </div>
-            </div>
-            <div class="card-meta">
-                <span class="tag">${steps.length} step${steps.length !== 1 ? 's' : ''}</span>
-                ${modes.map(m => `<span class="tag ${m === 'parallel' ? 'green' : ''}">${m}</span>`).join('')}
-                ${w.continue_on_error ? '<span class="tag red">continue on error</span>' : ''}
+                ${steps.length ? `
+                <div class="border-t border-gray-100 dark:border-gray-700/60 pt-3">
+                    <div class="space-y-0">
+                        ${steps.map((s, i) => {
+                            const prof = profileMap[s.profile_id] || {};
+                            const mode = s.execution_mode || 'sequential';
+                            const modeColor = mode === 'parallel' ? 'bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400 border-green-200 dark:border-green-500/20' : 'bg-gray-100 dark:bg-gray-700/50 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700/60';
+                            const isLast = i === steps.length - 1;
+                            const stepMissing = scriptStatusCache[prof.script_path] === false;
+                            return `
+                            <div class="flex items-start gap-3 ${!isLast ? 'pb-3' : ''}">
+                                <div class="flex flex-col items-center shrink-0 pt-0.5">
+                                    <span class="flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold ${stepMissing ? 'bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-500/30' : 'bg-violet-100 dark:bg-violet-500/20 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-500/30'}">${i + 1}</span>
+                                    ${!isLast ? '<div class="w-px h-full min-h-[8px] bg-gray-200 dark:bg-gray-700 mt-1"></div>' : ''}
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <span class="text-xs font-medium ${stepMissing ? 'text-red-700 dark:text-red-400' : 'text-gray-800 dark:text-gray-200'}">${esc(prof.name || 'Unknown Profile')}</span>
+                                        <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border ${modeColor}">${mode}</span>
+                                        ${stepMissing ? '<span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-500/20"><svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 6a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 6zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/></svg>missing</span>' : ''}
+                                    </div>
+                                    <div class="text-[11px] ${stepMissing ? 'text-red-500 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'} mt-0.5 truncate font-mono">${esc(prof.script_path || '—')}</div>
+                                    ${prof.args && prof.args.length ? `<div class="flex flex-wrap gap-1 mt-1">${prof.args.map(a => `<span class="text-[10px] px-1.5 py-0.5 rounded bg-violet-50 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400">${esc(a)}</span>`).join('')}</div>` : ''}
+                                </div>
+                            </div>`;
+                        }).join('')}
+                    </div>
+                </div>` : ''}
             </div>
         </div>`;
     }).join('');
@@ -803,239 +608,297 @@ function openWorkflowModal(workflow) {
     editingWorkflowId = workflow ? workflow.id : null;
     document.getElementById('workflow-modal-title').textContent = workflow ? 'Edit Workflow' : 'New Workflow';
     document.getElementById('workflow-name').value = workflow ? workflow.name : '';
-    document.getElementById('workflow-extra-args').value = workflow ? (workflow.extra_args || []).join('\n') : '';
     document.getElementById('workflow-continue-on-error').checked = workflow ? !!workflow.continue_on_error : false;
-
-    // Populate profile dropdown
-    const sel = document.getElementById('workflow-step-profile');
-    sel.innerHTML = profiles.map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join('');
-
+    document.getElementById('workflow-step-profile').innerHTML = profiles.map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join('');
     workflowSteps = workflow ? JSON.parse(JSON.stringify(workflow.steps || [])) : [];
     renderWorkflowSteps();
     openModal('workflow-modal');
 }
 
-function editWorkflow(id) {
-    const w = workflows.find(x => x.id === id);
-    if (w) openWorkflowModal(w);
-}
+function editWorkflow(id) { const w = workflows.find(x => x.id === id); if (w) openWorkflowModal(w); }
 
 async function deleteWorkflow(id) {
     if (!confirm('Delete this workflow?')) return;
     await api('DELETE', '/api/workflows/' + id);
-    await loadWorkflows();
-    renderWorkflows();
+    await loadWorkflows(); renderWorkflows();
 }
 
 function addWorkflowStep() {
-    const profileId = document.getElementById('workflow-step-profile').value;
-    const mode = document.getElementById('workflow-step-mode').value;
-    if (!profileId) return;
-    workflowSteps.push({ profile_id: profileId, execution_mode: mode, args: [] });
+    const pid = document.getElementById('workflow-step-profile').value;
+    if (!pid) return;
+    workflowSteps.push({ profile_id: pid, execution_mode: document.getElementById('workflow-step-mode').value, args: [] });
     renderWorkflowSteps();
 }
 
 function renderWorkflowSteps() {
     const el = document.getElementById('workflow-steps');
-    if (!workflowSteps.length) {
-        el.innerHTML = '<div style="color: var(--text-dim); font-size: 0.85rem; padding: 8px;">No steps added yet.</div>';
-        return;
-    }
-    el.innerHTML = workflowSteps.map((s, i) => {
-        return `
-        <div class="step-item">
-            <div class="step-num">${i + 1}</div>
-            <div class="step-info" style="flex:1;">
-                <select onchange="updateStepProfile(${i}, this.value)" style="width:100%;padding:5px 8px;font-size:0.85rem;margin-bottom:4px;">
-                    ${profiles.map(p => `<option value="${p.id}" ${s.profile_id === p.id ? 'selected' : ''}>${esc(p.name)} — ${esc(p.script_path)}</option>`).join('')}
-                </select>
-            </div>
-            <select onchange="updateStepMode(${i}, this.value)" style="width:auto;padding:4px 8px;font-size:0.8rem;">
+    if (!workflowSteps.length) { el.innerHTML = '<div class="text-xs text-gray-400 py-2">No steps added yet.</div>'; return; }
+    el.innerHTML = workflowSteps.map((s, i) => `
+        <div class="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg">
+            <div class="w-6 h-6 rounded-full bg-violet-500/10 text-violet-600 dark:text-violet-400 flex items-center justify-center text-xs font-bold shrink-0">${i + 1}</div>
+            <select onchange="updateStepProfile(${i}, this.value)" class="flex-1 bg-white dark:bg-gray-900/30 border border-gray-300 dark:border-gray-700/60 rounded px-2 py-1 text-xs text-gray-800 dark:text-gray-100 focus:border-violet-500 focus:ring-0 focus:ring-offset-0 transition">
+                ${profiles.map(p => `<option value="${p.id}" ${s.profile_id === p.id ? 'selected' : ''}>${esc(p.name)} &mdash; ${esc(p.script_path)}</option>`).join('')}
+            </select>
+            <select onchange="updateStepMode(${i}, this.value)" class="bg-white dark:bg-gray-900/30 border border-gray-300 dark:border-gray-700/60 rounded px-2 py-1 text-xs text-gray-800 dark:text-gray-100 focus:border-violet-500 focus:ring-0 focus:ring-offset-0 transition">
                 <option value="sequential" ${s.execution_mode === 'sequential' ? 'selected' : ''}>Sequential</option>
                 <option value="parallel" ${s.execution_mode === 'parallel' ? 'selected' : ''}>Parallel</option>
             </select>
-            <div class="step-controls">
-                ${i > 0 ? `<button class="btn small secondary" onclick="moveStep(${i},-1)">&#9650;</button>` : ''}
-                ${i < workflowSteps.length - 1 ? `<button class="btn small secondary" onclick="moveStep(${i},1)">&#9660;</button>` : ''}
-                <button class="btn small fail" onclick="removeStep(${i})">&#10005;</button>
+            <div class="flex items-center gap-0.5 shrink-0">
+                ${i > 0 ? `<button onclick="moveStep(${i},-1)" class="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5"/></svg></button>` : ''}
+                ${i < workflowSteps.length - 1 ? `<button onclick="moveStep(${i},1)" class="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/></svg></button>` : ''}
+                <button onclick="removeStep(${i})" class="p-1 text-gray-400 hover:text-red-500 transition"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg></button>
             </div>
-        </div>`;
-    }).join('');
+        </div>
+    `).join('');
 }
 
-function updateStepProfile(i, profileId) { workflowSteps[i].profile_id = profileId; }
-function updateStepMode(i, mode) { workflowSteps[i].execution_mode = mode; }
-function moveStep(i, dir) {
-    const j = i + dir;
-    [workflowSteps[i], workflowSteps[j]] = [workflowSteps[j], workflowSteps[i]];
-    renderWorkflowSteps();
-}
-function removeStep(i) {
-    workflowSteps.splice(i, 1);
-    renderWorkflowSteps();
-}
+function updateStepProfile(i, pid) { workflowSteps[i].profile_id = pid; }
+function updateStepMode(i, m) { workflowSteps[i].execution_mode = m; }
+function moveStep(i, d) { const j = i + d; [workflowSteps[i], workflowSteps[j]] = [workflowSteps[j], workflowSteps[i]]; renderWorkflowSteps(); }
+function removeStep(i) { workflowSteps.splice(i, 1); renderWorkflowSteps(); }
 
 async function saveWorkflow() {
     const name = document.getElementById('workflow-name').value.trim();
-    const extraArgs = document.getElementById('workflow-extra-args').value.trim();
-    const continueOnError = document.getElementById('workflow-continue-on-error').checked;
+    const coe = document.getElementById('workflow-continue-on-error').checked;
     if (!name) { alert('Name is required.'); return; }
     if (!workflowSteps.length) { alert('Add at least one step.'); return; }
-    const workflow = {
-        id: editingWorkflowId,
-        name,
-        steps: workflowSteps,
-        extra_args: extraArgs ? extraArgs.split('\n').map(s => s.trim()).filter(Boolean) : [],
-        continue_on_error: continueOnError,
-    };
-    await api('POST', '/api/workflows', workflow);
-    await loadWorkflows();
-    renderWorkflows();
-    closeModal('workflow-modal');
+    await api('POST', '/api/workflows', {
+        id: editingWorkflowId, name, steps: workflowSteps,
+        extra_args: [],
+        continue_on_error: coe,
+    });
+    await loadWorkflows(); renderWorkflows(); closeModal('workflow-modal');
 }
 
 async function runWorkflow(id) {
+    const wf = workflows.find(w => w.id === id);
+    if (wf) {
+        const profileMap = Object.fromEntries(profiles.map(p => [p.id, p]));
+        const missingSteps = (wf.steps || []).filter(s => {
+            const prof = profileMap[s.profile_id] || {};
+            return scriptStatusCache[prof.script_path] === false;
+        });
+        if (missingSteps.length) {
+            const names = missingSteps.map(s => (profileMap[s.profile_id] || {}).name || s.profile_id).join(', ');
+            if (!confirm(`These profiles have missing scripts: ${names}\n\nRun anyway?`)) return;
+        }
+    }
     const res = await api('POST', '/api/run/workflow', { workflow_id: id });
     if (res.run_id) openRunModal(res.run_id, 'Workflow Run');
 }
 
-// ---- History ----
 let historyPage = 1;
+let profileHistoryPage = 1;
 const HISTORY_PER_PAGE = 15;
-let historyRefreshTimer = null;
+let workflowHistoryTimer = null;
+let profileHistoryTimer = null;
+
+async function loadProfileHistory() {
+    const data = await api('GET', `/api/history?page=${profileHistoryPage}&per_page=${HISTORY_PER_PAGE}&type=profile`);
+    const wrap = document.getElementById('profile-history-table-wrap');
+    const pag = document.getElementById('profile-history-pagination');
+    if (!data.entries?.length) { wrap.innerHTML = '<div class="text-center py-8 text-sm text-gray-500 dark:text-gray-400">No profile run history yet.</div>'; pag.innerHTML = ''; return; }
+    wrap.innerHTML = `<table class="w-full text-xs"><thead><tr class="border-b border-gray-100 dark:border-gray-700/60"><th class="text-left py-2 px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">#</th><th class="text-left py-2 px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Name</th><th class="text-left py-2 px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Status</th><th class="text-left py-2 px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Output</th><th class="text-right py-2 px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Time</th><th class="w-8"></th></tr></thead><tbody class="divide-y divide-gray-100 dark:divide-gray-700/60">${data.entries.map((e, idx) => {
+        const t = e.started_at ? new Date(e.started_at * 1000).toLocaleTimeString() : '-';
+        const preview = (e.output_preview || '').replace(/\n/g, ' ').substring(0, 60);
+        const sc = e.status === 'completed' ? 'text-green-600 dark:text-green-400' : e.status === 'failed' ? 'text-red-600 dark:text-red-400' : 'text-sky-600 dark:text-sky-400';
+        return `<tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition" title="${esc(e.output_preview || '')}"><td class="py-2 px-3 text-gray-400">${data.total - (data.page - 1) * data.per_page - idx}</td><td class="py-2 px-3 font-medium text-gray-800 dark:text-gray-200 cursor-pointer" onclick="openRunModal('${esc(e.run_id)}', '${esc(e.name)}', 'profile')">${esc(e.name)}</td><td class="py-2 px-3 cursor-pointer" onclick="openRunModal('${esc(e.run_id)}', '${esc(e.name)}', 'profile')"><span class="${sc}">${e.status}</span></td><td class="py-2 px-3 text-gray-500 dark:text-gray-400 font-mono truncate max-w-[200px] cursor-pointer" onclick="openRunModal('${esc(e.run_id)}', '${esc(e.name)}', 'profile')">${esc(preview)}</td><td class="py-2 px-3 text-right text-gray-500 dark:text-gray-400 whitespace-nowrap cursor-pointer" onclick="openRunModal('${esc(e.run_id)}', '${esc(e.name)}', 'profile')">${t}</td><td class="py-2 px-1"><button onclick="event.stopPropagation();deleteHistoryEntry('${esc(e.run_id)}')" class="p-1 rounded text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition" title="Delete"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button></td></tr>`;
+    }).join('')}</tbody></table>`;
+    renderPag(pag, data, 'profileHistoryPage', 'loadProfileHistory');
+}
+
+function renderPag(pag, data, pageVar, loadFn) {
+    if (data.pages <= 1) { pag.innerHTML = ''; return; }
+    let b = '';
+    b += `<button onclick="${pageVar}=1;${loadFn}()" ${data.page===1?'disabled':''} class="px-2 py-1 rounded text-xs bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700/60 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-30 transition">&laquo;</button>`;
+    b += `<button onclick="${pageVar}=Math.max(1,${pageVar}-1);${loadFn}()" ${data.page===1?'disabled':''} class="px-2 py-1 rounded text-xs bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700/60 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-30 transition">&lsaquo;</button>`;
+    for (let i = Math.max(1, data.page - 2); i <= Math.min(data.pages, data.page + 2); i++)
+        b += `<button onclick="${pageVar}=${i};${loadFn}()" class="px-2 py-1 rounded text-xs ${i===data.page ? 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700/60 hover:bg-gray-50 dark:hover:bg-gray-700'} transition">${i}</button>`;
+    b += `<button onclick="${pageVar}=Math.min(${data.pages},${pageVar}+1);${loadFn}()" ${data.page===data.pages?'disabled':''} class="px-2 py-1 rounded text-xs bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700/60 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-30 transition">&rsaquo;</button>`;
+    b += `<button onclick="${pageVar}=${data.pages};${loadFn}()" ${data.page===data.pages?'disabled':''} class="px-2 py-1 rounded text-xs bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700/60 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-30 transition">&raquo;</button>`;
+    b += `<span class="text-xs text-gray-400 ml-2">${data.total} total</span>`;
+    pag.innerHTML = b;
+}
 
 async function loadHistory() {
-    const data = await api('GET', `/api/history?page=${historyPage}&per_page=${HISTORY_PER_PAGE}`);
+    const data = await api('GET', `/api/history?page=${historyPage}&per_page=${HISTORY_PER_PAGE}&type=workflow`);
     const wrap = document.getElementById('history-table-wrap');
     const pag = document.getElementById('history-pagination');
-
-    if (!data.entries || !data.entries.length) {
-        wrap.innerHTML = '<div style="color:var(--text-dim);font-size:0.85rem;padding:16px;text-align:center;">No run history yet.</div>';
-        pag.innerHTML = '';
-        return;
-    }
-
-    wrap.innerHTML = `
-        <table class="history-table">
-            <thead>
-                <tr>
-                    <th style="width:30px;">#</th>
-                    <th>Name</th>
-                    <th>Type</th>
-                    <th>Status</th>
-                    <th>Output Preview</th>
-                    <th>Time</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${data.entries.map((e, idx) => {
-                    const time = e.started_at ? new Date(e.started_at * 1000).toLocaleString() : '-';
-                    const preview = (e.output_preview || '').replace(/\n/g, ' ').substring(0, 80);
-                    return `<tr onclick="openRunModal('${esc(e.run_id)}', '${esc(e.name)}')" style="cursor:pointer;" title="${esc(e.output_preview || '')}">
-                        <td style="color:var(--text-dim);">${data.total - (data.page - 1) * data.per_page - idx}</td>
-                        <td>${esc(e.name)}</td>
-                        <td><span class="tag">${e.type}</span></td>
-                        <td><span class="status-${e.status}">${e.status}</span></td>
-                        <td style="color:var(--text-dim);font-family:monospace;font-size:0.78rem;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(preview)}</td>
-                        <td style="white-space:nowrap;">${time}</td>
-                    </tr>`;
-                }).join('')}
-            </tbody>
-        </table>
-    `;
-
-    // Pagination
-    if (data.pages <= 1) {
-        pag.innerHTML = '';
-        return;
-    }
-    let btns = '';
-    btns += `<button class="btn small secondary" onclick="historyPage=1;loadHistory()" ${data.page===1?'disabled':''}>&laquo;</button>`;
-    btns += `<button class="btn small secondary" onclick="historyPage=Math.max(1,historyPage-1);loadHistory()" ${data.page===1?'disabled':''}>&lsaquo;</button>`;
-    const start = Math.max(1, data.page - 2);
-    const end = Math.min(data.pages, data.page + 2);
-    for (let i = start; i <= end; i++) {
-        btns += `<button class="btn small ${i===data.page?'':'secondary'}" onclick="historyPage=${i};loadHistory()">${i}</button>`;
-    }
-    btns += `<button class="btn small secondary" onclick="historyPage=Math.min(${data.pages},historyPage+1);loadHistory()" ${data.page===data.pages?'disabled':''}>&rsaquo;</button>`;
-    btns += `<button class="btn small secondary" onclick="historyPage=${data.pages};loadHistory()" ${data.page===data.pages?'disabled':''}>&raquo;</button>`;
-    btns += `<span style="color:var(--text-dim);font-size:0.8rem;margin-left:8px;">${data.total} total</span>`;
-    pag.innerHTML = btns;
+    if (!data.entries?.length) { wrap.innerHTML = '<div class="text-center py-8 text-sm text-gray-500 dark:text-gray-400">No workflow run history yet.</div>'; pag.innerHTML = ''; return; }
+    wrap.innerHTML = `<table class="w-full text-xs"><thead><tr class="border-b border-gray-100 dark:border-gray-700/60"><th class="text-left py-2 px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">#</th><th class="text-left py-2 px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Name</th><th class="text-left py-2 px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Status</th><th class="text-left py-2 px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Output</th><th class="text-right py-2 px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Time</th><th class="w-8"></th></tr></thead><tbody class="divide-y divide-gray-100 dark:divide-gray-700/60">${data.entries.map((e, idx) => {
+        const t = e.started_at ? new Date(e.started_at * 1000).toLocaleTimeString() : '-';
+        const preview = (e.output_preview || '').replace(/\n/g, ' ').substring(0, 60);
+        const sc = e.status === 'completed' ? 'text-green-600 dark:text-green-400' : e.status === 'failed' ? 'text-red-600 dark:text-red-400' : 'text-sky-600 dark:text-sky-400';
+        return `<tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition" title="${esc(e.output_preview || '')}"><td class="py-2 px-3 text-gray-400">${data.total - (data.page - 1) * data.per_page - idx}</td><td class="py-2 px-3 font-medium text-gray-800 dark:text-gray-200 cursor-pointer" onclick="openRunModal('${esc(e.run_id)}', '${esc(e.name)}', 'workflow')">${esc(e.name)}</td><td class="py-2 px-3 cursor-pointer" onclick="openRunModal('${esc(e.run_id)}', '${esc(e.name)}', 'workflow')"><span class="${sc}">${e.status}</span></td><td class="py-2 px-3 text-gray-500 dark:text-gray-400 font-mono truncate max-w-[200px] cursor-pointer" onclick="openRunModal('${esc(e.run_id)}', '${esc(e.name)}', 'workflow')">${esc(preview)}</td><td class="py-2 px-3 text-right text-gray-500 dark:text-gray-400 whitespace-nowrap cursor-pointer" onclick="openRunModal('${esc(e.run_id)}', '${esc(e.name)}', 'workflow')">${t}</td><td class="py-2 px-1"><button onclick="event.stopPropagation();deleteHistoryEntry('${esc(e.run_id)}')" class="p-1 rounded text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition" title="Delete"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button></td></tr>`;
+    }).join('')}</tbody></table>`;
+    renderPag(pag, data, 'historyPage', 'loadHistory');
 }
 
-// ---- Runs ----
-async function refreshRuns() {
-    const data = await api('GET', '/api/runs');
-    const el = document.getElementById('runs-list');
-    const ids = Object.keys(data);
-    if (!ids.length) {
-        el.innerHTML = '<div class="empty-state"><div class="icon">&#9654;</div><p>No runs yet.</p></div>';
-        return;
-    }
-    el.innerHTML = ids.reverse().map(id => {
-        const r = data[id];
-        return `
-        <div class="card" onclick="openRunModal('${id}', 'Run')" style="cursor:pointer;">
-            <div class="card-header">
-                <h3 style="font-size:0.95rem;">${esc(id)}</h3>
-                <span class="run-status ${r.status}"><span class="dot"></span> ${r.status}</span>
-            </div>
-            <div class="card-meta" style="max-height:40px;overflow:hidden;">
-                ${(r.output || []).slice(-2).map(l => esc(l)).join('')}
-            </div>
-        </div>`;
-    }).join('');
+async function deleteHistoryEntry(runId) {
+    await api('DELETE', '/api/history/' + runId);
+    loadProfileHistory();
+    loadHistory();
 }
 
-function openRunModal(runId, title) {
+let activeRunTab = 'workflow';
+
+function openRunModal(runId, title, runType) {
     currentRunId = runId;
+    activeRunTab = 'workflow';
     document.getElementById('run-modal-title').textContent = title || 'Run Output';
     document.getElementById('run-output').innerHTML = '';
-    document.getElementById('run-status-badge').className = 'run-status starting';
+    document.getElementById('run-status-badge').className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700/50 text-gray-600 dark:text-gray-400';
+    document.getElementById('run-status-dot').className = 'w-1.5 h-1.5 rounded-full bg-gray-400 animate-pulse';
     document.getElementById('run-status-text').textContent = 'Starting...';
+    document.getElementById('run-current-step').textContent = '';
+    document.getElementById('run-current-step').classList.add('hidden');
+    document.getElementById('run-tabs').classList.add('hidden');
+    document.getElementById('run-tab-list').innerHTML = '';
     openModal('run-modal');
-    pollRun(runId);
+    pollRun(runId, runType);
 }
 
-async function pollRun(runId) {
+async function pollRun(runId, runType) {
     if (runPollTimer) clearInterval(runPollTimer);
+
+    // If called from history with known type, go directly to history (skip active runs)
+    let data;
+    if (runType) {
+        data = { error: true };
+    } else {
+        data = await api('GET', '/api/runs/' + runId);
+    }
+
+    // If not found in active runs, try history
+    if (data.error) {
+        const histUrl = runType ? `/api/history/${runId}?type=${runType}` : `/api/history/${runId}`;
+        const hist = await api('GET', histUrl);
+        if (hist.error) {
+            document.getElementById('run-output').innerHTML = '<div class="text-gray-500">Run data not found.</div>';
+            return;
+        }
+        // Render from history
+        const el = document.getElementById('run-output');
+        const steps = hist.steps || {};
+        const stepNames = Object.keys(steps);
+        const hasSteps = stepNames.length > 0;
+
+        // Show tabs for workflow history
+        const tabsEl = document.getElementById('run-tabs');
+        const currentStepEl = document.getElementById('run-current-step');
+        currentStepEl.classList.add('hidden');
+        if (hasSteps) {
+            tabsEl.classList.remove('hidden');
+            const tabList = document.getElementById('run-tab-list');
+            let html = `<button onclick="switchRunTab('workflow')" id="run-tab-workflow" class="px-3 py-2 text-xs font-medium border-b-2 transition ${activeRunTab === 'workflow' ? 'border-violet-500 text-violet-600 dark:text-violet-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}">Workflow</button>`;
+            for (const name of stepNames) {
+                const st = steps[name].status;
+                const dot = st === 'completed' ? 'bg-green-400' : st === 'failed' ? 'bg-red-400' : 'bg-gray-400';
+                html += `<button onclick="switchRunTab('${esc(name)}')" id="run-tab-${esc(name)}" class="px-3 py-2 text-xs font-medium border-b-2 transition flex items-center gap-1.5 ${activeRunTab === name ? 'border-violet-500 text-violet-600 dark:text-violet-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}"><span class="w-1.5 h-1.5 rounded-full ${dot}"></span>${esc(name)}</button>`;
+            }
+            tabList.innerHTML = html;
+        } else {
+            tabsEl.classList.add('hidden');
+        }
+
+        let lines;
+        if (activeRunTab === 'workflow' || !hasSteps) {
+            lines = (hist.workflow_log?.length ? hist.workflow_log : null) || hist.output || [];
+        } else {
+            lines = steps[activeRunTab]?.output || [];
+        }
+        if (!lines.length && hist.output_preview) {
+            lines = hist.output_preview.split('\n');
+        }
+        if (!lines.length) {
+            el.innerHTML = '<div class="text-gray-500">No output available for this run.</div>';
+        } else {
+            el.innerHTML = lines.map(l => {
+                const s = typeof l === 'string' ? l : String(l);
+                if (s.startsWith('[FAIL') || s.startsWith('[ABORT') || s.startsWith('ERROR')) return `<div class="text-red-400">${esc(s)}</div>`;
+                if (s.startsWith('[DONE') || s.startsWith('[SKIP')) return `<div class="text-green-400">${esc(s)}</div>`;
+                if (s.startsWith('[RUN') || s.startsWith('=')) return `<div class="text-sky-400">${esc(s)}</div>`;
+                return esc(s);
+            }).join('');
+        }
+
+        const sc = { completed: 'bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400 border-green-200 dark:border-green-500/20', failed: 'bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400 border-red-200 dark:border-red-500/20' };
+        const dc = { completed: 'bg-green-400', failed: 'bg-red-400' };
+        document.getElementById('run-status-badge').className = `inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${sc[hist.status] || sc.completed}`;
+        document.getElementById('run-status-dot').className = `w-1.5 h-1.5 rounded-full ${dc[hist.status] || dc.completed}`;
+        document.getElementById('run-status-text').textContent = { completed: 'Completed', failed: 'Failed' }[hist.status] || hist.status;
+        return;
+    }
+
+    // Active run — poll periodically
     runPollTimer = setInterval(async () => {
         const data = await api('GET', '/api/runs/' + runId);
+        const steps = data.steps || {};
+        const stepNames = Object.keys(steps);
+        const hasSteps = stepNames.length > 0;
+
+        // Show/hide tabs and current step indicator
+        const tabsEl = document.getElementById('run-tabs');
+        const currentStepEl = document.getElementById('run-current-step');
+        if (hasSteps) {
+            tabsEl.classList.remove('hidden');
+            const tabList = document.getElementById('run-tab-list');
+            let html = `<button onclick="switchRunTab('workflow')" id="run-tab-workflow" class="px-3 py-2 text-xs font-medium border-b-2 transition ${activeRunTab === 'workflow' ? 'border-violet-500 text-violet-600 dark:text-violet-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}">Workflow</button>`;
+            for (const name of stepNames) {
+                const st = steps[name].status;
+                const dot = st === 'completed' ? 'bg-green-400' : st === 'failed' ? 'bg-red-400' : st === 'running' ? 'bg-sky-400 animate-pulse' : 'bg-gray-400';
+                html += `<button onclick="switchRunTab('${esc(name)}')" id="run-tab-${esc(name)}" class="px-3 py-2 text-xs font-medium border-b-2 transition flex items-center gap-1.5 ${activeRunTab === name ? 'border-violet-500 text-violet-600 dark:text-violet-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}"><span class="w-1.5 h-1.5 rounded-full ${dot}"></span>${esc(name)}</button>`;
+            }
+            tabList.innerHTML = html;
+
+            if (data.current_step) {
+                currentStepEl.textContent = 'Running: ' + data.current_step;
+                currentStepEl.classList.remove('hidden');
+            } else {
+                currentStepEl.classList.add('hidden');
+            }
+        } else {
+            tabsEl.classList.add('hidden');
+            currentStepEl.classList.add('hidden');
+        }
+
+        // Render output for active tab
         const el = document.getElementById('run-output');
-        el.innerHTML = (data.output || []).map(l => {
-            if (l.startsWith('[FAIL') || l.startsWith('[ABORT') || l.startsWith('ERROR')) return `<div class="line-fail">${esc(l)}</div>`;
-            if (l.startsWith('[DONE') || l.startsWith('[SKIP')) return `<div class="line-success">${esc(l)}</div>`;
-            if (l.startsWith('[RUN') || l.startsWith('=')) return `<div class="line-info">${esc(l)}</div>`;
+        let lines;
+        if (activeRunTab === 'workflow' || !hasSteps) {
+            lines = (data.workflow_log?.length ? data.workflow_log : null) || data.output || [];
+        } else {
+            lines = steps[activeRunTab]?.output || [];
+        }
+        el.innerHTML = lines.map(l => {
+            if (l.startsWith('[FAIL') || l.startsWith('[ABORT') || l.startsWith('ERROR')) return `<div class="text-red-400">${esc(l)}</div>`;
+            if (l.startsWith('[DONE') || l.startsWith('[SKIP')) return `<div class="text-green-400">${esc(l)}</div>`;
+            if (l.startsWith('[RUN') || l.startsWith('=')) return `<div class="text-sky-400">${esc(l)}</div>`;
             return esc(l);
         }).join('');
         el.scrollTop = el.scrollHeight;
 
-        const badge = document.getElementById('run-status-badge');
-        const text = document.getElementById('run-status-text');
-        badge.className = 'run-status ' + data.status;
-        text.textContent = data.status === 'completed' ? 'Completed' :
-                          data.status === 'failed' ? 'Failed' :
-                          data.status === 'running' ? 'Running...' : 'Starting...';
-
-        if (data.status === 'completed' || data.status === 'failed') {
-            clearInterval(runPollTimer);
-            runPollTimer = null;
-        }
+        const sc = { running: 'bg-sky-50 dark:bg-sky-500/10 text-sky-700 dark:text-sky-400 border-sky-200 dark:border-sky-500/20', completed: 'bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400 border-green-200 dark:border-green-500/20', failed: 'bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400 border-red-200 dark:border-red-500/20', starting: 'bg-purple-50 dark:bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-500/20' };
+        const dc = { running: 'bg-sky-400', completed: 'bg-green-400', failed: 'bg-red-400', starting: 'bg-purple-400' };
+        document.getElementById('run-status-badge').className = `inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${sc[data.status] || sc.starting}`;
+        document.getElementById('run-status-dot').className = `w-1.5 h-1.5 rounded-full ${dc[data.status] || dc.starting} ${data.status === 'running' ? 'animate-pulse' : ''}`;
+        document.getElementById('run-status-text').textContent = { completed: 'Completed', failed: 'Failed', running: 'Running...' }[data.status] || 'Starting...';
+        if (data.status === 'completed' || data.status === 'failed') { clearInterval(runPollTimer); runPollTimer = null; }
     }, 500);
 }
 
-// ---- Utils ----
-function esc(s) {
-    if (!s) return '';
-    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+function switchRunTab(name) {
+    activeRunTab = name;
+    // Re-render tabs and output immediately
+    if (currentRunId) pollRun(currentRunId);
 }
 
-// Close modals on overlay click
-document.querySelectorAll('.modal-overlay').forEach(el => {
-    el.addEventListener('click', e => { if (e.target === el) el.classList.remove('show'); });
+function esc(s) { return s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') : ''; }
+
+document.querySelectorAll('#profile-modal, #workflow-modal, #run-modal').forEach(el => {
+    el.addEventListener('click', e => { if (e.target === el) el.classList.add('hidden'); });
 });
 
-// Init
 init();
 </script>
 </body>
