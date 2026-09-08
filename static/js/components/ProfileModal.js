@@ -1,27 +1,30 @@
 import { html } from '../../vendor/standalone-preact.esm.js';
 import { useState, useEffect } from '../../vendor/standalone-preact.esm.js';
 import { esc } from '../utils.js';
-import { profileTags } from '../state.js';
+import { tags } from '../state.js';
 import { saveProfile, loadProfiles, checkAllScripts, openNativeFileDialog } from '../api.js';
+import { ErrorBanner } from './ErrorBanner.js';
 
 export function ProfileModal({ isOpen, onClose, profile }) {
     const [name, setName] = useState('');
     const [scriptPath, setScriptPath] = useState('');
     const [args, setArgs] = useState('');
     const [customArgs, setCustomArgs] = useState([]);
-    const [group, setGroup] = useState('');
+    const [tagIds, setTagIds] = useState([]);
     const [timeout, setTimeout] = useState('');
     const [editingId, setEditingId] = useState(null);
+    const [error, setError] = useState('');
 
     useEffect(() => {
         if (isOpen) {
+            setError('');
             if (profile) {
                 setEditingId(profile.id);
                 setName(profile.name || '');
                 setScriptPath(profile.script_path || '');
                 setArgs((profile.args || []).join('\n'));
                 setCustomArgs(JSON.parse(JSON.stringify(profile.custom_args || [])));
-                setGroup(profile.group || '');
+                setTagIds(profile.tags || []);
                 setTimeout(profile.timeout === undefined || profile.timeout === null ? '' : String(profile.timeout));
             } else {
                 setEditingId(null);
@@ -29,11 +32,15 @@ export function ProfileModal({ isOpen, onClose, profile }) {
                 setScriptPath('');
                 setArgs('');
                 setCustomArgs([]);
-                setGroup('');
+                setTagIds([]);
                 setTimeout('');
             }
         }
     }, [isOpen, profile]);
+
+    function toggleTagId(id) {
+        setTagIds(prev => prev.includes(id) ? prev.filter(t => t !== id) : [...prev, id]);
+    }
 
     function addCustomArg() {
         setCustomArgs([...customArgs, { name: '', label: '', type: 'text', default: '', value: '' }]);
@@ -48,15 +55,16 @@ export function ProfileModal({ isOpen, onClose, profile }) {
     }
 
     async function handleSave() {
+        setError('');
         const trimmedName = name.trim();
         const trimmedScript = scriptPath.trim();
-        if (!trimmedName || !trimmedScript) { alert('Name and script path are required.'); return; }
+        if (!trimmedName || !trimmedScript) { setError('Name and script path are required.'); return; }
         const argsList = args.trim() ? args.trim().split('\n').map(s => s.trim()).filter(Boolean) : [];
         let parsedTimeout = null;
         if (timeout.trim() !== '') {
             parsedTimeout = Number(timeout);
             if (!Number.isFinite(parsedTimeout) || parsedTimeout <= 0) {
-                alert('Timeout must be a positive number of seconds.');
+                setError('Timeout must be a positive number of seconds.');
                 return;
             }
         }
@@ -69,11 +77,14 @@ export function ProfileModal({ isOpen, onClose, profile }) {
             if (built.type === 'enum') built.options = (ca.options || '').trim();
             return built;
         }).filter(ca => ca.name);
-        const profileData = { id: editingId, name: trimmedName, script_path: trimmedScript, args: argsList, custom_args: builtCustomArgs };
+        const profileData = { id: editingId, name: trimmedName, script_path: trimmedScript, args: argsList, custom_args: builtCustomArgs, tags: tagIds, group: '' };
         if (parsedTimeout !== null) profileData.timeout = parsedTimeout;
-        if (group) profileData.group = group;
-        else if (editingId) profileData.group = '';
-        await saveProfile(profileData);
+        try {
+            await saveProfile(profileData);
+        } catch (err) {
+            setError(err.message || 'Could not save the profile.');
+            return;
+        }
         await loadProfiles();
         await checkAllScripts();
         onClose();
@@ -81,7 +92,7 @@ export function ProfileModal({ isOpen, onClose, profile }) {
 
     async function handleBrowse() {
         const data = await openNativeFileDialog();
-        if (data.error) { alert(data.error); return; }
+        if (data.error) { setError(data.error); return; }
         if (data.path) setScriptPath(data.path);
     }
 
@@ -103,6 +114,7 @@ export function ProfileModal({ isOpen, onClose, profile }) {
                         </div>
                     </div>
                     <div class="px-6 py-5 space-y-4">
+                        <${ErrorBanner} message=${error} />
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Profile Name</label>
                             <input type="text" value=${name} onInput=${e => setName(e.target.value)}
@@ -110,12 +122,21 @@ export function ProfileModal({ isOpen, onClose, profile }) {
                                 class="w-full bg-white dark:bg-gray-900/30 border border-gray-300 dark:border-gray-700/60 rounded-lg px-3 py-2 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-violet-500 focus:ring-0 focus:ring-offset-0 transition" />
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tag</label>
-                            <select value=${group} onChange=${e => setGroup(e.target.value)}
-                                class="w-full bg-white dark:bg-gray-900/30 border border-gray-300 dark:border-gray-700/60 rounded-lg px-3 py-2 text-sm text-gray-800 dark:text-gray-100 focus:border-violet-500 focus:ring-0 focus:ring-offset-0 transition">
-                                <option value="">No tag</option>
-                                ${profileTags.value.map(f => html`<option value=${f.id} selected=${group === f.id}>${f.name}</option>`)}
-                            </select>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tags <span class="text-gray-400 font-normal">(any number)</span></label>
+                            ${tags.value.length ? html`
+                                <div class="flex flex-wrap gap-1.5">
+                                    ${tags.value.map(t => html`
+                                        <button type="button" onClick=${() => toggleTagId(t.id)}
+                                            class="px-2.5 py-1.5 text-xs font-medium rounded-lg border transition ${tagIds.includes(t.id)
+                                                ? 'bg-amber-50 dark:bg-amber-500/10 border-amber-300 dark:border-amber-500/40 text-amber-700 dark:text-amber-400'
+                                                : 'bg-white dark:bg-gray-900/30 border-gray-300 dark:border-gray-700/60 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'}">
+                                            ${esc(t.name)}
+                                        </button>
+                                    `)}
+                                </div>
+                            ` : html`
+                                <p class="text-sm text-gray-500 dark:text-gray-400">No tags yet — create some with the Tags button above the list.</p>
+                            `}
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Script Path</label>

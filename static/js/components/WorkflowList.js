@@ -1,8 +1,8 @@
 import { html } from '../../vendor/standalone-preact.esm.js';
-import { workflows, workflowTags, selectedWorkflowTag } from '../state.js';
+import { workflows, tags, selectedWorkflowTag } from '../state.js';
 import { saveWorkflowOrder } from '../api.js';
 import { WorkflowCard } from './WorkflowCard.js';
-import { GroupedSortableList } from './GroupedSortableList.js';
+import { ItemList } from './ItemList.js';
 import { TagFilter } from './TagFilter.js';
 
 export function WorkflowList({ onEdit, onRun }) {
@@ -17,16 +17,15 @@ export function WorkflowList({ onEdit, onRun }) {
 
     return html`
         <${TagFilter}
-            tags=${workflowTags.value}
+            tags=${tags.value}
             items=${workflows.value}
-            getTag=${(w) => w.group || ''}
+            getTags=${(w) => w.tags || []}
             selectedTag=${selectedWorkflowTag.value}
             onSelect=${(v) => { selectedWorkflowTag.value = v; }}
         />
-        <${GroupedSortableList}
+        <${ItemList}
             items=${workflows.value}
-            tags=${workflowTags.value}
-            getTag=${(w) => w.group || ''}
+            getTags=${(w) => w.tags || []}
             selectedTag=${selectedWorkflowTag.value}
             onReorder=${(next) => {
                 workflows.value = next;

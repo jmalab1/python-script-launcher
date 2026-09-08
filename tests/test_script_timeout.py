@@ -159,7 +159,7 @@ def test_profile_modal_offers_a_timeout_field():
         in src
     ), "an existing profile's timeout must load into the input"
     assert "positive number of seconds" in src, \
-        "non-positive or junk timeouts must be rejected with an alert"
+        "non-positive or junk timeouts must be rejected with an inline error"
     assert "profileData.timeout = parsedTimeout" in src, \
         "a valid timeout must be saved on the profile"
     assert 'placeholder="No limit"' in src, \

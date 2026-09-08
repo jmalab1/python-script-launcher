@@ -45,23 +45,34 @@ export const auditUntil = signal('');
 export const logData = signal([]);
 export const logOffset = signal(0);
 
-// Tags for grouping profiles and workflows
+// Tags for grouping profiles and workflows. One global list: both kinds of
+// item reference the same tags by id.
 export const TRASH_GROUP = '__trash__';
-export const PROFILE_TAGS_KEY = 'profileTags';
-export const WORKFLOW_TAGS_KEY = 'workflowTags';
+export const TAGS_KEY = 'tags';
+// Older versions kept a separate list per panel (and earlier still, per
+// panel "folders"). They are merged into the single global list on load.
+const LEGACY_TAG_KEYS = ['profileTags', 'profileFolders', 'workflowTags', 'workflowFolders'];
 
-function loadTags(key, legacyKey) {
-    try {
-        const raw = localStorage.getItem(key) || (legacyKey ? localStorage.getItem(legacyKey) : null);
-        return raw ? JSON.parse(raw) : [];
-    } catch { return []; }
+function loadTags() {
+    const read = (key) => {
+        try {
+            const raw = localStorage.getItem(key);
+            return raw ? JSON.parse(raw) : [];
+        } catch { return []; }
+    };
+    const merged = [];
+    const seen = new Set();
+    for (const tag of [read(TAGS_KEY), ...LEGACY_TAG_KEYS.map(read)].flat()) {
+        if (!tag || !tag.id || seen.has(tag.id)) continue;
+        seen.add(tag.id);
+        merged.push(tag);
+    }
+    return merged;
 }
 
-export const profileTags = signal(loadTags(PROFILE_TAGS_KEY, 'profileFolders'));
-export const workflowTags = signal(loadTags(WORKFLOW_TAGS_KEY, 'workflowFolders'));
+export const tags = signal(loadTags());
 
-profileTags.subscribe(v => localStorage.setItem(PROFILE_TAGS_KEY, JSON.stringify(v)));
-workflowTags.subscribe(v => localStorage.setItem(WORKFLOW_TAGS_KEY, JSON.stringify(v)));
+tags.subscribe(v => localStorage.setItem(TAGS_KEY, JSON.stringify(v)));
 
 export function addTag(tagsSignal, name) {
     const id = 'tag_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);

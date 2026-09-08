@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from '../../vendor/standalone-preact.esm.
 import { esc, colorizeLine } from '../utils.js';
 import { pollRun, fetchHistoryRun, cancelRun } from '../api.js';
 import { ConfirmModal } from './ConfirmModal.js';
+import { ErrorBanner } from './ErrorBanner.js';
 
 export function RunModal({ isOpen, onClose, runId, title, runType }) {
     const [output, setOutput] = useState([]);
@@ -13,6 +14,7 @@ export function RunModal({ isOpen, onClose, runId, title, runType }) {
     const [timedOut, setTimedOut] = useState(false);
     const [command, setCommand] = useState(null);
     const [pendingCancel, setPendingCancel] = useState(false);
+    const [error, setError] = useState('');
     const timerRef = useRef(null);
     const outputRef = useRef(null);
     const activeTabRef = useRef('workflow');
@@ -70,12 +72,12 @@ export function RunModal({ isOpen, onClose, runId, title, runType }) {
 
     function exportOutput() {
         const data = lastDataRef.current;
-        if (!data) { alert('No output to export.'); return; }
+        if (!data) { setError('No output to export.'); return; }
         const steps = data.steps || {};
         const hasAny = Object.keys(steps).length
             || (data.output || []).length
             || (data.workflow_log || []).length;
-        if (!hasAny) { alert('No output to export.'); return; }
+        if (!hasAny) { setError('No output to export.'); return; }
         // Build a single self-contained document. Lines in the run data
         // already end with '\n', so separators carry their own newlines.
         const parts = [`${title || 'Run output'}\n`, `Status: ${data.status || 'running'}\n\n`];
@@ -114,7 +116,7 @@ export function RunModal({ isOpen, onClose, runId, title, runType }) {
         try {
             await cancelRun(runId);
         } catch (err) {
-            alert('Could not stop the run.');
+            setError('Could not stop the run.');
         }
     }
 
@@ -198,6 +200,7 @@ export function RunModal({ isOpen, onClose, runId, title, runType }) {
         setTimedOut(false);
         setCommand(null);
         setPendingCancel(false);
+        setError('');
 
         if (runType) {
             loadFromHistory(runId, runType);
@@ -257,6 +260,7 @@ export function RunModal({ isOpen, onClose, runId, title, runType }) {
                             ` : ''}
                             ${currentStep ? html`<span class="text-xs text-gray-500 dark:text-gray-400">Running: ${esc(currentStep)}</span>` : ''}
                         </div>
+                        <${ErrorBanner} message=${error} />
                     </div>
                     ${tabs.length ? html`
                         <div class="shrink-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700/60 px-6">

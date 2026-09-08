@@ -3,6 +3,7 @@ import { useState, useEffect } from '../../vendor/standalone-preact.esm.js';
 import { esc } from '../utils.js';
 import { profiles, workflows } from '../state.js';
 import { saveSchedule, loadSchedules, previewCron } from '../api.js';
+import { ErrorBanner } from './ErrorBanner.js';
 
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const UNIT_MAX = { minutes: 59, hours: 23, days: 31 };
@@ -26,9 +27,11 @@ export function ScheduleModal({ isOpen, onClose, schedule }) {
     const [enabled, setEnabled] = useState(true);
     const [preview, setPreview] = useState(null);
     const [previewError, setPreviewError] = useState('');
+    const [error, setError] = useState('');
 
     useEffect(() => {
         if (isOpen) {
+            setError('');
             if (schedule) {
                 setEditingId(schedule.id || null);
                 setName(schedule.name || '');
@@ -115,18 +118,25 @@ export function ScheduleModal({ isOpen, onClose, schedule }) {
         .filter(item => item.group !== '__trash__');
 
     async function handleSave() {
-        if (!targetId) { alert('Pick a profile or workflow to schedule.'); return; }
+        setError('');
+        if (!targetId) { setError('Pick a profile or workflow to schedule.'); return; }
         const finalCron = currentCron().trim();
-        if (!finalCron) { alert('Enter a schedule.'); return; }
-        const res = await saveSchedule({
-            id: editingId,
-            name: name.trim(),
-            target_type: targetType,
-            target_id: targetId,
-            cron: finalCron,
-            enabled,
-        });
-        if (res.error) { alert(res.error); return; }
+        if (!finalCron) { setError('Enter a schedule.'); return; }
+        let res;
+        try {
+            res = await saveSchedule({
+                id: editingId,
+                name: name.trim(),
+                target_type: targetType,
+                target_id: targetId,
+                cron: finalCron,
+                enabled,
+            });
+        } catch (err) {
+            setError(err.message || 'Could not save the schedule.');
+            return;
+        }
+        if (res.error) { setError(res.error); return; }
         await loadSchedules();
         onClose();
     }
@@ -153,6 +163,7 @@ export function ScheduleModal({ isOpen, onClose, schedule }) {
                         </div>
                     </div>
                     <div class="px-6 py-5 space-y-4">
+                        <${ErrorBanner} message=${error} />
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">What should run?</label>
                             <div class="flex gap-2 mb-2">

@@ -3,14 +3,17 @@ import { TRASH_GROUP } from '../state.js';
 
 const TAG_ICON = html`<svg class="w-3 h-3 text-amber-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z"/><path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6z"/></svg>`;
 
-export function TagFilter({ tags, items, getTag, selectedTag, onSelect }) {
+export function TagFilter({ tags, items, getTags, selectedTag, onSelect }) {
     const tagCounts = {};
     let untaggedCount = 0;
     for (const item of items) {
-        const g = getTag(item);
-        if (g === TRASH_GROUP) continue;
-        if (g) {
-            tagCounts[g] = (tagCounts[g] || 0) + 1;
+        // Trash items are listed in their own section, never in the pills.
+        if ((item.group || '') === TRASH_GROUP) continue;
+        const itemTagIds = getTags(item);
+        if (itemTagIds.length) {
+            for (const id of itemTagIds) {
+                tagCounts[id] = (tagCounts[id] || 0) + 1;
+            }
         } else {
             untaggedCount++;
         }

@@ -1,6 +1,6 @@
 import { html, useState } from '../../vendor/standalone-preact.esm.js';
 import { esc } from '../utils.js';
-import { profiles, schedules, scriptStatusCache, TRASH_GROUP } from '../state.js';
+import { profiles, schedules, scriptStatusCache, tags, TRASH_GROUP } from '../state.js';
 import { runWorkflow, loadWorkflows, duplicateWorkflow, restoreWorkflow, permanentDeleteWorkflow } from '../api.js';
 import { ConfirmModal } from './ConfirmModal.js';
 
@@ -10,11 +10,15 @@ export function WorkflowCard({ workflow, onEdit, onRun }) {
     const [expanded, setExpanded] = useState(false);
     const [pendingDelete, setPendingDelete] = useState(null);
     const [pendingPermanentDelete, setPendingPermanentDelete] = useState(null);
+    const [pendingRun, setPendingRun] = useState(false);
     const isTrashed = w.group === TRASH_GROUP;
     const hasSchedule = schedules.value.some(s => s.enabled && s.target_type === 'workflow' && s.target_id === w.id);
     const profileMap = Object.fromEntries(profiles.value.map(p => [p.id, p]));
     const profFor = (entry) => entry.profile || profileMap[entry.profile_id] || {};
     const cache = scriptStatusCache.value;
+    const tagNames = (w.tags || [])
+        .map(id => (tags.value.find(t => t.id === id) || {}).name)
+        .filter(Boolean);
 
     const totalSteps = steps.reduce((n, s) => n + (s.type === 'parallel' ? (s.profiles || []).length : 1), 0);
 
@@ -37,12 +41,17 @@ export function WorkflowCard({ workflow, onEdit, onRun }) {
     const missing = collectMissing();
     const hasMissingScripts = missing.length > 0;
 
-    async function handleRun() {
-        if (hasMissingScripts) {
-            if (!confirm(`These profiles have missing scripts: ${missing.join(', ')}\n\nRun anyway?`)) return;
-        }
+    async function startRun() {
         const res = await runWorkflow(w.id);
         if (res.run_id && onRun) onRun(res.run_id, 'Workflow Run');
+    }
+
+    function handleRun() {
+        if (hasMissingScripts) {
+            setPendingRun(true);
+            return;
+        }
+        startRun();
     }
 
     function confirmDelete() {
@@ -149,6 +158,12 @@ export function WorkflowCard({ workflow, onEdit, onRun }) {
                         <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-100">${esc(w.name)}</h3>
                         <div class="flex flex-wrap items-center gap-1.5 mt-1.5">
                             <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700/50 text-gray-600 dark:text-gray-400">${totalSteps} step${totalSteps !== 1 ? 's' : ''}</span>
+                            ${tagNames.map(name => html`
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20">
+                                    <svg class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z"/><path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6z"/></svg>
+                                    ${esc(name)}
+                                </span>
+                            `)}
                             ${hasSchedule ? html`
                                 <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-violet-500/10 text-violet-600 dark:text-violet-400" title="Runs automatically on a schedule">
                                     <svg class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -218,6 +233,15 @@ export function WorkflowCard({ workflow, onEdit, onRun }) {
             onConfirm=${handleConfirmPermanentDelete}
             title="Permanently delete workflow"
             message=${html`This will permanently delete <span class="font-medium text-gray-700 dark:text-gray-200">${esc(w.name)}</span>. This action cannot be undone.`}
+        />
+        <${ConfirmModal}
+            isOpen=${pendingRun}
+            onClose=${() => setPendingRun(null)}
+            onConfirm=${startRun}
+            title="Missing scripts"
+            confirmLabel="Run anyway"
+            busyLabel="Starting..."
+            message=${html`These profiles have missing scripts: <span class="font-medium text-red-600 dark:text-red-400">${esc(missing.join(', '))}</span>. Their steps will fail. Run anyway?`}
         />
     `;
 }

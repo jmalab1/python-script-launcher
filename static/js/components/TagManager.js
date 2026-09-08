@@ -1,21 +1,37 @@
 import { html } from '../../vendor/standalone-preact.esm.js';
-import { useState } from '../../vendor/standalone-preact.esm.js';
+import { useState, useEffect } from '../../vendor/standalone-preact.esm.js';
 import { addTag, renameTag, deleteTag, reorderTags } from '../state.js';
+import { ConfirmModal } from './ConfirmModal.js';
+import { ErrorBanner } from './ErrorBanner.js';
 
-export function TagManager({ isOpen, onClose, tags, tagsSignal, items, getTag }) {
+export function TagManager({ isOpen, onClose, tags, tagsSignal, profiles, workflows, saveProfile, saveWorkflow, reloadItems }) {
     const [newName, setNewName] = useState('');
     const [editingId, setEditingId] = useState(null);
     const [editName, setEditName] = useState('');
     const [dragIndex, setDragIndex] = useState(null);
     const [overIndex, setOverIndex] = useState(null);
+    const [pendingDelete, setPendingDelete] = useState(null);
+    const [error, setError] = useState('');
+
+    useEffect(() => {
+        if (isOpen) setError('');
+    }, [isOpen]);
 
     if (!isOpen) return null;
 
+    // Tags are global, so usage counts span both profiles and workflows.
+    const items = [...profiles, ...workflows];
+    const hasTag = (item, id) => (item.tags || []).includes(id);
+
+    const pendingTag = tags.find(f => f.id === pendingDelete);
+    const pendingCount = pendingTag ? items.filter(item => hasTag(item, pendingTag.id)).length : 0;
+
     function handleCreate() {
+        setError('');
         const trimmed = newName.trim();
         if (!trimmed) return;
         if (tags.some(f => f.name.toLowerCase() === trimmed.toLowerCase())) {
-            alert('A tag with this name already exists.');
+            setError('A tag with this name already exists.');
             return;
         }
         addTag(tagsSignal, trimmed);
@@ -23,10 +39,11 @@ export function TagManager({ isOpen, onClose, tags, tagsSignal, items, getTag })
     }
 
     function handleRename(id) {
+        setError('');
         const trimmed = editName.trim();
         if (!trimmed) return;
         if (tags.some(f => f.id !== id && f.name.toLowerCase() === trimmed.toLowerCase())) {
-            alert('A tag with this name already exists.');
+            setError('A tag with this name already exists.');
             return;
         }
         renameTag(tagsSignal, id, trimmed);
@@ -35,14 +52,25 @@ export function TagManager({ isOpen, onClose, tags, tagsSignal, items, getTag })
     }
 
     function handleDelete(id) {
-        const tag = tags.find(f => f.id === id);
-        const count = items.filter(item => getTag(item) === id).length;
-        const msg = count > 0
-            ? `Delete tag "${tag.name}"? ${count} item${count !== 1 ? 's' : ''} will become untagged.`
-            : `Delete tag "${tag.name}"?`;
-        if (confirm(msg)) {
-            deleteTag(tagsSignal, id);
+        setPendingDelete(id);
+    }
+
+    async function confirmDelete() {
+        // Untag items before dropping the tag: if a save fails midway, the
+        // tag still exists and no item is left pointing at a deleted tag
+        // (which would land the item in an "Unknown" group).
+        for (const item of profiles) {
+            if (hasTag(item, pendingDelete)) {
+                await saveProfile({ ...item, tags: item.tags.filter(t => t !== pendingDelete) });
+            }
         }
+        for (const item of workflows) {
+            if (hasTag(item, pendingDelete)) {
+                await saveWorkflow({ ...item, tags: item.tags.filter(t => t !== pendingDelete) });
+            }
+        }
+        deleteTag(tagsSignal, pendingDelete);
+        await reloadItems();
     }
 
     function handleDragStart(e, i) {
@@ -93,6 +121,7 @@ export function TagManager({ isOpen, onClose, tags, tagsSignal, items, getTag })
                         </div>
                     </div>
                     <div class="px-6 py-5 space-y-4">
+                        <${ErrorBanner} message=${error} />
                         <div class="flex gap-2">
                             <input type="text" value=${newName} onInput=${e => setNewName(e.target.value)}
                                 onKeyDown=${e => e.key === 'Enter' && handleCreate()}
@@ -108,7 +137,7 @@ export function TagManager({ isOpen, onClose, tags, tagsSignal, items, getTag })
                         ` : html`
                             <div class="space-y-1.5">
                                 ${tags.map((f, i) => {
-                                    const count = items.filter(item => getTag(item) === f.id).length;
+                                    const count = items.filter(item => hasTag(item, f.id)).length;
                                     return html`
                                         <div key=${f.id}
                                             class="flex items-center gap-2 p-2 rounded-lg border transition ${dragIndex === i ? 'opacity-40' : ''} ${overIndex === i && dragIndex !== null && dragIndex !== i ? 'border-violet-400/70 ring-1 ring-violet-400/50' : 'border-gray-200 dark:border-gray-700/60'}"
@@ -159,6 +188,15 @@ export function TagManager({ isOpen, onClose, tags, tagsSignal, items, getTag })
                     </div>
                 </div>
             </div>
+            <${ConfirmModal}
+                isOpen=${!!pendingTag}
+                onClose=${() => setPendingDelete(null)}
+                onConfirm=${confirmDelete}
+                title="Delete tag"
+                message=${pendingCount
+                    ? `Delete tag "${pendingTag.name}"? ${pendingCount} item${pendingCount !== 1 ? 's' : ''} will become untagged.`
+                    : `Delete tag "${pendingTag.name}"?`}
+            />
         </div>
     `;
 }

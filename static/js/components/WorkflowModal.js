@@ -1,9 +1,10 @@
 import { html } from '../../vendor/standalone-preact.esm.js';
 import { useState, useEffect } from '../../vendor/standalone-preact.esm.js';
 import { esc } from '../utils.js';
-import { profiles, workflowTags } from '../state.js';
+import { profiles, tags } from '../state.js';
 import { saveWorkflow, loadWorkflows } from '../api.js';
 import { SortableList } from './SortableList.js';
+import { ErrorBanner } from './ErrorBanner.js';
 
 let uidCounter = 0;
 const nextUid = () => ++uidCounter;
@@ -14,15 +15,17 @@ export function WorkflowModal({ isOpen, onClose, workflow }) {
     const [localSteps, setLocalSteps] = useState([]);
     const [openArgs, setOpenArgs] = useState(null);
     const [editingId, setEditingId] = useState(null);
-    const [group, setGroup] = useState('');
+    const [tagIds, setTagIds] = useState([]);
+    const [error, setError] = useState('');
 
     useEffect(() => {
         if (isOpen) {
+            setError('');
             if (workflow) {
                 setEditingId(workflow.id);
                 setName(workflow.name || '');
                 setContinueOnError(!!workflow.continue_on_error);
-                setGroup(workflow.group || '');
+                setTagIds(workflow.tags || []);
                 const normalized = (workflow.steps || []).map(s => s.type === 'parallel'
                     ? { ...s, _id: nextUid(), profiles: (s.profiles || []).map(p => ({ ...p, _id: nextUid(), _argsText: (p.args || []).join('\n') })) }
                     : { ...s, _id: nextUid(), _argsText: (s.args || []).join('\n') });
@@ -31,12 +34,16 @@ export function WorkflowModal({ isOpen, onClose, workflow }) {
                 setEditingId(null);
                 setName('');
                 setContinueOnError(false);
-                setGroup('');
+                setTagIds([]);
                 setLocalSteps([]);
             }
             setOpenArgs(null);
         }
     }, [isOpen, workflow]);
+
+    function toggleTagId(id) {
+        setTagIds(prev => prev.includes(id) ? prev.filter(t => t !== id) : [...prev, id]);
+    }
 
     function profileSnapshot(pid) {
         const p = profileMap[pid];
@@ -200,23 +207,28 @@ export function WorkflowModal({ isOpen, onClose, workflow }) {
     }
 
     async function handleSave() {
+        setError('');
         const trimmedName = name.trim();
-        if (!trimmedName) { alert('Name is required.'); return; }
-        if (!localSteps.length) { alert('Add at least one step.'); return; }
+        if (!trimmedName) { setError('Name is required.'); return; }
+        if (!localSteps.length) { setError('Add at least one step.'); return; }
         const missingProfile = localSteps.some(s => s.type === 'parallel'
             ? !(s.profiles || []).length || s.profiles.some(p => !p.profile_id)
             : !s.profile_id);
-        if (missingProfile) { alert('Every step needs a selected profile.'); return; }
+        if (missingProfile) { setError('Every step needs a selected profile.'); return; }
         const stepsToSave = localSteps.map(s => s.type === 'parallel'
             ? { type: 'parallel', profiles: (s.profiles || []).map(p => ({ profile_id: p.profile_id, profile: p.profile, args: parseArgsText(p._argsText, p.args), arg_values: p.arg_values || {} })) }
             : { type: 'sequential', profile_id: s.profile_id, profile: s.profile, args: parseArgsText(s._argsText, s.args), arg_values: s.arg_values || {} });
         const workflowData = {
             id: editingId, name: trimmedName, steps: stepsToSave,
             extra_args: [], continue_on_error: continueOnError,
+            tags: tagIds, group: '',
         };
-        if (group) workflowData.group = group;
-        else if (editingId) workflowData.group = '';
-        await saveWorkflow(workflowData);
+        try {
+            await saveWorkflow(workflowData);
+        } catch (err) {
+            setError(err.message || 'Could not save the workflow.');
+            return;
+        }
         await loadWorkflows();
         onClose();
     }
@@ -334,6 +346,7 @@ export function WorkflowModal({ isOpen, onClose, workflow }) {
                         </div>
                     </div>
                     <div class="px-6 py-5 space-y-4">
+                        <${ErrorBanner} message=${error} />
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Workflow Name</label>
                             <input type="text" value=${name} onInput=${e => setName(e.target.value)}
@@ -341,12 +354,21 @@ export function WorkflowModal({ isOpen, onClose, workflow }) {
                                 class="w-full bg-white dark:bg-gray-900/30 border border-gray-300 dark:border-gray-700/60 rounded-lg px-3 py-2 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-violet-500 focus:ring-0 focus:ring-offset-0 transition" />
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tag</label>
-                            <select value=${group} onChange=${e => setGroup(e.target.value)}
-                                class="w-full bg-white dark:bg-gray-900/30 border border-gray-300 dark:border-gray-700/60 rounded-lg px-3 py-2 text-sm text-gray-800 dark:text-gray-100 focus:border-violet-500 focus:ring-0 focus:ring-offset-0 transition">
-                                <option value="">No tag</option>
-                                ${workflowTags.value.map(f => html`<option value=${f.id} selected=${group === f.id}>${f.name}</option>`)}
-                            </select>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tags <span class="text-gray-400 font-normal">(any number)</span></label>
+                            ${tags.value.length ? html`
+                                <div class="flex flex-wrap gap-1.5">
+                                    ${tags.value.map(t => html`
+                                        <button type="button" onClick=${() => toggleTagId(t.id)}
+                                            class="px-2.5 py-1.5 text-xs font-medium rounded-lg border transition ${tagIds.includes(t.id)
+                                                ? 'bg-amber-50 dark:bg-amber-500/10 border-amber-300 dark:border-amber-500/40 text-amber-700 dark:text-amber-400'
+                                                : 'bg-white dark:bg-gray-900/30 border-gray-300 dark:border-gray-700/60 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'}">
+                                            ${esc(t.name)}
+                                        </button>
+                                    `)}
+                                </div>
+                            ` : html`
+                                <p class="text-sm text-gray-500 dark:text-gray-400">No tags yet — create some with the Tags button above the list.</p>
+                            `}
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Steps</label>

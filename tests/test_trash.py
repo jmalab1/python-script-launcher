@@ -139,35 +139,35 @@ def test_api_has_permanent_delete_workflow():
     assert "/permanent" in src
 
 
-# --- Frontend: GroupedSortableList.js ---
+# --- Frontend: ItemList.js ---
 
-def test_grouped_sortable_list_has_trash_section():
-    src = (COMPONENTS / "GroupedSortableList.js").read_text()
+def test_item_list_has_trash_section():
+    src = (COMPONENTS / "ItemList.js").read_text()
     assert "TRASH_GROUP" in src
     assert "renderTrashSection" in src
 
 
-def test_grouped_sortable_list_trash_collapsed_by_default():
-    src = (COMPONENTS / "GroupedSortableList.js").read_text()
+def test_item_list_trash_collapsed_by_default():
+    src = (COMPONENTS / "ItemList.js").read_text()
     assert re.search(r"useState\(\{\s*\[TRASH_GROUP\]\s*:\s*true\s*\}", src), \
         "Trash section should be collapsed by default"
 
 
-def test_grouped_sortable_list_separates_trash_items():
-    src = (COMPONENTS / "GroupedSortableList.js").read_text()
+def test_item_list_separates_trash_items():
+    src = (COMPONENTS / "ItemList.js").read_text()
     assert "trashItems" in src
     assert "TRASH_GROUP" in src
 
 
-def test_grouped_sortable_list_trash_always_visible():
-    src = (COMPONENTS / "GroupedSortableList.js").read_text()
+def test_item_list_trash_always_visible():
+    src = (COMPONENTS / "ItemList.js").read_text()
     assert "Trash is empty" in src, "Trash section should render even when empty"
     assert not re.search(r"if\s*\(\s*!trashItems\.length\s*\)\s*return", src), \
         "Trash section must not be hidden when it has no items"
 
 
-def test_grouped_sortable_list_trash_has_no_reorder():
-    src = (COMPONENTS / "GroupedSortableList.js").read_text()
+def test_item_list_trash_has_no_reorder():
+    src = (COMPONENTS / "ItemList.js").read_text()
     assert re.search(r"onReorder.*\(\).*=>.*\{\}", src) or "onReorder=${() => {}}" in src, \
         "Trash section should not allow reordering"
 
@@ -241,7 +241,7 @@ def test_workflow_card_delete_message_says_trash():
 def test_tag_filter_excludes_trash_items():
     src = (COMPONENTS / "TagFilter.js").read_text()
     assert "TRASH_GROUP" in src
-    assert re.search(r"if\s*\(\s*g\s*===\s*TRASH_GROUP\s*\)\s*continue", src), \
+    assert "(item.group || '') === TRASH_GROUP" in src, \
         "TagFilter should skip trash items"
 
 

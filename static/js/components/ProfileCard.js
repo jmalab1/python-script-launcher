@@ -1,6 +1,6 @@
 import { html, useState } from '../../vendor/standalone-preact.esm.js';
 import { esc } from '../utils.js';
-import { scriptStatusCache, schedules, TRASH_GROUP } from '../state.js';
+import { scriptStatusCache, schedules, tags, TRASH_GROUP } from '../state.js';
 import { runProfile, saveProfile as apiSaveProfile, loadProfiles, duplicateProfile, restoreProfile, permanentDeleteProfile } from '../api.js';
 import { ConfirmModal } from './ConfirmModal.js';
 
@@ -14,6 +14,9 @@ export function ProfileCard({ profile, onEdit, onRun }) {
     const [pendingPermanentDelete, setPendingPermanentDelete] = useState(null);
     const isTrashed = p.group === TRASH_GROUP;
     const hasSchedule = schedules.value.some(s => s.enabled && s.target_type === 'profile' && s.target_id === p.id);
+    const tagNames = (p.tags || [])
+        .map(id => (tags.value.find(t => t.id === id) || {}).name)
+        .filter(Boolean);
 
     async function handleRun() {
         if (scriptMissing) return;
@@ -72,6 +75,12 @@ export function ProfileCard({ profile, onEdit, onRun }) {
                 <div class="min-w-0 flex-1">
                     <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-100">${esc(p.name)}</h3>
                     <div class="flex flex-wrap items-center gap-1.5 mt-2">
+                        ${tagNames.map(name => html`
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20">
+                                <svg class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z"/><path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6z"/></svg>
+                                ${esc(name)}
+                            </span>
+                        `)}
                         ${scriptBadge}
                         ${hasSchedule ? html`
                             <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-violet-500/10 text-violet-600 dark:text-violet-400" title="Runs automatically on a schedule">

@@ -58,3 +58,33 @@ def test_run_modal_keeps_polling_through_transient_errors():
         src,
         re.DOTALL,
     ), "history fetch failures must render an error message, not throw unhandled"
+
+
+# --- Native browser dialogs ---
+
+def test_no_component_uses_native_alert_or_confirm():
+    """Native alert()/confirm() block the whole page and can't be styled.
+
+    Modals must surface errors inline (ErrorBanner) and route yes/no
+    choices through the ConfirmModal component instead.
+    """
+    offenders = []
+    for path in sorted(JS.rglob("*.js")):
+        if "vendor" in path.parts:
+            continue
+        if re.search(r"\b(alert|confirm)\(", path.read_text()):
+            offenders.append(path.relative_to(JS).as_posix())
+    assert not offenders, f"native alert()/confirm() found in: {offenders}"
+
+
+def test_error_banner_exists_and_is_inline():
+    src = read(COMPONENTS / "ErrorBanner.js")
+    assert "export function ErrorBanner(" in src, "ErrorBanner is not exported"
+    assert 'role="alert"' in src, "the banner should be announced to screen readers"
+
+
+def test_modals_surface_errors_inline_via_error_banner():
+    for name in ("ProfileModal.js", "WorkflowModal.js", "ScheduleModal.js", "RunModal.js", "TagManager.js"):
+        src = read(COMPONENTS / name)
+        assert "<${ErrorBanner}" in src, f"{name} does not render ErrorBanner"
+        assert "setError(" in src, f"{name} has no inline error state"

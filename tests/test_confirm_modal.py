@@ -61,3 +61,22 @@ def test_workflow_card_routes_deletion_through_the_confirm_modal():
     assert "<${ConfirmModal}" in card_src, "ConfirmModal is not rendered by WorkflowCard"
     assert not re.search(r'confirm\(\s*[\'"]Delete this workflow', card_src), \
         "WorkflowCard still uses native confirm() for delete"
+
+
+def test_workflow_card_confirms_running_with_missing_scripts():
+    card_src = (COMPONENTS / "WorkflowCard.js").read_text()
+    assert "pendingRun" in card_src, "WorkflowCard has no run-confirmation state"
+    assert "Run anyway" in card_src, "the run-anyway confirm button is missing"
+    assert "startRun" in card_src, "the confirmed run must go through startRun"
+    assert "<${ConfirmModal}" in card_src, "ConfirmModal is not used for the run confirmation"
+    assert not re.search(r'confirm\(', card_src), \
+        "WorkflowCard still uses native confirm() for running with missing scripts"
+
+
+def test_tag_manager_routes_deletion_through_the_confirm_modal():
+    src = (COMPONENTS / "TagManager.js").read_text()
+    assert "import { ConfirmModal } from './ConfirmModal.js';" in src, \
+        "TagManager does not import ConfirmModal"
+    assert "pendingDelete" in src, "TagManager has no pending-delete modal state"
+    assert "<${ConfirmModal}" in src, "ConfirmModal is not rendered by TagManager"
+    assert not re.search(r'confirm\(', src), "TagManager still uses native confirm()"

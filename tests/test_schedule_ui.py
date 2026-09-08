@@ -30,7 +30,7 @@ def test_schedule_modal_previews_upcoming_runs_and_validates_target():
     assert "previewCron(" in src, "cron preview not requested"
     assert "Next runs" in src, "preview list not rendered"
     assert "Pick a profile or workflow to schedule." in src, "missing target guard"
-    assert "alert(res.error)" in src, "backend errors are not surfaced"
+    assert "setError(res.error)" in src, "backend errors are not surfaced inline"
 
 
 def test_schedules_list_shows_state_and_uses_confirm_modal_for_delete():

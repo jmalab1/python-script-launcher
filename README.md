@@ -8,6 +8,7 @@ Tiller is a local, zero-dependency web tool for managing and running Python scri
 
 - **Profiles**: Reusable script presets with a name, script path, and arguments. Run with one click.
 - **Workflows**: Chain profiles as sequential steps or parallel groups, with configurable error handling.
+- **Tags**: Global labels shared by profiles and workflows. Apply any number of tags, filter the lists by tag, and manage all tags from one place — deleting a tag simply removes it from the items that use it.
 - **Schedules**: Run profiles or workflows automatically on cron-like schedules — every hour, daily at 09:00, weekdays at 08:30, or any 5-field cron expression.
 - **Run History**: Full audit log of every run with output capture and status tracking. Search and filter by name, status, and date range.
 - **Audit**: Complete trail of every profile, workflow, and schedule change. Filter by action, entity type, name, and date range.

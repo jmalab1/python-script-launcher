@@ -6,13 +6,14 @@ import {
     profileHistoryPage, workflowHistoryPage,
     profileHistoryFilters, workflowHistoryFilters,
     auditData, auditPage,
-    profileTags, workflowTags,
+    tags,
     logData,
 } from './state.js';
 import {
     loadProfiles, loadWorkflows, loadSchedules, checkAllScripts,
     loadProfileHistory, loadWorkflowHistory,
     loadAudit, loadLogs, pollLogs,
+    saveProfile, saveWorkflow,
 } from './api.js';
 import { Sidebar, MobileHeader } from './components/Sidebar.js';
 import { ProfileList } from './components/ProfileList.js';
@@ -49,7 +50,6 @@ function App() {
     const [editingSchedule, setEditingSchedule] = useState(null);
 
     const [tagManagerOpen, setTagManagerOpen] = useState(false);
-    const [tagManagerType, setTagManagerType] = useState('profiles');
 
     useEffect(() => {
         function onHashChange() {
@@ -167,7 +167,7 @@ function App() {
                                         <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Reusable script presets — point one at a Python script, add its arguments, and run it anytime.</p>
                                     </div>
                                     <div class="flex items-center gap-2">
-                                        <button onClick=${() => { setTagManagerType('profiles'); setTagManagerOpen(true); }}
+                                        <button onClick=${() => setTagManagerOpen(true)}
                                             class="bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm font-medium px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700/60 transition inline-flex items-center gap-1.5">
                                             <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z"/><path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6z"/></svg>
                                             Tags
@@ -205,7 +205,7 @@ function App() {
                                         <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Chain profiles into ordered steps or parallel groups and run them all with a single click.</p>
                                     </div>
                                     <div class="flex items-center gap-2">
-                                        <button onClick=${() => { setTagManagerType('workflows'); setTagManagerOpen(true); }}
+                                        <button onClick=${() => setTagManagerOpen(true)}
                                             class="bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm font-medium px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700/60 transition inline-flex items-center gap-1.5">
                                             <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z"/><path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6z"/></svg>
                                             Tags
@@ -303,10 +303,13 @@ function App() {
             <${TagManager}
                 isOpen=${tagManagerOpen}
                 onClose=${() => setTagManagerOpen(false)}
-                tags=${tagManagerType === 'profiles' ? profileTags.value : workflowTags.value}
-                tagsSignal=${tagManagerType === 'profiles' ? profileTags : workflowTags}
-                items=${tagManagerType === 'profiles' ? profiles.value : workflows.value}
-                getTag=${(item) => item.group || ''}
+                tags=${tags.value}
+                tagsSignal=${tags}
+                profiles=${profiles.value}
+                workflows=${workflows.value}
+                saveProfile=${saveProfile}
+                saveWorkflow=${saveWorkflow}
+                reloadItems=${async () => { await loadProfiles(); await loadWorkflows(); }}
             />
         </div>
     `;

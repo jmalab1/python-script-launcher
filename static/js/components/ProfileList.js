@@ -1,8 +1,8 @@
 import { html } from '../../vendor/standalone-preact.esm.js';
-import { profiles, profileTags, selectedProfileTag } from '../state.js';
+import { profiles, tags, selectedProfileTag } from '../state.js';
 import { saveProfileOrder } from '../api.js';
 import { ProfileCard } from './ProfileCard.js';
-import { GroupedSortableList } from './GroupedSortableList.js';
+import { ItemList } from './ItemList.js';
 import { TagFilter } from './TagFilter.js';
 
 export function ProfileList({ onEdit, onRun }) {
@@ -17,16 +17,15 @@ export function ProfileList({ onEdit, onRun }) {
 
     return html`
         <${TagFilter}
-            tags=${profileTags.value}
+            tags=${tags.value}
             items=${profiles.value}
-            getTag=${(p) => p.group || ''}
+            getTags=${(p) => p.tags || []}
             selectedTag=${selectedProfileTag.value}
             onSelect=${(v) => { selectedProfileTag.value = v; }}
         />
-        <${GroupedSortableList}
+        <${ItemList}
             items=${profiles.value}
-            tags=${profileTags.value}
-            getTag=${(p) => p.group || ''}
+            getTags=${(p) => p.tags || []}
             selectedTag=${selectedProfileTag.value}
             onReorder=${(next) => {
                 profiles.value = next;

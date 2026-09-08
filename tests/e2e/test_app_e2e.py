@@ -123,7 +123,7 @@ def test_run_workflow_shows_step_log_and_completion(page, launcher_server):
     expect(modal.get_by_text("Workflow completed")).to_be_visible(timeout=15000)
 
 
-def test_new_profile_modal_alerts_when_required_fields_missing(page, launcher_server):
+def test_new_profile_modal_shows_inline_error_when_required_fields_missing(page, launcher_server):
     page.goto(launcher_server["base_url"])
 
     page.get_by_role("button", name="New Profile").click()
@@ -131,15 +131,12 @@ def test_new_profile_modal_alerts_when_required_fields_missing(page, launcher_se
     expect(modal.get_by_role("heading", name="New Profile")).to_be_visible()
 
     page.get_by_placeholder("e.g. Data Pipeline").fill("E2E Typed")
-    # A synchronous alert() blocks the click action, so a dialog handler
-    # must be registered up front rather than awaited around the click.
-    alerts = []
-    page.on("dialog", lambda dialog: (alerts.append(dialog.message), dialog.dismiss()))
     modal.get_by_role("button", name="Save Profile").click()
 
-    assert alerts == ["Name and script path are required."]
-
+    # Validation errors appear inline in the modal, never as a native alert().
+    expect(modal.get_by_text("Name and script path are required.")).to_be_visible()
     expect(modal.get_by_role("heading", name="New Profile")).to_be_visible()
+
     modal.get_by_role("button", name="Cancel").click()
     expect(modal).to_be_hidden()
 

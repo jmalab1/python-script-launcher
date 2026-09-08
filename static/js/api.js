@@ -6,6 +6,7 @@ import {
     auditPage, auditData, auditAction, auditEntity,
     auditName, auditSince, auditUntil,
     logData, logOffset,
+    tags, TRASH_GROUP,
 } from './state.js';
 
 async function api(method, path, body) {
@@ -21,12 +22,25 @@ async function api(method, path, body) {
     }
 }
 
+// Older data kept one tag id in `group`; new data keeps a `tags` array.
+// On load, fold the legacy value into the array and drop ids whose tag no
+// longer exists, so items deleted with old versions don't linger as
+// unknown tags. `group` itself now only marks trash ('__trash__').
+function normalizeTags(item) {
+    const known = new Set(tags.value.map(t => t.id));
+    const ids = [];
+    for (const id of [...(item.tags || []), item.group || '']) {
+        if (id && id !== TRASH_GROUP && known.has(id) && !ids.includes(id)) ids.push(id);
+    }
+    return { ...item, tags: ids };
+}
+
 export async function loadProfiles() {
-    profiles.value = await api('GET', '/api/profiles');
+    profiles.value = (await api('GET', '/api/profiles')).map(normalizeTags);
 }
 
 export async function loadWorkflows() {
-    workflows.value = await api('GET', '/api/workflows');
+    workflows.value = (await api('GET', '/api/workflows')).map(normalizeTags);
 }
 
 export async function loadSchedules() {
