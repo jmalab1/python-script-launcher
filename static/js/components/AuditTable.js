@@ -114,7 +114,7 @@ export function AuditTable({ data, pageSignal, onLoad }) {
                 <${AuditFilters} onLoad=${onLoad} />
             </div>
             <div class="overflow-auto -mx-3 px-3 flex-1 min-h-0">
-                <table class="w-full text-xs min-w-[640px]">
+                <table class="data-table w-full text-xs min-w-[640px]">
                     <thead>
                         <tr class="border-b border-gray-100 dark:border-gray-700/60">
                             <th class="text-left py-2 px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">#</th>

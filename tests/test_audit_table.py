@@ -79,3 +79,8 @@ def test_audit_table_uses_shared_pagination():
     src = read(COMPONENTS / "AuditTable.js")
     assert "<${Pagination} data=${data} pageSignal=${pageSignal} onLoad=${onLoad} />" in src
     assert "ConfirmModal" not in src, "confirm modal should not be used for audit entries"
+
+
+def test_audit_table_header_is_sticky_while_scrolling():
+    src = read(COMPONENTS / "AuditTable.js")
+    assert 'class="data-table ' in src, "the table must be marked .data-table so index.html's sticky header rule applies"

@@ -180,7 +180,7 @@ function App() {
                                     </div>
                                 </div>
                                 <div class="grid grid-cols-1 xl:grid-cols-5 gap-6 flex-1 min-h-0 overflow-y-auto xl:overflow-y-visible">
-                                    <div class="xl:col-span-2 xl:overflow-y-auto xl:pr-1">
+                                    <div class="xl:col-span-2 xl:overflow-y-auto xl:pr-3">
                                         <${ProfileList} onEdit=${(p) => { setEditingProfile(p); setProfileOpen(true); }} onRun=${handleRunStarted} />
                                     </div>
                                     <div class="xl:col-span-3 xl:overflow-y-auto xl:pr-1">
@@ -218,7 +218,7 @@ function App() {
                                     </div>
                                 </div>
                                 <div class="grid grid-cols-1 xl:grid-cols-5 gap-6 flex-1 min-h-0 overflow-y-auto xl:overflow-y-visible">
-                                    <div class="xl:col-span-2 xl:overflow-y-auto xl:pr-1">
+                                    <div class="xl:col-span-2 xl:overflow-y-auto xl:pr-3">
                                         <${WorkflowList} onEdit=${(w) => { setEditingWorkflow(w); setWorkflowOpen(true); }} onRun=${handleRunStarted} />
                                     </div>
                                     <div class="xl:col-span-3 xl:overflow-y-auto xl:pr-1">

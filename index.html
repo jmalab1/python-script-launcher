@@ -66,6 +66,17 @@ aside { width: 12rem; }
 @media (max-width: 767px) {
     aside { width: min(12rem, 65vw); }
 }
+
+/* Tables marked .data-table keep their header visible while scrolling. */
+.data-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background-color: #ffffff;
+}
+.dark .data-table thead th {
+    background-color: #1f2937;
+}
 </style>
 </head>
 <body class="overflow-hidden">

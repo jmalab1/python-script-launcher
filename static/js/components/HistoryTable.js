@@ -82,7 +82,7 @@ export function HistoryTable({ data, pageSignal, filters, onLoad, type, onOpenRu
                 </div>
             ` : ''}
             <div class="overflow-auto -mx-3 px-3 flex-1 min-h-0">
-                <table class="w-full text-xs min-w-[600px]">
+                <table class="data-table w-full text-xs min-w-[600px]">
                     <thead>
                         <tr class="border-b border-gray-100 dark:border-gray-700/60">
                             <th class="w-8 py-2 px-1">

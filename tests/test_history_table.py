@@ -46,3 +46,14 @@ def test_history_table_imports_delete_history_entries():
     src = history_table_src()
     assert "deleteHistoryEntries" in src, \
         "HistoryTable must import deleteHistoryEntries for bulk delete"
+
+
+def test_history_table_header_is_sticky_while_scrolling():
+    src = history_table_src()
+    assert 'class="data-table ' in src, "the table must be marked .data-table"
+    index_html = (Path(__file__).resolve().parent.parent / "index.html").read_text()
+    assert ".data-table thead th" in index_html, "sticky header rule is missing"
+    assert re.search(r"\.data-table thead th \{[^}]*position:\s*sticky[^}]*top:\s*0", index_html, re.S), \
+        "header cells must stick to the top of the scroll container"
+    assert ".dark .data-table thead th" in index_html, \
+        "the sticky header needs an opaque dark-mode background too"
