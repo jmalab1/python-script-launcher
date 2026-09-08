@@ -25,6 +25,11 @@ export function TagManager({ isOpen, onClose, tags, tagsSignal, profiles, workfl
 
     const pendingTag = tags.find(f => f.id === pendingDelete);
     const pendingCount = pendingTag ? items.filter(item => hasTag(item, pendingTag.id)).length : 0;
+    // Built up front: template literals evaluate eagerly, so the message
+    // must not touch pendingTag unless a tag is actually pending deletion.
+    const deleteMessage = pendingTag
+        ? `Delete tag "${pendingTag.name}"?${pendingCount ? ` ${pendingCount} item${pendingCount !== 1 ? 's' : ''} will become untagged.` : ''}`
+        : '';
 
     function handleCreate() {
         setError('');
@@ -193,9 +198,7 @@ export function TagManager({ isOpen, onClose, tags, tagsSignal, profiles, workfl
                 onClose=${() => setPendingDelete(null)}
                 onConfirm=${confirmDelete}
                 title="Delete tag"
-                message=${pendingCount
-                    ? `Delete tag "${pendingTag.name}"? ${pendingCount} item${pendingCount !== 1 ? 's' : ''} will become untagged.`
-                    : `Delete tag "${pendingTag.name}"?`}
+                message=${deleteMessage}
             />
         </div>
     `;

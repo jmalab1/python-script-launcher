@@ -244,6 +244,14 @@ def test_tag_manager_delete_routes_through_confirm_modal():
     assert not re.search(r"confirm\(", src), "TagManager still uses native confirm()"
 
 
+def test_tag_manager_delete_message_guards_against_no_pending_tag():
+    src = (COMPONENTS / "TagManager.js").read_text()
+    assert "const deleteMessage = pendingTag" in src, \
+        "the delete message must be built only when a tag is actually pending " \
+        "deletion — template literals evaluate eagerly, so reading pendingTag " \
+        "otherwise crashes the whole TagManager"
+
+
 def test_tag_manager_delete_untags_affected_items():
     src = (COMPONENTS / "TagManager.js").read_text()
     assert "item.tags.filter(t => t !== pendingDelete)" in src, \

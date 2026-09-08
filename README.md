@@ -273,7 +273,7 @@ Notes:
 
 ### Demo Screencast
 
-`scripts/dev/make_screencast.py` records a narrated-less video tour of the app with Playwright. It boots the real server on a free port with a throwaway data directory, seeds it with realistic profiles, a workflow, schedules, and run history (built from the example scripts), then drives the browser through every panel — running a profile with live output, executing a workflow, the schedule editor's live cron preview, the audit trail, server logs, and the theme toggle — while recording the screen.
+`scripts/dev/make_screencast.py` records a narrated-less video tour of the app with Playwright. It boots the real server on a free port with a throwaway data directory, seeds it with tagged profiles, a workflow, schedules, and run history (built from the example scripts), then drives the browser through every panel — running a profile with live output, filtering by tag, assigning an extra tag while editing, the tag manager, executing a workflow, the schedule editor's live cron preview, the audit trail, server logs, and the theme toggle — while recording the screen.
 
 ```bash
 make demo                                    # writes demo/launcher_demo.webm

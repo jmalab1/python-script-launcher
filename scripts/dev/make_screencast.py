@@ -2,7 +2,7 @@
 """Generate a screencast demo of the launcher UI with Playwright.
 
 Boots the real server (via tests/e2e/server_main.py) on a free port with a
-throwaway data directory, seeds it with realistic profiles/workflows/schedules
+throwaway data directory, seeds it with tagged profiles/workflows/schedules
 built from the example scripts, then drives the browser through a guided tour
 while recording video.
 
@@ -54,7 +54,11 @@ def _api(base_url, method, path, payload=None):
 
 
 def _seed(base_url):
-    """Seed the demo server with profiles, a workflow, and a schedule."""
+    """Seed the demo server with profiles, a workflow, and a schedule.
+
+    Profiles and workflows carry `tags` arrays referencing the global tag
+    list that _seed_browser_tags injects into the browser's localStorage.
+    """
     def script(name):
         return str(EXAMPLE_SCRIPTS / name)
 
@@ -63,6 +67,7 @@ def _seed(base_url):
         "name": "Daily Report",
         "script_path": script("generate_report.py"),
         "args": [],
+        "tags": ["tag_reports"],
         "custom_args": [
             {"name": "--format", "label": "Format", "type": "text",
              "default": "pdf", "value": "pdf"},
@@ -73,6 +78,7 @@ def _seed(base_url):
         "name": "Data Pipeline",
         "script_path": script("process_data.py"),
         "args": [],
+        "tags": ["tag_data", "tag_reports"],
         "custom_args": [
             {"name": "--input", "label": "Input file", "type": "text",
              "default": "data.csv", "value": "data.csv"},
@@ -85,6 +91,7 @@ def _seed(base_url):
         "name": "Fetch Data",
         "script_path": script("fetch_data.py"),
         "args": [],
+        "tags": ["tag_data"],
         "custom_args": [
             {"name": "--rows", "label": "Rows", "type": "text",
              "default": "50", "value": "50"},
@@ -95,6 +102,7 @@ def _seed(base_url):
         "name": "Nightly Backup",
         "script_path": script("backup.py"),
         "args": ["--compress"],
+        "tags": ["tag_ops"],
         "custom_args": [],
     })
     email = _api(base_url, "POST", "/api/profiles", {
@@ -102,6 +110,7 @@ def _seed(base_url):
         "name": "Email Report",
         "script_path": script("send_email.py"),
         "args": [],
+        "tags": ["tag_reports"],
         "custom_args": [
             {"name": "--to", "label": "Recipient", "type": "text",
              "default": "team@example.com", "value": "team@example.com"},
@@ -121,6 +130,7 @@ def _seed(base_url):
         ],
         "extra_args": [],
         "continue_on_error": False,
+        "tags": ["tag_ops", "tag_data"],
     })
 
     _api(base_url, "POST", "/api/schedules", {
@@ -150,6 +160,22 @@ def _seed(base_url):
         "backup": backup,
         "email": email,
     }
+
+
+def _seed_browser_tags(context):
+    """Create the global tag list in the browser's localStorage.
+
+    Tags live client-side (the server only stores the tag ids on items), so
+    the demo injects them before any page script runs. The ids match the
+    `tags` arrays used in _seed.
+    """
+    context.add_init_script(
+        "localStorage.setItem('tags', JSON.stringify(["
+        "{ id: 'tag_reports', name: 'Reports' },"
+        "{ id: 'tag_data', name: 'Data' },"
+        "{ id: 'tag_ops', name: 'Ops' },"
+        "]));"
+    )
 
 
 def _attach_gif_sampler(page, shot_dir, interval_ms=300):
@@ -247,7 +273,34 @@ def _tour(page, base_url, pause):
     page.mouse.wheel(0, -700)
     page.wait_for_timeout(pause)
 
-    # 4. Workflows panel; run the chained workflow.
+    # 4. Tags: filter the list down to one tag, then back to all.
+    page.get_by_role("button", name="Data 2").click()
+    page.get_by_role("heading", name="Profiles", exact=True).wait_for()
+    page.wait_for_timeout(pause * 1.5)
+    page.get_by_role("button", name="Data 2").click()
+    page.wait_for_timeout(pause)
+
+    # 5. Assign an extra tag while editing: Fetch Data also joins Reports.
+    fcard = page.locator("#panel-profiles h3", has_text="Fetch Data").locator(
+        "xpath=ancestor::div[contains(@class, 'group')][1]")
+    fcard.get_by_role("button", name="Edit").click()
+    modal.get_by_role("heading", name="Edit Profile").wait_for()
+    page.wait_for_timeout(pause)
+    modal.get_by_role("button", name="Reports", exact=True).click()
+    page.wait_for_timeout(pause)
+    modal.get_by_role("button", name="Save Profile").click()
+    modal.wait_for(state="hidden")
+    page.wait_for_timeout(pause)
+
+    # 6. Tag manager: one global list shared by profiles and workflows.
+    page.get_by_role("button", name="Tags").first.click()
+    modal.get_by_role("heading", name="Manage Tags").wait_for()
+    page.wait_for_timeout(pause * 1.5)
+    modal.get_by_role("button", name="Done").click()
+    modal.wait_for(state="hidden")
+    page.wait_for_timeout(pause)
+
+    # 7. Workflows panel; run the chained workflow (same global tags apply).
     nav("Workflows")
     page.get_by_role("heading", name="Workflows", exact=True).wait_for()
     page.wait_for_timeout(pause)
@@ -261,7 +314,7 @@ def _tour(page, base_url, pause):
     modal.wait_for(state="hidden")
     page.wait_for_timeout(pause)
 
-    # 5. Schedules panel and the live cron preview in the editor.
+    # 8. Schedules panel and the live cron preview in the editor.
     nav("Schedules")
     page.get_by_role("heading", name="Schedules", exact=True).wait_for()
     page.wait_for_timeout(pause)
@@ -277,23 +330,23 @@ def _tour(page, base_url, pause):
     modal.wait_for(state="hidden")
     page.wait_for_timeout(pause)
 
-    # 6. Audit trail.
+    # 9. Audit trail.
     nav("Audit")
     page.get_by_role("heading", name="Audit", exact=True).wait_for()
     page.wait_for_timeout(pause * 1.5)
 
-    # 7. Server logs with live tailing.
+    # 10. Server logs with live tailing.
     nav("Logs")
     page.get_by_role("heading", name="Server Logs", exact=True).wait_for()
     page.wait_for_timeout(pause * 2)
 
-    # 8. Theme toggle: light, then back to dark.
+    # 11. Theme toggle: light, then back to dark.
     page.get_by_role("button", name="Light Mode").click()
     page.wait_for_timeout(pause)
     page.get_by_role("button", name="Dark Mode").click()
     page.wait_for_timeout(pause)
 
-    # 9. Back to Profiles for the closing shot.
+    # 12. Back to Profiles for the closing shot.
     nav("Profiles")
     page.get_by_role("heading", name="Profiles", exact=True).wait_for()
     page.wait_for_timeout(pause * 2)
@@ -356,6 +409,7 @@ def main():
                 record_video_dir=str(video_dir),
                 record_video_size={"width": 1280, "height": 800},
             )
+            _seed_browser_tags(context)
             page = context.new_page()
             sampler = None
             if args.gif:
