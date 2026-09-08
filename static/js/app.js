@@ -5,6 +5,7 @@ import {
     profileHistoryData, workflowHistoryData,
     profileHistoryPage, workflowHistoryPage,
     auditData, auditPage,
+    profileFolders, workflowFolders,
 } from './state.js';
 import {
     loadProfiles, loadWorkflows, checkAllScripts,
@@ -19,6 +20,7 @@ import { WorkflowModal } from './components/WorkflowModal.js';
 import { HistoryTable } from './components/HistoryTable.js';
 import { AuditTable } from './components/AuditTable.js';
 import { RunModal } from './components/RunModal.js';
+import { FolderManager } from './components/FolderManager.js';
 
 function App() {
     const [initialized, setInitialized] = useState(false);
@@ -35,6 +37,9 @@ function App() {
 
     const [workflowOpen, setWorkflowOpen] = useState(false);
     const [editingWorkflow, setEditingWorkflow] = useState(null);
+
+    const [folderManagerOpen, setFolderManagerOpen] = useState(false);
+    const [folderManagerType, setFolderManagerType] = useState('profiles');
 
     useEffect(() => {
         function onHashChange() {
@@ -124,11 +129,18 @@ function App() {
                                         <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Profiles</h1>
                                         <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Reusable script presets — point one at a Python script, add its arguments, and run it anytime.</p>
                                     </div>
-                                    <button onClick=${openNewProfileModal}
-                                        class="bg-gray-900 text-gray-100 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-800 dark:hover:bg-white text-sm font-medium px-3 py-2 rounded-lg inline-flex items-center gap-1.5 transition">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
-                                        New Profile
-                                    </button>
+                                    <div class="flex items-center gap-2">
+                                        <button onClick=${() => { setFolderManagerType('profiles'); setFolderManagerOpen(true); }}
+                                            class="bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm font-medium px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700/60 transition inline-flex items-center gap-1.5">
+                                            <svg class="w-4 h-4 text-amber-500" fill="currentColor" viewBox="0 0 20 20"><path d="M3.75 3a.75.75 0 00-.75.75v12.5c0 .414.336.75.75.75h12.5a.75.75 0 00.75-.75V6.75a.75.75 0 00-.75-.75H3.75zM3 6.75A.75.75 0 013.75 6h4.5a.75.75 0 01.75.75v4.5a.75.75 0 01-.75.75h-4.5A.75.75 0 013 11.25v-4.5z"/></svg>
+                                            Folders
+                                        </button>
+                                        <button onClick=${openNewProfileModal}
+                                            class="bg-gray-900 text-gray-100 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-800 dark:hover:bg-white text-sm font-medium px-3 py-2 rounded-lg inline-flex items-center gap-1.5 transition">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                                            New Profile
+                                        </button>
+                                    </div>
                                 </div>
                                 <div class="grid grid-cols-1 xl:grid-cols-5 gap-6 xl:flex-1 xl:min-h-0">
                                     <div class="xl:col-span-2 xl:overflow-y-auto xl:pr-1">
@@ -155,11 +167,18 @@ function App() {
                                         <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Workflows</h1>
                                         <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Chain profiles into ordered steps or parallel groups and run them all with a single click.</p>
                                     </div>
-                                    <button onClick=${openNewWorkflowModal}
-                                        class="bg-gray-900 text-gray-100 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-800 dark:hover:bg-white text-sm font-medium px-3 py-2 rounded-lg inline-flex items-center gap-1.5 transition">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
-                                        New Workflow
-                                    </button>
+                                    <div class="flex items-center gap-2">
+                                        <button onClick=${() => { setFolderManagerType('workflows'); setFolderManagerOpen(true); }}
+                                            class="bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm font-medium px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700/60 transition inline-flex items-center gap-1.5">
+                                            <svg class="w-4 h-4 text-amber-500" fill="currentColor" viewBox="0 0 20 20"><path d="M3.75 3a.75.75 0 00-.75.75v12.5c0 .414.336.75.75.75h12.5a.75.75 0 00.75-.75V6.75a.75.75 0 00-.75-.75H3.75zM3 6.75A.75.75 0 013.75 6h4.5a.75.75 0 01.75.75v4.5a.75.75 0 01-.75.75h-4.5A.75.75 0 013 11.25v-4.5z"/></svg>
+                                            Folders
+                                        </button>
+                                        <button onClick=${openNewWorkflowModal}
+                                            class="bg-gray-900 text-gray-100 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-800 dark:hover:bg-white text-sm font-medium px-3 py-2 rounded-lg inline-flex items-center gap-1.5 transition">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                                            New Workflow
+                                        </button>
+                                    </div>
                                 </div>
                                 <div class="grid grid-cols-1 xl:grid-cols-5 gap-6 xl:flex-1 xl:min-h-0">
                                     <div class="xl:col-span-2 xl:overflow-y-auto xl:pr-1">
@@ -205,6 +224,14 @@ function App() {
             <${ProfileModal} isOpen=${profileOpen} onClose=${() => setProfileOpen(false)} profile=${editingProfile} />
             <${WorkflowModal} isOpen=${workflowOpen} onClose=${() => setWorkflowOpen(false)} workflow=${editingWorkflow} />
             <${RunModal} isOpen=${runOpen} onClose=${() => setRunOpen(false)} runId=${runId} title=${runTitle} runType=${runType} />
+            <${FolderManager}
+                isOpen=${folderManagerOpen}
+                onClose=${() => setFolderManagerOpen(false)}
+                folders=${folderManagerType === 'profiles' ? profileFolders.value : workflowFolders.value}
+                foldersSignal=${folderManagerType === 'profiles' ? profileFolders : workflowFolders}
+                items=${folderManagerType === 'profiles' ? profiles.value : workflows.value}
+                getFolder=${(item) => item.group || ''}
+            />
         </div>
     `;
 }

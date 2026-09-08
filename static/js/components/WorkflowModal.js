@@ -1,7 +1,7 @@
 import { html } from '../../vendor/standalone-preact.esm.js';
 import { useState, useEffect } from '../../vendor/standalone-preact.esm.js';
 import { esc } from '../utils.js';
-import { profiles } from '../state.js';
+import { profiles, workflowFolders } from '../state.js';
 import { saveWorkflow, loadWorkflows } from '../api.js';
 import { SortableList } from './SortableList.js';
 
@@ -14,6 +14,7 @@ export function WorkflowModal({ isOpen, onClose, workflow }) {
     const [localSteps, setLocalSteps] = useState([]);
     const [openArgs, setOpenArgs] = useState(null);
     const [editingId, setEditingId] = useState(null);
+    const [group, setGroup] = useState('');
 
     useEffect(() => {
         if (isOpen) {
@@ -21,6 +22,7 @@ export function WorkflowModal({ isOpen, onClose, workflow }) {
                 setEditingId(workflow.id);
                 setName(workflow.name || '');
                 setContinueOnError(!!workflow.continue_on_error);
+                setGroup(workflow.group || '');
                 const normalized = (workflow.steps || []).map(s => s.type === 'parallel'
                     ? { ...s, _id: nextUid(), profiles: (s.profiles || []).map(p => ({ ...p, _id: nextUid(), _argsText: (p.args || []).join('\n') })) }
                     : { ...s, _id: nextUid(), _argsText: (s.args || []).join('\n') });
@@ -29,6 +31,7 @@ export function WorkflowModal({ isOpen, onClose, workflow }) {
                 setEditingId(null);
                 setName('');
                 setContinueOnError(false);
+                setGroup('');
                 setLocalSteps([]);
             }
             setOpenArgs(null);
@@ -207,10 +210,13 @@ export function WorkflowModal({ isOpen, onClose, workflow }) {
         const stepsToSave = localSteps.map(s => s.type === 'parallel'
             ? { type: 'parallel', profiles: (s.profiles || []).map(p => ({ profile_id: p.profile_id, profile: p.profile, args: parseArgsText(p._argsText, p.args), arg_values: p.arg_values || {} })) }
             : { type: 'sequential', profile_id: s.profile_id, profile: s.profile, args: parseArgsText(s._argsText, s.args), arg_values: s.arg_values || {} });
-        await saveWorkflow({
+        const workflowData = {
             id: editingId, name: trimmedName, steps: stepsToSave,
             extra_args: [], continue_on_error: continueOnError,
-        });
+        };
+        if (group) workflowData.group = group;
+        else if (editingId) workflowData.group = '';
+        await saveWorkflow(workflowData);
         await loadWorkflows();
         onClose();
     }
@@ -333,6 +339,14 @@ export function WorkflowModal({ isOpen, onClose, workflow }) {
                             <input type="text" value=${name} onInput=${e => setName(e.target.value)}
                                 placeholder="e.g. ETL Pipeline"
                                 class="w-full bg-white dark:bg-gray-900/30 border border-gray-300 dark:border-gray-700/60 rounded-lg px-3 py-2 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-violet-500 focus:ring-0 focus:ring-offset-0 transition" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Folder</label>
+                            <select value=${group} onChange=${e => setGroup(e.target.value)}
+                                class="w-full bg-white dark:bg-gray-900/30 border border-gray-300 dark:border-gray-700/60 rounded-lg px-3 py-2 text-sm text-gray-800 dark:text-gray-100 focus:border-violet-500 focus:ring-0 focus:ring-offset-0 transition">
+                                <option value="">No folder</option>
+                                ${workflowFolders.value.map(f => html`<option value=${f.id} selected=${group === f.id}>${f.name}</option>`)}
+                            </select>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Steps</label>

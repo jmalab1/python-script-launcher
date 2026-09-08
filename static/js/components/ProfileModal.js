@@ -1,6 +1,7 @@
 import { html } from '../../vendor/standalone-preact.esm.js';
 import { useState, useEffect } from '../../vendor/standalone-preact.esm.js';
 import { esc } from '../utils.js';
+import { profileFolders } from '../state.js';
 import { saveProfile, loadProfiles, checkAllScripts, openNativeFileDialog } from '../api.js';
 
 export function ProfileModal({ isOpen, onClose, profile }) {
@@ -8,6 +9,7 @@ export function ProfileModal({ isOpen, onClose, profile }) {
     const [scriptPath, setScriptPath] = useState('');
     const [args, setArgs] = useState('');
     const [customArgs, setCustomArgs] = useState([]);
+    const [group, setGroup] = useState('');
     const [editingId, setEditingId] = useState(null);
 
     useEffect(() => {
@@ -18,12 +20,14 @@ export function ProfileModal({ isOpen, onClose, profile }) {
                 setScriptPath(profile.script_path || '');
                 setArgs((profile.args || []).join('\n'));
                 setCustomArgs(JSON.parse(JSON.stringify(profile.custom_args || [])));
+                setGroup(profile.group || '');
             } else {
                 setEditingId(null);
                 setName('');
                 setScriptPath('');
                 setArgs('');
                 setCustomArgs([]);
+                setGroup('');
             }
         }
     }, [isOpen, profile]);
@@ -54,7 +58,10 @@ export function ProfileModal({ isOpen, onClose, profile }) {
             if (built.type === 'enum') built.options = (ca.options || '').trim();
             return built;
         }).filter(ca => ca.name);
-        await saveProfile({ id: editingId, name: trimmedName, script_path: trimmedScript, args: argsList, custom_args: builtCustomArgs });
+        const profileData = { id: editingId, name: trimmedName, script_path: trimmedScript, args: argsList, custom_args: builtCustomArgs };
+        if (group) profileData.group = group;
+        else if (editingId) profileData.group = '';
+        await saveProfile(profileData);
         await loadProfiles();
         await checkAllScripts();
         onClose();
@@ -89,6 +96,14 @@ export function ProfileModal({ isOpen, onClose, profile }) {
                             <input type="text" value=${name} onInput=${e => setName(e.target.value)}
                                 placeholder="e.g. Data Pipeline"
                                 class="w-full bg-white dark:bg-gray-900/30 border border-gray-300 dark:border-gray-700/60 rounded-lg px-3 py-2 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-violet-500 focus:ring-0 focus:ring-offset-0 transition" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Folder</label>
+                            <select value=${group} onChange=${e => setGroup(e.target.value)}
+                                class="w-full bg-white dark:bg-gray-900/30 border border-gray-300 dark:border-gray-700/60 rounded-lg px-3 py-2 text-sm text-gray-800 dark:text-gray-100 focus:border-violet-500 focus:ring-0 focus:ring-offset-0 transition">
+                                <option value="">No folder</option>
+                                ${profileFolders.value.map(f => html`<option value=${f.id} selected=${group === f.id}>${f.name}</option>`)}
+                            </select>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Script Path</label>

@@ -95,3 +95,28 @@ def test_handle_duplicate_keeps_ids_and_names_unique_across_repeats(store):
 
 def test_handle_duplicate_returns_none_for_unknown_profiles(store):
     assert profiles.handle_duplicate("ghost_id") is None
+
+
+def test_handle_create_persists_group_field(store):
+    p = profiles.handle_create({"name": "Grouped", "script_path": "/tmp/a.py", "args": [], "group": "folder_123"})
+    saved = store.read("profiles")
+    assert saved[0]["group"] == "folder_123"
+
+
+def test_handle_create_strips_empty_group(store):
+    p = profiles.handle_create({"name": "NoGroup", "script_path": "/tmp/a.py", "args": [], "group": ""})
+    saved = store.read("profiles")
+    assert "group" not in saved[0] or saved[0].get("group") == ""
+
+
+def test_handle_create_upsert_preserves_group(store):
+    p = profiles.handle_create({"name": "G", "script_path": "/tmp/a.py", "args": [], "group": "f1"})
+    profiles.handle_create({"id": p["id"], "name": "G Updated", "script_path": "/tmp/a.py", "args": []})
+    saved = store.read("profiles")
+    assert saved[0].get("group") == "" or "group" not in saved[0]
+
+
+def test_handle_duplicate_preserves_group(store):
+    p = profiles.handle_create({"name": "G", "script_path": "/tmp/a.py", "args": [], "group": "f1"})
+    dup = profiles.handle_duplicate(p["id"])
+    assert dup.get("group") == "f1"

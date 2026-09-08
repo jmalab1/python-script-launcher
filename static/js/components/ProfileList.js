@@ -1,8 +1,9 @@
 import { html } from '../../vendor/standalone-preact.esm.js';
-import { profiles } from '../state.js';
+import { profiles, profileFolders, selectedProfileFolder } from '../state.js';
 import { saveProfileOrder } from '../api.js';
 import { ProfileCard } from './ProfileCard.js';
-import { SortableList } from './SortableList.js';
+import { GroupedSortableList } from './GroupedSortableList.js';
+import { FolderFilter } from './FolderFilter.js';
 
 export function ProfileList({ onEdit, onRun }) {
     if (!profiles.value.length) {
@@ -15,13 +16,24 @@ export function ProfileList({ onEdit, onRun }) {
     }
 
     return html`
-        <${SortableList}
+        <${FolderFilter}
+            folders=${profileFolders.value}
             items=${profiles.value}
+            getFolder=${(p) => p.group || ''}
+            selectedFolder=${selectedProfileFolder.value}
+            onSelect=${(v) => { selectedProfileFolder.value = v; }}
+        />
+        <${GroupedSortableList}
+            items=${profiles.value}
+            folders=${profileFolders.value}
+            getFolder=${(p) => p.group || ''}
+            selectedFolder=${selectedProfileFolder.value}
             onReorder=${(next) => {
                 profiles.value = next;
                 saveProfileOrder(next.map(p => p.id));
             }}
             renderItem=${(p) => html`<${ProfileCard} profile=${p} onEdit=${onEdit} onRun=${onRun} />`}
+            emptyMessage="No profiles in this folder."
         />
     `;
 }

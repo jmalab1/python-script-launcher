@@ -1,8 +1,9 @@
 import { html } from '../../vendor/standalone-preact.esm.js';
-import { workflows } from '../state.js';
+import { workflows, workflowFolders, selectedWorkflowFolder } from '../state.js';
 import { saveWorkflowOrder } from '../api.js';
 import { WorkflowCard } from './WorkflowCard.js';
-import { SortableList } from './SortableList.js';
+import { GroupedSortableList } from './GroupedSortableList.js';
+import { FolderFilter } from './FolderFilter.js';
 
 export function WorkflowList({ onEdit, onRun }) {
     if (!workflows.value.length) {
@@ -15,13 +16,24 @@ export function WorkflowList({ onEdit, onRun }) {
     }
 
     return html`
-        <${SortableList}
+        <${FolderFilter}
+            folders=${workflowFolders.value}
             items=${workflows.value}
+            getFolder=${(w) => w.group || ''}
+            selectedFolder=${selectedWorkflowFolder.value}
+            onSelect=${(v) => { selectedWorkflowFolder.value = v; }}
+        />
+        <${GroupedSortableList}
+            items=${workflows.value}
+            folders=${workflowFolders.value}
+            getFolder=${(w) => w.group || ''}
+            selectedFolder=${selectedWorkflowFolder.value}
             onReorder=${(next) => {
                 workflows.value = next;
                 saveWorkflowOrder(next.map(w => w.id));
             }}
             renderItem=${(w) => html`<${WorkflowCard} workflow=${w} onEdit=${onEdit} onRun=${onRun} />`}
+            emptyMessage="No workflows in this folder."
         />
     `;
 }

@@ -155,3 +155,22 @@ def test_handle_duplicate_keeps_workflow_names_unique_across_repeats(store):
 
 def test_handle_duplicate_returns_none_for_unknown_workflows(store):
     assert workflows.handle_duplicate("ghost_id") is None
+
+
+def test_handle_create_persists_group_field(store):
+    w = workflows.handle_create({"name": "Grouped", "steps": [], "group": "folder_456"})
+    saved = store.read("workflows")
+    assert saved[0]["group"] == "folder_456"
+
+
+def test_handle_create_upsert_strips_empty_group(store):
+    w = workflows.handle_create({"name": "G", "steps": [], "group": "f1"})
+    workflows.handle_create({"id": w["id"], "name": "G Updated", "steps": []})
+    saved = store.read("workflows")
+    assert saved[0].get("group") == "" or "group" not in saved[0]
+
+
+def test_handle_duplicate_preserves_group(store):
+    w = workflows.handle_create({"name": "G", "steps": [], "group": "f1"})
+    dup = workflows.handle_duplicate(w["id"])
+    assert dup.get("group") == "f1"
