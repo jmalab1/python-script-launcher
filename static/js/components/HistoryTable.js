@@ -104,7 +104,7 @@ export function HistoryTable({ data, pageSignal, onLoad, type, onOpenRun }) {
                                 </td>
                                 <td class="py-2 px-3 text-gray-400">${rowNum}</td>
                                 <td class="py-2 px-3 font-medium text-gray-800 dark:text-gray-200">${esc(e.name)}</td>
-                                <td class="py-2 px-3"><span class="inline-flex items-center gap-1.5 ${sc}">${e.status === 'running' ? html`<svg class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>` : ''}${e.status}</span></td>
+                                <td class="py-2 px-3"><span class="inline-flex items-center gap-1.5 ${sc}">${e.status === 'running' ? html`<span class="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse"></span>` : ''}${e.status}</span></td>
                                 <td class="py-2 px-3 text-gray-500 dark:text-gray-400 whitespace-nowrap">
                                     ${formatDuration(e.duration)}${e.steps_total != null ? html` · <span class=${stepsFailed ? 'text-red-500 dark:text-red-400' : ''}>${e.steps_ok}/${e.steps_total} steps</span>` : ''}
                                 </td>
