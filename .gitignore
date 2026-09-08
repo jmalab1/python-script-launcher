@@ -50,3 +50,6 @@ htmlcov/
 
 # Application runtime data
 data/
+
+# Server PID files
+*.pid
