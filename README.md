@@ -105,7 +105,7 @@ When a profile is added to a workflow, its current custom argument values are ca
 
 Each profile can set a **Timeout (seconds)** in the profile editor — a plain number like `60` or a decimal like `2.5`. Whether the profile is run directly, as a workflow step, or on a schedule, Tiller kills the script if it is still running after that long. The timed-out run is marked **failed**, and a `Timed out after Ns and was killed` line appears in its output. Leave the field blank to let scripts run indefinitely (the default).
 
-The run modal's **Export** button downloads the currently displayed output — workflow log or the selected step's output — as a timestamped `.txt` file.
+The run modal's **Export** button downloads the run as a timestamped `.txt` file. For a workflow, the file combines the workflow progress log with every step's output, each under its own headed section; for a profile run it is the script's output (with the command that ran).
 
 ## Scheduling Runs
 

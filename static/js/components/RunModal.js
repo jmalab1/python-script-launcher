@@ -67,18 +67,40 @@ export function RunModal({ isOpen, onClose, runId, title, runType }) {
     }
 
     function exportOutput() {
-        const lines = output || [];
-        if (!lines.length) { alert('No output to export.'); return; }
-        // Lines already carry their own trailing newlines, so join them bare;
-        // the output_preview path splits on '\n', hence the final newline check.
-        const text = lines.map(l => l == null ? '' : String(l)).join('');
-        const blob = new Blob([text.endsWith('\n') ? text : text + '\n'], { type: 'text/plain' });
+        const data = lastDataRef.current;
+        if (!data) { alert('No output to export.'); return; }
+        const steps = data.steps || {};
+        const hasAny = Object.keys(steps).length
+            || (data.output || []).length
+            || (data.workflow_log || []).length;
+        if (!hasAny) { alert('No output to export.'); return; }
+        // Build a single self-contained document. Lines in the run data
+        // already end with '\n', so separators carry their own newlines.
+        const parts = [`${title || 'Run output'}\n`, `Status: ${data.status || 'running'}\n\n`];
+        if (Object.keys(steps).length) {
+            parts.push('Workflow log\n------------\n');
+            parts.push(...(data.workflow_log || []));
+            for (const [name, step] of Object.entries(steps)) {
+                parts.push(`\n${name}\n${'-'.repeat(Math.max(name.length, 10))}\n`);
+                if (step.command) {
+                    parts.push(`Command: ${[].concat(step.command).join(' ')}\n`);
+                }
+                parts.push(...(step.output || []));
+            }
+        } else {
+            if (data.command) {
+                parts.push(`Command: ${[].concat(data.command).join(' ')}\n\n`);
+            }
+            parts.push(...(data.output || []));
+        }
+        let text = parts.map(p => p == null ? '' : String(p)).join('');
+        if (!text.endsWith('\n')) text += '\n';
+        const blob = new Blob([text], { type: 'text/plain' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         const stamp = new Date().toISOString().slice(0, 19).replace(/[T:]/g, '-');
-        const tabSuffix = activeTab !== 'workflow' ? '-' + slug(activeTab) : '';
         a.href = url;
-        a.download = `${slug(title)}${tabSuffix}-${stamp}.txt`;
+        a.download = `${slug(title)}-${stamp}.txt`;
         document.body.appendChild(a);
         a.click();
         a.remove();

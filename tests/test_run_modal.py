@@ -92,7 +92,7 @@ def test_run_modal_updates_the_command_on_load_poll_and_tab_switch():
 # ------------------------------------------------------------------ output export
 
 
-def test_run_modal_exports_the_displayed_output_as_a_text_file():
+def test_run_modal_exports_the_run_as_a_text_file():
     src = run_modal_src()
     assert "function exportOutput()" in src, "the export helper is missing"
     assert "new Blob(" in src and "text/plain" in src, \
@@ -110,10 +110,28 @@ def test_run_modal_export_refuses_an_empty_output_and_names_the_file():
     src = run_modal_src()
     assert "No output to export." in src, \
         "exporting an empty run must tell the user instead of downloading nothing"
-    assert "a.download = `${slug(title)}${tabSuffix}-${stamp}.txt`;" in src, \
-        "the filename must combine the run title, active tab, and a timestamp"
-    assert "const tabSuffix = activeTab !== 'workflow'" in src, \
-        "step tabs must be reflected in the exported filename"
+    assert "a.download = `${slug(title)}-${stamp}.txt`;" in src, \
+        "the filename must combine the run title and a timestamp"
+
+
+def test_run_modal_export_combines_workflow_logs_and_steps_into_one_document():
+    src = run_modal_src()
+    assert "const data = lastDataRef.current;" in src, \
+        "the export must build from the loaded run data, not the displayed tab"
+    assert "'Workflow log\\n------------\\n'" in src, \
+        "workflow exports start with the progress log section"
+    assert "for (const [name, step] of Object.entries(steps)) {" in src, \
+        "every step must get its own section"
+    assert re.search(
+        r"parts\.push\(`\\n\$\{name\}\\n\$\{'-'\.repeat[^`]*\}\\n`\);",
+        src,
+    ), "step sections carry the step name as an underlined header"
+    assert "`Command: ${[].concat(step.command).join(' ')}\\n`" in src, \
+        "each step section records the command that ran"
+    assert re.search(
+        r"else \{[\s\S]*?parts\.push\(\.\.\.\(data\.output \|\| \[\]\)\);\s*\}",
+        src,
+    ), "profile runs export their plain output without step sections"
 
 
 # --------------------------------------------------------------- timed-out badge
