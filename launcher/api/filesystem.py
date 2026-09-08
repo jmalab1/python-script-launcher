@@ -9,12 +9,20 @@ from pathlib import Path
 
 _dialog_lock = threading.Lock()
 
+PYTHON_EXTENSIONS = {".py", ".pyw"}
+
+
+def is_python_script(path):
+    return Path(path).suffix.lower() in PYTHON_EXTENSIONS
+
 
 def browse_directory(path):
     path = Path(path).expanduser().resolve()
     if not path.exists():
         return {"error": f"Path does not exist: {path}"}
     if not path.is_dir():
+        if not is_python_script(path):
+            return {"error": f'"{path.name}" is not a Python script (.py or .pyw)'}
         return {
             "path": str(path.parent),
             "selected_file": {"name": path.name, "path": str(path), "is_dir": False},
@@ -122,6 +130,9 @@ def open_file_dialog():
 
         result = dialog()
         if result is not None:
+            selected = result.get("path")
+            if selected and not is_python_script(selected):
+                return {"error": f'"{Path(selected).name}" is not a Python script (.py or .pyw)'}
             return result
 
         if sys.platform == "win32":

@@ -1,4 +1,4 @@
-import { html } from '../../vendor/standalone-preact.esm.js';
+import { html, useState } from '../../vendor/standalone-preact.esm.js';
 import { esc } from '../utils.js';
 import { profiles, scriptStatusCache } from '../state.js';
 import { runWorkflow, loadWorkflows } from '../api.js';
@@ -6,6 +6,7 @@ import { runWorkflow, loadWorkflows } from '../api.js';
 export function WorkflowCard({ workflow, onEdit, onRun }) {
     const w = workflow;
     const steps = w.steps || [];
+    const [expanded, setExpanded] = useState(false);
     const profileMap = Object.fromEntries(profiles.value.map(p => [p.id, p]));
     const cache = scriptStatusCache.value;
 
@@ -118,9 +119,20 @@ export function WorkflowCard({ workflow, onEdit, onRun }) {
                     </div>
                 </div>
                 ${steps.length ? html`
-                <div class="border-t border-gray-100 dark:border-gray-700/60 pt-3">
-                    <div class="space-y-0">
-                        ${steps.map((s, i) => renderStep(s, i))}
+                <div class="border-t border-gray-100 dark:border-gray-700/60 pt-3 group/steps">
+                    <div class="flex items-center justify-between cursor-pointer select-none" onClick=${() => setExpanded(e => !e)} title=${expanded ? 'Collapse steps' : 'Expand steps'}>
+                        <span class="text-[11px] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Steps</span>
+                        <span class="flex items-center gap-1 text-[11px] text-gray-400 dark:text-gray-500">
+                            ${!expanded && html`<span class="group-hover/steps:hidden">hover to view</span>`}
+                            <svg class="w-3 h-3 transition-transform duration-200 ${expanded ? 'rotate-180' : 'group-hover/steps:rotate-180'}" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                        </span>
+                    </div>
+                    <div class="grid grid-rows-[0fr] transition-[grid-template-rows] duration-200 ${expanded ? 'grid-rows-[1fr]' : 'group-hover/steps:grid-rows-[1fr]'}">
+                        <div class="overflow-hidden">
+                            <div class="space-y-0 pt-2">
+                                ${steps.map((s, i) => renderStep(s, i))}
+                            </div>
+                        </div>
                     </div>
                 </div>` : ''}
             </div>

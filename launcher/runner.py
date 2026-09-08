@@ -85,7 +85,7 @@ def execute_workflow(workflow, run_id, started_at):
 
                 t = threading.Thread(
                     target=_run_step,
-                    args=(profile, profile_entry.get("args", []), run_id, continue_on_error),
+                    args=(profile, profile_entry.get("args", []), run_id, continue_on_error, profile_entry.get("arg_values", {})),
                 )
                 threads.append(t)
                 t.start()
@@ -107,7 +107,7 @@ def execute_workflow(workflow, run_id, started_at):
                     return
                 continue
 
-            _run_step(profile, step.get("args", []), run_id, continue_on_error)
+            _run_step(profile, step.get("args", []), run_id, continue_on_error, step.get("arg_values", {}))
             with run_lock:
                 if not continue_on_error and active_runs[run_id].get("failed"):
                     break
@@ -119,7 +119,7 @@ def execute_workflow(workflow, run_id, started_at):
     save_history(run_id, workflow.get("name", "Unnamed"), "workflow", status, None, active_runs[run_id]["workflow_log"], started_at, workflow_log=active_runs[run_id]["workflow_log"], steps=active_runs[run_id].get("steps", {}))
 
 
-def _run_step(profile, extra_args, run_id, continue_on_error):
+def _run_step(profile, extra_args, run_id, continue_on_error, arg_overrides=None):
     script_path = profile.get("script_path", "")
     step_name = profile.get("name", "Unnamed")
 
@@ -131,13 +131,14 @@ def _run_step(profile, extra_args, run_id, continue_on_error):
             active_runs[run_id]["failed"] = True
         return
 
+    overrides = arg_overrides or {}
     custom_args = profile.get("custom_args", [])
     built_args = []
     for ca in custom_args:
         flag = ca.get("name", "")
         if not flag:
             continue
-        val = ca.get("value", ca.get("default", ""))
+        val = overrides.get(flag, ca.get("value", ca.get("default", "")))
         if ca.get("type") == "checkbox":
             if val == "true":
                 built_args.append(flag)

@@ -12,6 +12,7 @@ export function RunModal({ isOpen, onClose, runId, title, runType }) {
     const timerRef = useRef(null);
     const outputRef = useRef(null);
     const activeTabRef = useRef('workflow');
+    const lastDataRef = useRef(null);
     activeTabRef.current = activeTab;
 
     function linesFor(data) {
@@ -23,10 +24,17 @@ export function RunModal({ isOpen, onClose, runId, title, runType }) {
         } else {
             lines = stepData[tab]?.output || [];
         }
-        if (!lines.length && data.output_preview) {
+        if (!lines.length && tab === 'workflow' && data.output_preview) {
             lines = data.output_preview.split('\n');
         }
         return lines;
+    }
+
+    function switchTab(name) {
+        activeTabRef.current = name;
+        setActiveTab(name);
+        const data = lastDataRef.current;
+        if (data) setOutput(linesFor(data));
     }
 
     function renderLines(lines) {
@@ -56,6 +64,7 @@ export function RunModal({ isOpen, onClose, runId, title, runType }) {
             setOutput(['Run data not found.']);
             return;
         }
+        lastDataRef.current = hist;
         setStatus(hist.status || 'completed');
         updateTabs(hist.steps || {});
         setOutput(linesFor(hist));
@@ -74,6 +83,7 @@ export function RunModal({ isOpen, onClose, runId, title, runType }) {
             setStatus(data.status || 'running');
             setCurrentStep(data.current_step || '');
             updateTabs(data.steps || {});
+            lastDataRef.current = data;
             setOutput(linesFor(data));
             if (outputRef.current) outputRef.current.scrollTop = outputRef.current.scrollHeight;
 
@@ -86,6 +96,7 @@ export function RunModal({ isOpen, onClose, runId, title, runType }) {
 
     useEffect(() => {
         if (!isOpen || !runId) return;
+        lastDataRef.current = null;
         setOutput([]);
         setStatus('starting');
         setTabs([]);
@@ -147,12 +158,12 @@ export function RunModal({ isOpen, onClose, runId, title, runType }) {
                     ${tabs.length ? html`
                         <div class="shrink-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700/60 px-6">
                             <div class="flex gap-1 -mb-px overflow-x-auto">
-                                <button onClick=${() => setActiveTab('workflow')}
+                                <button onClick=${() => switchTab('workflow')}
                                     class="px-3 py-2 text-xs font-medium border-b-2 transition ${activeTab === 'workflow' ? 'border-violet-500 text-violet-600 dark:text-violet-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}">Workflow</button>
                                 ${tabs.map(t => {
                                     const dot = t.status === 'completed' ? 'bg-green-400' : t.status === 'failed' ? 'bg-red-400' : t.status === 'running' ? 'bg-sky-400 animate-pulse' : 'bg-gray-400';
                                     return html`
-                                        <button onClick=${() => setActiveTab(t.name)}
+                                        <button onClick=${() => switchTab(t.name)}
                                             class="px-3 py-2 text-xs font-medium border-b-2 transition flex items-center gap-1.5 ${activeTab === t.name ? 'border-violet-500 text-violet-600 dark:text-violet-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}">
                                             <span class="w-1.5 h-1.5 rounded-full ${dot}"></span>${esc(t.name)}
                                         </button>`;

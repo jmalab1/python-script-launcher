@@ -31,6 +31,9 @@ function toggleTheme() {
 
 function showPanel(name) {
     currentPanel.value = name;
+    localStorage.setItem('panel', name);
+    const hash = `#/${name}`;
+    if (location.hash !== hash) history.replaceState(null, '', hash);
     sidebarOpen.value = false;
 }
 

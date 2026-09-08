@@ -6,7 +6,16 @@ export const workflows = signal([]);
 export const scriptStatusCache = signal({});
 
 // UI state
-export const currentPanel = signal('profiles');
+export const PANELS = ['profiles', 'workflows'];
+
+function initialPanel() {
+    const hash = location.hash.replace(/^#\/?/, '');
+    if (PANELS.includes(hash)) return hash;
+    const saved = localStorage.getItem('panel');
+    return PANELS.includes(saved) ? saved : 'profiles';
+}
+
+export const currentPanel = signal(initialPanel());
 export const theme = signal(localStorage.getItem('theme') || 'dark');
 export const sidebarOpen = signal(false);
 

@@ -1,7 +1,7 @@
 import { html, render } from '../vendor/standalone-preact.esm.js';
 import { useState, useEffect } from '../vendor/standalone-preact.esm.js';
 import {
-    profiles, workflows, currentPanel, theme, sidebarOpen,
+    profiles, workflows, currentPanel, theme, sidebarOpen, PANELS,
     profileHistoryData, workflowHistoryData,
     profileHistoryPage, workflowHistoryPage,
 } from './state.js';
@@ -32,6 +32,18 @@ function App() {
 
     const [workflowOpen, setWorkflowOpen] = useState(false);
     const [editingWorkflow, setEditingWorkflow] = useState(null);
+
+    useEffect(() => {
+        function onHashChange() {
+            const name = location.hash.replace(/^#\/?/, '');
+            if (PANELS.includes(name) && name !== currentPanel.value) {
+                currentPanel.value = name;
+                localStorage.setItem('panel', name);
+            }
+        }
+        window.addEventListener('hashchange', onHashChange);
+        return () => window.removeEventListener('hashchange', onHashChange);
+    }, []);
 
     useEffect(() => {
         async function init() {
@@ -100,9 +112,12 @@ function App() {
                     <div class="flex flex-col px-4 sm:px-6 lg:px-8 py-6 w-full min-h-full">
 
                         ${currentPanel.value === 'profiles' ? html`
-                            <div id="panel-profiles" class="panel xl:flex xl:flex-col xl:h-[calc(100vh-6.75rem)]">
+                            <div id="panel-profiles" class="panel xl:flex xl:flex-col xl:h-[calc(100vh-8.25rem)]">
                                 <div class="flex items-center justify-between mb-6 xl:shrink-0">
-                                    <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Profiles</h1>
+                                    <div class="min-w-0">
+                                        <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Profiles</h1>
+                                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Reusable script presets — point one at a Python script, add its arguments, and run it anytime.</p>
+                                    </div>
                                     <button onClick=${openNewProfileModal}
                                         class="bg-gray-900 text-gray-100 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-800 dark:hover:bg-white text-sm font-medium px-3 py-2 rounded-lg inline-flex items-center gap-1.5 transition">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
@@ -128,9 +143,12 @@ function App() {
                         ` : ''}
 
                         ${currentPanel.value === 'workflows' ? html`
-                            <div id="panel-workflows" class="panel xl:flex xl:flex-col xl:h-[calc(100vh-6.75rem)]">
+                            <div id="panel-workflows" class="panel xl:flex xl:flex-col xl:h-[calc(100vh-8.25rem)]">
                                 <div class="flex items-center justify-between mb-6 xl:shrink-0">
-                                    <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Workflows</h1>
+                                    <div class="min-w-0">
+                                        <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Workflows</h1>
+                                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Chain profiles into ordered steps or parallel groups and run them all with a single click.</p>
+                                    </div>
                                     <button onClick=${openNewWorkflowModal}
                                         class="bg-gray-900 text-gray-100 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-800 dark:hover:bg-white text-sm font-medium px-3 py-2 rounded-lg inline-flex items-center gap-1.5 transition">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
