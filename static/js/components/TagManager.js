@@ -1,8 +1,8 @@
 import { html } from '../../vendor/standalone-preact.esm.js';
 import { useState } from '../../vendor/standalone-preact.esm.js';
-import { addFolder, renameFolder, deleteFolder, reorderFolders } from '../state.js';
+import { addTag, renameTag, deleteTag, reorderTags } from '../state.js';
 
-export function FolderManager({ isOpen, onClose, folders, foldersSignal, items, getFolder }) {
+export function TagManager({ isOpen, onClose, tags, tagsSignal, items, getTag }) {
     const [newName, setNewName] = useState('');
     const [editingId, setEditingId] = useState(null);
     const [editName, setEditName] = useState('');
@@ -14,34 +14,34 @@ export function FolderManager({ isOpen, onClose, folders, foldersSignal, items, 
     function handleCreate() {
         const trimmed = newName.trim();
         if (!trimmed) return;
-        if (folders.some(f => f.name.toLowerCase() === trimmed.toLowerCase())) {
-            alert('A folder with this name already exists.');
+        if (tags.some(f => f.name.toLowerCase() === trimmed.toLowerCase())) {
+            alert('A tag with this name already exists.');
             return;
         }
-        addFolder(foldersSignal, trimmed);
+        addTag(tagsSignal, trimmed);
         setNewName('');
     }
 
     function handleRename(id) {
         const trimmed = editName.trim();
         if (!trimmed) return;
-        if (folders.some(f => f.id !== id && f.name.toLowerCase() === trimmed.toLowerCase())) {
-            alert('A folder with this name already exists.');
+        if (tags.some(f => f.id !== id && f.name.toLowerCase() === trimmed.toLowerCase())) {
+            alert('A tag with this name already exists.');
             return;
         }
-        renameFolder(foldersSignal, id, trimmed);
+        renameTag(tagsSignal, id, trimmed);
         setEditingId(null);
         setEditName('');
     }
 
     function handleDelete(id) {
-        const folder = folders.find(f => f.id === id);
-        const count = items.filter(item => getFolder(item) === id).length;
+        const tag = tags.find(f => f.id === id);
+        const count = items.filter(item => getTag(item) === id).length;
         const msg = count > 0
-            ? `Delete folder "${folder.name}"? ${count} item${count !== 1 ? 's' : ''} will be moved to the root level.`
-            : `Delete folder "${folder.name}"?`;
+            ? `Delete tag "${tag.name}"? ${count} item${count !== 1 ? 's' : ''} will become untagged.`
+            : `Delete tag "${tag.name}"?`;
         if (confirm(msg)) {
-            deleteFolder(foldersSignal, id);
+            deleteTag(tagsSignal, id);
         }
     }
 
@@ -61,10 +61,10 @@ export function FolderManager({ isOpen, onClose, folders, foldersSignal, items, 
     function handleDrop(e, i) {
         if (dragIndex === null || dragIndex === i) { setDragIndex(null); setOverIndex(null); return; }
         e.preventDefault();
-        const next = folders.slice();
+        const next = tags.slice();
         const [moved] = next.splice(dragIndex, 1);
         next.splice(i, 0, moved);
-        reorderFolders(foldersSignal, next);
+        reorderTags(tagsSignal, next);
         setDragIndex(null);
         setOverIndex(null);
     }
@@ -86,7 +86,7 @@ export function FolderManager({ isOpen, onClose, folders, foldersSignal, items, 
                 <div class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md max-h-[85vh] overflow-y-auto border border-gray-200 dark:border-gray-700/60">
                     <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700/60 px-6 py-4 rounded-t-2xl z-10">
                         <div class="flex items-center justify-between">
-                            <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Manage Folders</h2>
+                            <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Manage Tags</h2>
                             <button onClick=${onClose} class="p-1 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
                             </button>
@@ -96,19 +96,19 @@ export function FolderManager({ isOpen, onClose, folders, foldersSignal, items, 
                         <div class="flex gap-2">
                             <input type="text" value=${newName} onInput=${e => setNewName(e.target.value)}
                                 onKeyDown=${e => e.key === 'Enter' && handleCreate()}
-                                placeholder="New folder name"
+                                placeholder="New tag name"
                                 class="flex-1 bg-white dark:bg-gray-900/30 border border-gray-300 dark:border-gray-700/60 rounded-lg px-3 py-2 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-violet-500 focus:ring-0 focus:ring-offset-0 transition" />
                             <button onClick=${handleCreate}
                                 class="bg-gray-900 text-gray-100 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-800 dark:hover:bg-white text-sm font-medium px-3 py-2 rounded-lg transition whitespace-nowrap">Add</button>
                         </div>
-                        ${!folders.length ? html`
+                        ${!tags.length ? html`
                             <div class="text-center py-6 text-gray-500 dark:text-gray-400 text-sm">
-                                No folders yet. Create one above, then assign items to it when editing.
+                                No tags yet. Create one above, then assign items to it when editing.
                             </div>
                         ` : html`
                             <div class="space-y-1.5">
-                                ${folders.map((f, i) => {
-                                    const count = items.filter(item => getFolder(item) === f.id).length;
+                                ${tags.map((f, i) => {
+                                    const count = items.filter(item => getTag(item) === f.id).length;
                                     return html`
                                         <div key=${f.id}
                                             class="flex items-center gap-2 p-2 rounded-lg border transition ${dragIndex === i ? 'opacity-40' : ''} ${overIndex === i && dragIndex !== null && dragIndex !== i ? 'border-violet-400/70 ring-1 ring-violet-400/50' : 'border-gray-200 dark:border-gray-700/60'}"
@@ -127,7 +127,7 @@ export function FolderManager({ isOpen, onClose, folders, foldersSignal, items, 
                                                     <circle cx="2.5" cy="13.5" r="1.4"/><circle cx="7.5" cy="13.5" r="1.4"/>
                                                 </svg>
                                             </div>
-                                            <svg class="w-4 h-4 text-amber-500 dark:text-amber-400 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path d="M3.75 3a.75.75 0 00-.75.75v12.5c0 .414.336.75.75.75h12.5a.75.75 0 00.75-.75V6.75a.75.75 0 00-.75-.75H3.75zM3 6.75A.75.75 0 013.75 6h4.5a.75.75 0 01.75.75v4.5a.75.75 0 01-.75.75h-4.5A.75.75 0 013 11.25v-4.5z"/></svg>
+                                            <svg class="w-4 h-4 text-amber-500 dark:text-amber-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z"/><path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6z"/></svg>
                                             ${editingId === f.id ? html`
                                                 <input type="text" value=${editName} onInput=${e => setEditName(e.target.value)}
                                                     onKeyDown=${(e) => handleKeyDown(e, f.id)}
@@ -145,7 +145,7 @@ export function FolderManager({ isOpen, onClose, folders, foldersSignal, items, 
                                                 </button>
                                             ` : ''}
                                             <button onClick=${() => handleDelete(f.id)}
-                                                class="p-1 text-gray-400 hover:text-red-500 transition" title="Delete folder">
+                                                class="p-1 text-gray-400 hover:text-red-500 transition" title="Delete tag">
                                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg>
                                             </button>
                                         </div>

@@ -1,5 +1,5 @@
-from ..storage import load_audit, load_json, save_json, record_audit
-from ..config import COL_AUDIT, COL_PROFILES, COL_WORKFLOWS
+from ..storage import load_audit
+from ..config import COL_AUDIT
 
 _LIST_FIELDS = ("id", "timestamp", "action", "entity_type", "entity_id", "name", "details")
 
@@ -33,37 +33,3 @@ def handle_detail(entry_id):
         return None
     return matches[0]
 
-
-
-
-
-def handle_restore(entry_id):
-    """Re-create the entity captured in a 'deleted' audit entry from its snapshot."""
-    matches = [e for e in load_audit() if e.get("id") == entry_id]
-    if not matches:
-        return None
-    entry = matches[0]
-    if entry.get("action") != "deleted":
-        return None
-    snapshot = entry.get("before")
-    if not isinstance(snapshot, dict) or not snapshot.get("id"):
-        return None
-    if entry.get("entity_type") == "profile":
-        collection = COL_PROFILES
-    elif entry.get("entity_type") == "workflow":
-        collection = COL_WORKFLOWS
-    else:
-        return None
-    entities = load_json(collection)
-    entities = [e for e in entities if e.get("id") != snapshot["id"]]
-    entities.append(snapshot)
-    save_json(collection, entities)
-    record_audit(
-        "restored",
-        entry["entity_type"],
-        snapshot["id"],
-        entry.get("name") or snapshot.get("name"),
-        after=snapshot,
-        details={"restored_from": entry_id},
-    )
-    return snapshot

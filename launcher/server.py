@@ -175,6 +175,14 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
                 else:
                     self._json_response({"error": "Not found"}, 404)
 
+            elif path.startswith("/api/profiles/") and path.endswith("/restore"):
+                profile_id = path[len("/api/profiles/"):-len("/restore")]
+                result = profiles.handle_restore(profile_id)
+                if result:
+                    self._json_response(result)
+                else:
+                    self._json_response({"error": "Not found"}, 404)
+
             elif path == "/api/workflows":
                 result = workflows.handle_create(data)
                 self._json_response(result)
@@ -191,18 +199,18 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
                 else:
                     self._json_response({"error": "Not found"}, 404)
 
+            elif path.startswith("/api/workflows/") and path.endswith("/restore"):
+                workflow_id = path[len("/api/workflows/"):-len("/restore")]
+                result = workflows.handle_restore(workflow_id)
+                if result:
+                    self._json_response(result)
+                else:
+                    self._json_response({"error": "Not found"}, 404)
+
             elif path == "/api/history/bulk":
                 ids = data.get("ids", [])
                 result = history.handle_bulk_delete(ids)
                 self._json_response(result)
-
-            elif path.startswith("/api/audit/") and path.endswith("/restore"):
-                entry_id = path[len("/api/audit/"):-len("/restore")]
-                restored = audit.handle_restore(entry_id)
-                if restored:
-                    self._json_response(restored)
-                else:
-                    self._json_response({"error": "Not found"}, 404)
 
             elif path == "/api/run/profile":
                 result, status, error = runs.handle_run_profile(data, self.send_error)
@@ -236,9 +244,19 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
         path = parsed.path
 
         try:
-            if path.startswith("/api/profiles/"):
+            if path.startswith("/api/profiles/") and path.endswith("/permanent"):
+                profile_id = path[len("/api/profiles/"):-len("/permanent")]
+                result = profiles.handle_permanent_delete(profile_id)
+                self._json_response(result)
+
+            elif path.startswith("/api/profiles/"):
                 profile_id = path.split("/")[-1]
                 result = profiles.handle_delete(profile_id)
+                self._json_response(result)
+
+            elif path.startswith("/api/workflows/") and path.endswith("/permanent"):
+                workflow_id = path[len("/api/workflows/"):-len("/permanent")]
+                result = workflows.handle_permanent_delete(workflow_id)
                 self._json_response(result)
 
             elif path.startswith("/api/workflows/"):

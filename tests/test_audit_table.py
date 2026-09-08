@@ -36,7 +36,7 @@ def test_audit_api_calls_hit_the_audit_endpoints():
     assert re.search(r"api\('GET', '/api/audit\?' \+ params", src)
     assert "auditAction.value" in src and "auditEntity.value" in src, "filters must be sent with the list request"
     assert "api('GET', '/api/audit/' + entryId)" in src
-    assert re.search(r"api\('POST', `/api/audit/\$\{entryId\}/restore`\)", src)
+    assert "restoreAuditEntry" not in src, "restore-from-audit must be removed (trash is the restore path)"
 
 
 def test_audit_table_has_action_and_entity_filters():
@@ -47,9 +47,11 @@ def test_audit_table_has_action_and_entity_filters():
         assert f'value="{action}"' in src, f"missing filter option for {action}"
 
 
-def test_audit_table_rows_offer_restore_and_delete_actions():
+def test_audit_table_rows_have_no_restore_action():
     src = read(COMPONENTS / "AuditTable.js")
-    assert "isDeleted" in src and "confirmRestore(e)" in src, "deleted rows must expose a restore button"
+    assert "confirmRestore" not in src, "restore must not be offered from audit rows"
+    assert "onRestore" not in src, "detail modal must not offer restore"
+    assert "restoreAuditEntry" not in src, "restore api must not be used"
     assert "deleteAuditEntry" not in src, "delete functionality should be removed"
 
 
@@ -59,7 +61,6 @@ def test_audit_detail_modal_shows_before_and_after_snapshots():
     assert "JSON.stringify(entry.before, null, 2)" in src
     assert "JSON.stringify(entry.after, null, 2)" in src
     assert "JSON.stringify(entry.details, null, 2)" in src
-    assert "action === 'deleted'" in src, "restore must only be offered for deleted entries"
 
 
 def test_audit_table_uses_shared_pagination():

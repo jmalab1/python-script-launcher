@@ -1,4 +1,4 @@
-.PHONY: start stop restart test
+.PHONY: start stop restart test test-e2e
 
 PIDFILE := .server.pid
 
@@ -22,3 +22,6 @@ restart: stop start
 
 test:
 	python3 -m pytest tests/
+
+test-e2e:
+	python3 -m pytest tests/e2e/

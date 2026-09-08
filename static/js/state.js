@@ -31,39 +31,42 @@ export const auditData = signal(null);
 export const auditAction = signal('');
 export const auditEntity = signal('');
 
-// Folders for grouping profiles and workflows
-export const PROFILE_FOLDERS_KEY = 'profileFolders';
-export const WORKFLOW_FOLDERS_KEY = 'workflowFolders';
+// Tags for grouping profiles and workflows
+export const TRASH_GROUP = '__trash__';
+export const PROFILE_TAGS_KEY = 'profileTags';
+export const WORKFLOW_TAGS_KEY = 'workflowTags';
 
-function loadFolders(key) {
-    try { return JSON.parse(localStorage.getItem(key)) || []; }
-    catch { return []; }
+function loadTags(key, legacyKey) {
+    try {
+        const raw = localStorage.getItem(key) || (legacyKey ? localStorage.getItem(legacyKey) : null);
+        return raw ? JSON.parse(raw) : [];
+    } catch { return []; }
 }
 
-export const profileFolders = signal(loadFolders(PROFILE_FOLDERS_KEY));
-export const workflowFolders = signal(loadFolders(WORKFLOW_FOLDERS_KEY));
+export const profileTags = signal(loadTags(PROFILE_TAGS_KEY, 'profileFolders'));
+export const workflowTags = signal(loadTags(WORKFLOW_TAGS_KEY, 'workflowFolders'));
 
-profileFolders.subscribe(v => localStorage.setItem(PROFILE_FOLDERS_KEY, JSON.stringify(v)));
-workflowFolders.subscribe(v => localStorage.setItem(WORKFLOW_FOLDERS_KEY, JSON.stringify(v)));
+profileTags.subscribe(v => localStorage.setItem(PROFILE_TAGS_KEY, JSON.stringify(v)));
+workflowTags.subscribe(v => localStorage.setItem(WORKFLOW_TAGS_KEY, JSON.stringify(v)));
 
-export function addFolder(foldersSignal, name) {
-    const id = 'folder_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
-    foldersSignal.value = [...foldersSignal.value, { id, name: name.trim() }];
+export function addTag(tagsSignal, name) {
+    const id = 'tag_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+    tagsSignal.value = [...tagsSignal.value, { id, name: name.trim() }];
     return id;
 }
 
-export function renameFolder(foldersSignal, id, newName) {
-    foldersSignal.value = foldersSignal.value.map(f => f.id === id ? { ...f, name: newName.trim() } : f);
+export function renameTag(tagsSignal, id, newName) {
+    tagsSignal.value = tagsSignal.value.map(t => t.id === id ? { ...t, name: newName.trim() } : t);
 }
 
-export function deleteFolder(foldersSignal, id) {
-    foldersSignal.value = foldersSignal.value.filter(f => f.id !== id);
+export function deleteTag(tagsSignal, id) {
+    tagsSignal.value = tagsSignal.value.filter(t => t.id !== id);
 }
 
-export function reorderFolders(foldersSignal, next) {
-    foldersSignal.value = next;
+export function reorderTags(tagsSignal, next) {
+    tagsSignal.value = next;
 }
 
-// Folder filter selection (null = show all, string = folder id, 'ungrouped' = items with no group)
-export const selectedProfileFolder = signal(null);
-export const selectedWorkflowFolder = signal(null);
+// Tag filter selection (null = show all, string = tag id, 'untagged' = items with no tag)
+export const selectedProfileTag = signal(null);
+export const selectedWorkflowTag = signal(null);

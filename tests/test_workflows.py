@@ -37,7 +37,10 @@ def test_handle_delete_removes_only_target(store):
     w3 = workflows.handle_create({"name": "Third"})
     workflows.handle_delete("custom")
     saved = store.read("workflows")
-    assert [w["id"] for w in saved] == [w1["id"], w3["id"]], saved
+    ids = [w["id"] for w in saved]
+    assert "custom" in ids and w1["id"] in ids and w3["id"] in ids
+    trashed = next(w for w in saved if w["id"] == "custom")
+    assert trashed["group"] == "__trash__"
 
 
 def test_handle_reorder_applies_order_and_survives_unknown_or_empty_ids(store):
@@ -158,9 +161,9 @@ def test_handle_duplicate_returns_none_for_unknown_workflows(store):
 
 
 def test_handle_create_persists_group_field(store):
-    w = workflows.handle_create({"name": "Grouped", "steps": [], "group": "folder_456"})
+    w = workflows.handle_create({"name": "Grouped", "steps": [], "group": "tag_456"})
     saved = store.read("workflows")
-    assert saved[0]["group"] == "folder_456"
+    assert saved[0]["group"] == "tag_456"
 
 
 def test_handle_create_upsert_strips_empty_group(store):

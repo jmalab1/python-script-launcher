@@ -54,11 +54,49 @@ def handle_create(data):
 def handle_delete(workflow_id):
     workflows = load_json(COL_WORKFLOWS)
     target = next((w for w in workflows if w.get("id") == workflow_id), None)
+    if not target:
+        return {"ok": True}
+    before = copy.deepcopy(target)
+    target["group"] = "__trash__"
+    save_json(COL_WORKFLOWS, workflows)
+    record_audit(
+        "deleted",
+        "workflow",
+        workflow_id,
+        target.get("name"),
+        before=before,
+        after=copy.deepcopy(target),
+    )
+    return {"ok": True}
+
+
+def handle_restore(workflow_id):
+    workflows = load_json(COL_WORKFLOWS)
+    target = next((w for w in workflows if w.get("id") == workflow_id), None)
+    if not target or target.get("group") != "__trash__":
+        return None
+    before = copy.deepcopy(target)
+    target["group"] = ""
+    save_json(COL_WORKFLOWS, workflows)
+    record_audit(
+        "restored",
+        "workflow",
+        workflow_id,
+        target.get("name"),
+        before=before,
+        after=copy.deepcopy(target),
+    )
+    return target
+
+
+def handle_permanent_delete(workflow_id):
+    workflows = load_json(COL_WORKFLOWS)
+    target = next((w for w in workflows if w.get("id") == workflow_id), None)
     workflows = [w for w in workflows if w.get("id") != workflow_id]
     save_json(COL_WORKFLOWS, workflows)
     if target:
         record_audit(
-            "deleted",
+            "permanently_deleted",
             "workflow",
             workflow_id,
             target.get("name"),

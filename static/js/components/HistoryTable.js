@@ -56,7 +56,7 @@ export function HistoryTable({ data, pageSignal, onLoad, type, onOpenRun }) {
     const someSelected = allKeys.some(k => selected.has(k));
 
     return html`
-        <div>
+        <div class="flex flex-col h-full min-h-0">
             ${someSelected ? html`
                 <div class="flex flex-wrap items-center gap-3 px-3 py-2 mb-2 bg-blue-50 dark:bg-blue-500/10 rounded-lg text-sm">
                     <span class="text-blue-700 dark:text-blue-300 font-medium">${selected.size} selected</span>
@@ -70,7 +70,7 @@ export function HistoryTable({ data, pageSignal, onLoad, type, onOpenRun }) {
                     </button>
                 </div>
             ` : ''}
-            <div class="overflow-x-auto -mx-3 px-3">
+            <div class="overflow-auto -mx-3 px-3 flex-1 min-h-0">
                 <table class="w-full text-xs min-w-[600px]">
                     <thead>
                         <tr class="border-b border-gray-100 dark:border-gray-700/60">
@@ -123,7 +123,9 @@ export function HistoryTable({ data, pageSignal, onLoad, type, onOpenRun }) {
                     </tbody>
                 </table>
             </div>
-            <${Pagination} data=${data} pageSignal=${pageSignal} onLoad=${onLoad} />
+            <div class="shrink-0">
+                <${Pagination} data=${data} pageSignal=${pageSignal} onLoad=${onLoad} />
+            </div>
             <${ConfirmModal} isOpen=${!!pendingDelete} onClose=${() => setPendingDelete(null)}
                 onConfirm=${confirmDelete}
                 title="Delete run"

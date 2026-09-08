@@ -33,7 +33,10 @@ def test_handle_delete_removes_only_target(store):
     p3 = profiles.handle_create({"name": "Three"})
     profiles.handle_delete("custom")
     saved = store.read("profiles")
-    assert [p["id"] for p in saved] == [p1["id"], p3["id"]], saved
+    ids = [p["id"] for p in saved]
+    assert "custom" in ids and p1["id"] in ids and p3["id"] in ids
+    trashed = next(p for p in saved if p["id"] == "custom")
+    assert trashed["group"] == "__trash__"
 
 
 def test_handle_reorder_applies_order_and_survives_unknown_or_empty_ids(store):
@@ -98,9 +101,9 @@ def test_handle_duplicate_returns_none_for_unknown_profiles(store):
 
 
 def test_handle_create_persists_group_field(store):
-    p = profiles.handle_create({"name": "Grouped", "script_path": "/tmp/a.py", "args": [], "group": "folder_123"})
+    p = profiles.handle_create({"name": "Grouped", "script_path": "/tmp/a.py", "args": [], "group": "tag_123"})
     saved = store.read("profiles")
-    assert saved[0]["group"] == "folder_123"
+    assert saved[0]["group"] == "tag_123"
 
 
 def test_handle_create_strips_empty_group(store):

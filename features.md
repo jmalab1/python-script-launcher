@@ -15,7 +15,7 @@
 ## Low Priority
 
 - **Keyboard shortcuts** — `Ctrl+N` new profile, `Ctrl+R` run selected, `Esc` close modals.
-- **Profile grouping/folders** — organize profiles into folders or tags.
+- **Profile grouping** — organize profiles into tags.
 - **Template variables** — `{date}`, `{timestamp}`, `{random}` placeholders in argument fields.
 - **Workflow conditional steps** — skip a step based on the previous step's output or exit code.
 - **Export run output** — save script output to a file from the run modal.

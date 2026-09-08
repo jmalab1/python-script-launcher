@@ -1,7 +1,7 @@
 import { html, useState } from '../../vendor/standalone-preact.esm.js';
 import { esc } from '../utils.js';
-import { profiles, scriptStatusCache } from '../state.js';
-import { runWorkflow, loadWorkflows, duplicateWorkflow } from '../api.js';
+import { profiles, scriptStatusCache, TRASH_GROUP } from '../state.js';
+import { runWorkflow, loadWorkflows, duplicateWorkflow, restoreWorkflow, permanentDeleteWorkflow } from '../api.js';
 import { ConfirmModal } from './ConfirmModal.js';
 
 export function WorkflowCard({ workflow, onEdit, onRun }) {
@@ -9,6 +9,8 @@ export function WorkflowCard({ workflow, onEdit, onRun }) {
     const steps = w.steps || [];
     const [expanded, setExpanded] = useState(false);
     const [pendingDelete, setPendingDelete] = useState(null);
+    const [pendingPermanentDelete, setPendingPermanentDelete] = useState(null);
+    const isTrashed = w.group === TRASH_GROUP;
     const profileMap = Object.fromEntries(profiles.value.map(p => [p.id, p]));
     const profFor = (entry) => entry.profile || profileMap[entry.profile_id] || {};
     const cache = scriptStatusCache.value;
@@ -49,6 +51,16 @@ export function WorkflowCard({ workflow, onEdit, onRun }) {
     async function handleConfirmDelete() {
         const { deleteWorkflow } = await import('../api.js');
         await deleteWorkflow(w.id);
+        await loadWorkflows();
+    }
+
+    async function handleRestore() {
+        await restoreWorkflow(w.id);
+        await loadWorkflows();
+    }
+
+    async function handleConfirmPermanentDelete() {
+        await permanentDeleteWorkflow(w.id);
         await loadWorkflows();
     }
 
@@ -141,18 +153,29 @@ export function WorkflowCard({ workflow, onEdit, onRun }) {
                         </div>
                     </div>
                     <div class="flex items-center gap-1 shrink-0 flex-wrap">
-                        <button onClick=${handleRun}
-                            class="inline-flex items-center gap-1 px-2.5 py-1.5 bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400 text-xs font-medium rounded-lg border border-green-200 dark:border-green-500/20 hover:bg-green-100 dark:hover:bg-green-500/20 transition">
-                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg> Run
-                        </button>
-                        <button onClick=${() => onEdit && onEdit(w)}
-                            class="px-2.5 py-1.5 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-xs font-medium rounded-lg border border-gray-200 dark:border-gray-700/60 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Edit</button>
-                        <button onClick=${handleDuplicate} title="Duplicate workflow"
-                            class="px-2.5 py-1.5 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-xs font-medium rounded-lg border border-gray-200 dark:border-gray-700/60 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Copy</button>
-                        <button onClick=${confirmDelete} title="Delete" aria-label="Delete"
-                            class="inline-flex items-center justify-center p-1.5 bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400 rounded-lg border border-red-200 dark:border-red-500/20 hover:bg-red-100 dark:hover:bg-red-500/20 transition">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg>
-                        </button>
+                        ${isTrashed ? html`
+                            <button onClick=${handleRestore}
+                                class="inline-flex items-center gap-1 px-2.5 py-1.5 bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400 text-xs font-medium rounded-lg border border-green-200 dark:border-green-500/20 hover:bg-green-100 dark:hover:bg-green-500/20 transition">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3"/></svg> Restore
+                            </button>
+                            <button onClick=${() => setPendingPermanentDelete(w)} title="Permanently delete" aria-label="Permanently delete"
+                                class="inline-flex items-center justify-center p-1.5 bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400 rounded-lg border border-red-200 dark:border-red-500/20 hover:bg-red-100 dark:hover:bg-red-500/20 transition">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg>
+                            </button>
+                        ` : html`
+                            <button onClick=${handleRun}
+                                class="inline-flex items-center gap-1 px-2.5 py-1.5 bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400 text-xs font-medium rounded-lg border border-green-200 dark:border-green-500/20 hover:bg-green-100 dark:hover:bg-green-500/20 transition">
+                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg> Run
+                            </button>
+                            <button onClick=${() => onEdit && onEdit(w)}
+                                class="px-2.5 py-1.5 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-xs font-medium rounded-lg border border-gray-200 dark:border-gray-700/60 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Edit</button>
+                            <button onClick=${handleDuplicate} title="Duplicate workflow"
+                                class="px-2.5 py-1.5 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-xs font-medium rounded-lg border border-gray-200 dark:border-gray-700/60 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Copy</button>
+                            <button onClick=${confirmDelete} title="Delete" aria-label="Delete"
+                                class="inline-flex items-center justify-center p-1.5 bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400 rounded-lg border border-red-200 dark:border-red-500/20 hover:bg-red-100 dark:hover:bg-red-500/20 transition">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg>
+                            </button>
+                        `}
                     </div>
                 </div>
                 ${steps.length ? html`
@@ -180,6 +203,13 @@ export function WorkflowCard({ workflow, onEdit, onRun }) {
             onClose=${() => setPendingDelete(null)}
             onConfirm=${handleConfirmDelete}
             title="Delete workflow"
+            message=${html`This will move <span class="font-medium text-gray-700 dark:text-gray-200">${esc(w.name)}</span> to the trash.`}
+        />
+        <${ConfirmModal}
+            isOpen=${!!pendingPermanentDelete}
+            onClose=${() => setPendingPermanentDelete(null)}
+            onConfirm=${handleConfirmPermanentDelete}
+            title="Permanently delete workflow"
             message=${html`This will permanently delete <span class="font-medium text-gray-700 dark:text-gray-200">${esc(w.name)}</span>. This action cannot be undone.`}
         />
     `;

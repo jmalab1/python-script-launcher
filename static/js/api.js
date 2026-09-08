@@ -45,6 +45,14 @@ export async function deleteProfile(id) {
     return api('DELETE', '/api/profiles/' + id);
 }
 
+export async function restoreProfile(id) {
+    return api('POST', `/api/profiles/${id}/restore`);
+}
+
+export async function permanentDeleteProfile(id) {
+    return api('DELETE', `/api/profiles/${id}/permanent`);
+}
+
 export async function duplicateProfile(id) {
     return api('POST', `/api/profiles/${id}/duplicate`);
 }
@@ -59,6 +67,14 @@ export async function saveWorkflow(data) {
 
 export async function deleteWorkflow(id) {
     return api('DELETE', '/api/workflows/' + id);
+}
+
+export async function restoreWorkflow(id) {
+    return api('POST', `/api/workflows/${id}/restore`);
+}
+
+export async function permanentDeleteWorkflow(id) {
+    return api('DELETE', `/api/workflows/${id}/permanent`);
 }
 
 export async function duplicateWorkflow(id) {
@@ -121,9 +137,4 @@ export async function loadAudit() {
 
 export async function fetchAuditDetail(entryId) {
     return api('GET', '/api/audit/' + entryId);
-}
-
-export async function restoreAuditEntry(entryId) {
-    await api('POST', `/api/audit/${entryId}/restore`);
-    await Promise.all([loadProfiles(), loadWorkflows(), loadAudit()]);
 }

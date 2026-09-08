@@ -1,9 +1,9 @@
 import { html } from '../../vendor/standalone-preact.esm.js';
-import { profiles, profileFolders, selectedProfileFolder } from '../state.js';
+import { profiles, profileTags, selectedProfileTag } from '../state.js';
 import { saveProfileOrder } from '../api.js';
 import { ProfileCard } from './ProfileCard.js';
 import { GroupedSortableList } from './GroupedSortableList.js';
-import { FolderFilter } from './FolderFilter.js';
+import { TagFilter } from './TagFilter.js';
 
 export function ProfileList({ onEdit, onRun }) {
     if (!profiles.value.length) {
@@ -16,24 +16,24 @@ export function ProfileList({ onEdit, onRun }) {
     }
 
     return html`
-        <${FolderFilter}
-            folders=${profileFolders.value}
+        <${TagFilter}
+            tags=${profileTags.value}
             items=${profiles.value}
-            getFolder=${(p) => p.group || ''}
-            selectedFolder=${selectedProfileFolder.value}
-            onSelect=${(v) => { selectedProfileFolder.value = v; }}
+            getTag=${(p) => p.group || ''}
+            selectedTag=${selectedProfileTag.value}
+            onSelect=${(v) => { selectedProfileTag.value = v; }}
         />
         <${GroupedSortableList}
             items=${profiles.value}
-            folders=${profileFolders.value}
-            getFolder=${(p) => p.group || ''}
-            selectedFolder=${selectedProfileFolder.value}
+            tags=${profileTags.value}
+            getTag=${(p) => p.group || ''}
+            selectedTag=${selectedProfileTag.value}
             onReorder=${(next) => {
                 profiles.value = next;
                 saveProfileOrder(next.map(p => p.id));
             }}
             renderItem=${(p) => html`<${ProfileCard} profile=${p} onEdit=${onEdit} onRun=${onRun} />`}
-            emptyMessage="No profiles in this folder."
+            emptyMessage="No profiles with this tag."
         />
     `;
 }

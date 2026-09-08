@@ -90,46 +90,6 @@ def test_handle_delete_and_clear(store):
     assert [e["id"] for e in entries] == [e2["id"], e1["id"]]
 
 
-def test_restore_deleted_profile_round_trip(store):
-    p1 = profiles.handle_create({"name": "One", "script_path": "/tmp/a.py", "args": []})
-    profiles.handle_delete(p1["id"])
-    assert profiles.handle_list() == []
-    deleted_entry = [e for e in audit.handle_list(1, 10)["entries"] if e["action"] == "deleted"][0]
-    restored = audit.handle_restore(deleted_entry["id"])
-    assert restored["id"] == p1["id"] and restored["name"] == "One"
-    saved = profiles.handle_list()
-    assert [p["id"] for p in saved] == [p1["id"]]
-    actions = [e["action"] for e in audit.handle_list(1, 10)["entries"]]
-    assert actions[0] == "restored"
-    assert audit.handle_list(1, 10)["entries"][0]["details"]["restored_from"] == deleted_entry["id"]
-
-
-def test_restore_deleted_workflow_round_trip(store):
-    w1 = workflows.handle_create({"name": "Chain", "steps": []})
-    workflows.handle_delete(w1["id"])
-    deleted_entry = [e for e in audit.handle_list(1, 10)["entries"] if e["action"] == "deleted"][0]
-    restored = audit.handle_restore(deleted_entry["id"])
-    assert restored["id"] == w1["id"]
-    assert [w["id"] for w in workflows.handle_list()] == [w1["id"]]
-
-
-def test_restore_replaces_existing_entity_with_same_id(store):
-    p1 = profiles.handle_create({"id": "p1", "name": "One", "args": []})
-    profiles.handle_delete("p1")
-    profiles.handle_create({"id": "p1", "name": "Interloper", "args": []})
-    deleted_entry = [e for e in audit.handle_list(1, 10)["entries"] if e["action"] == "deleted"][0]
-    audit.handle_restore(deleted_entry["id"])
-    saved = [p["name"] for p in profiles.handle_list()]
-    assert saved == ["One"]
-
-
-def test_restore_rejects_unknown_or_non_deletable_entries(store):
-    profiles.handle_create({"id": "p1", "name": "One", "args": []})
-    created_entry = audit.handle_list(1, 10)["entries"][0]
-    assert audit.handle_restore("ghost") is None
-    assert audit.handle_restore(created_entry["id"]) is None
-
-
 def test_audit_entries_recorded_for_profile_lifecycle(store):
     p1 = profiles.handle_create({"name": "One", "script_path": "/tmp/a.py", "args": []})
     profiles.handle_create({"id": p1["id"], "name": "One Updated", "script_path": "/tmp/b.py", "args": []})

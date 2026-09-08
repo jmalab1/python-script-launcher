@@ -1,9 +1,9 @@
 import { html } from '../../vendor/standalone-preact.esm.js';
-import { workflows, workflowFolders, selectedWorkflowFolder } from '../state.js';
+import { workflows, workflowTags, selectedWorkflowTag } from '../state.js';
 import { saveWorkflowOrder } from '../api.js';
 import { WorkflowCard } from './WorkflowCard.js';
 import { GroupedSortableList } from './GroupedSortableList.js';
-import { FolderFilter } from './FolderFilter.js';
+import { TagFilter } from './TagFilter.js';
 
 export function WorkflowList({ onEdit, onRun }) {
     if (!workflows.value.length) {
@@ -16,24 +16,24 @@ export function WorkflowList({ onEdit, onRun }) {
     }
 
     return html`
-        <${FolderFilter}
-            folders=${workflowFolders.value}
+        <${TagFilter}
+            tags=${workflowTags.value}
             items=${workflows.value}
-            getFolder=${(w) => w.group || ''}
-            selectedFolder=${selectedWorkflowFolder.value}
-            onSelect=${(v) => { selectedWorkflowFolder.value = v; }}
+            getTag=${(w) => w.group || ''}
+            selectedTag=${selectedWorkflowTag.value}
+            onSelect=${(v) => { selectedWorkflowTag.value = v; }}
         />
         <${GroupedSortableList}
             items=${workflows.value}
-            folders=${workflowFolders.value}
-            getFolder=${(w) => w.group || ''}
-            selectedFolder=${selectedWorkflowFolder.value}
+            tags=${workflowTags.value}
+            getTag=${(w) => w.group || ''}
+            selectedTag=${selectedWorkflowTag.value}
             onReorder=${(next) => {
                 workflows.value = next;
                 saveWorkflowOrder(next.map(w => w.id));
             }}
             renderItem=${(w) => html`<${WorkflowCard} workflow=${w} onEdit=${onEdit} onRun=${onRun} />`}
-            emptyMessage="No workflows in this folder."
+            emptyMessage="No workflows with this tag."
         />
     `;
 }

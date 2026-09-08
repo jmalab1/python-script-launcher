@@ -129,6 +129,7 @@ static/                  # Frontend assets
 
 scripts/                 # Example Python scripts
 tests/                   # pytest suite (dev-only; app stays stdlib-only)
+  e2e/                   # Playwright end-to-end browser tests
 data/                    # Runtime data (gitignored)
 ```
 
@@ -161,6 +162,23 @@ python3 -m pytest tests/test_workflows.py
 python3 -m pytest tests/test_workflow_execute.py -k parallel
 ```
 
+### End-to-End Browser Tests
+
+`tests/e2e/` contains Playwright tests that drive the real app — the stdlib server plus the browser UI — through actual page interactions (navigation, running profiles and workflows, modals, history, audit, theme toggle).
+
+They are part of the normal suite (`python3 -m pytest tests/`) and are skipped automatically when Playwright or Chromium is not installed. To run them:
+
+```bash
+pip install -r requirements-dev.txt
+python3 -m playwright install chromium
+python3 -m pytest tests/e2e/
+```
+
+Notes:
+
+- Each run boots the server as a subprocess on a free port with a throwaway data directory, so e2e tests never touch your real `data/` store.
+- Tests run headless; add `--headed` to watch them in a visible browser window.
+
 ## Requirements
 
-Python 3.10+ with only the standard library — no packages needed to run the app. Unit tests additionally need pytest (`pip install pytest` or `pip install -r requirements-dev.txt`).
+Python 3.10+ with only the standard library — no packages needed to run the app. Unit tests additionally need pytest, and the e2e tests need pytest-playwright (`pip install -r requirements-dev.txt`).

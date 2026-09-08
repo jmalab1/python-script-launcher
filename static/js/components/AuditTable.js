@@ -3,7 +3,7 @@ import { useState } from '../../vendor/standalone-preact.esm.js';
 import { esc, formatTime } from '../utils.js';
 import { Pagination } from './Pagination.js';
 import { auditPage, auditAction, auditEntity } from '../state.js';
-import { fetchAuditDetail, restoreAuditEntry } from '../api.js';
+import { fetchAuditDetail } from '../api.js';
 
 function formatAuditTime(ts) {
     return ts ? new Date(ts * 1000).toLocaleString() : '-';
@@ -27,16 +27,15 @@ function entryDetails(e) {
         return 'Changed: ' + d.changed.join(', ');
     }
     if (d.duplicate_of) return 'Duplicate of "' + d.duplicate_of + '"';
-    if (e.action === 'restored') return 'Restored from earlier delete';
+    if (e.action === 'restored') return 'Restored from trash';
     if (e.action === 'reordered' && Array.isArray(d.order)) {
         return 'New order: ' + d.order.length + ' items';
     }
     return '—';
 }
 
-function AuditDetailModal({ entry, onClose, onRestore }) {
+function AuditDetailModal({ entry, onClose }) {
     if (!entry) return null;
-    const deletable = entry.action === 'deleted' && entry.before;
     return html`
         <div class="fixed inset-0 z-50">
             <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick=${onClose}></div>
@@ -77,12 +76,6 @@ function AuditDetailModal({ entry, onClose, onRestore }) {
                         ` : ''}
                     </div>
                     <div class="mt-5 flex justify-end gap-2">
-                        ${deletable ? html`
-                            <button onClick=${() => onRestore(entry)}
-                                class="px-4 py-2 text-sm font-medium bg-violet-600 hover:bg-violet-700 text-white rounded-lg transition">
-                                Restore deleted ${esc(entry.entity_type)}
-                            </button>
-                        ` : ''}
                         <button onClick=${onClose}
                             class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg transition">Close</button>
                     </div>
@@ -114,17 +107,12 @@ export function AuditTable({ data, pageSignal, onLoad }) {
         setDetail(full);
     }
 
-    async function confirmRestore(e) {
-        await restoreAuditEntry(e.id);
-        onLoad();
-    }
-
     return html`
-        <div>
-            <div class="flex items-center justify-between gap-3 mb-3">
+        <div class="flex flex-col h-full min-h-0">
+            <div class="flex items-center justify-between gap-3 mb-3 shrink-0">
                 <${AuditFilters} onLoad=${onLoad} />
             </div>
-            <div class="overflow-x-auto -mx-3 px-3">
+            <div class="overflow-auto -mx-3 px-3 flex-1 min-h-0">
                 <table class="w-full text-xs min-w-[640px]">
                     <thead>
                         <tr class="border-b border-gray-100 dark:border-gray-700/60">
@@ -134,14 +122,12 @@ export function AuditTable({ data, pageSignal, onLoad }) {
                             <th class="text-left py-2 px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Action</th>
                             <th class="text-left py-2 px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Details</th>
                             <th class="text-right py-2 px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Time</th>
-                            <th class="w-8"></th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100 dark:divide-gray-700/60">
                         ${data.entries.map((e, idx) => {
                             const rowNum = data.total - (data.page - 1) * data.per_page - idx;
                             const as = ACTION_STYLES[e.action] || '';
-                            const isDeleted = e.action === 'deleted';
                             return html`
                                 <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition cursor-pointer"
                                     onClick=${() => openDetail(e)}>
@@ -155,25 +141,16 @@ export function AuditTable({ data, pageSignal, onLoad }) {
                                     </td>
                                     <td class="py-2 px-3 text-gray-500 dark:text-gray-400 max-w-[16rem] truncate" title=${esc(entryDetails(e))}>${entryDetails(e)}</td>
                                     <td class="py-2 px-3 text-right text-gray-500 dark:text-gray-400 whitespace-nowrap">${formatTime(e.timestamp)}</td>
-                                    <td class="py-2 px-1">
-                                        <div class="flex items-center gap-0.5">
-                                            ${isDeleted ? html`
-                                                <button onClick=${(ev) => { ev.stopPropagation(); confirmRestore(e); }}
-                                                    class="p-1 rounded text-gray-400 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-500/10 transition"
-                                                    title="Restore deleted ${esc(e.entity_type)}">
-                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.204a8.25 8.25 0 0113.803-3.7l3.181 3.182"/></svg>
-                                                </button>
-                                            ` : ''}
-                                        </div>
-                                    </td>
                                 </tr>
                             `;
                         })}
                     </tbody>
                 </table>
             </div>
-            <${Pagination} data=${data} pageSignal=${pageSignal} onLoad=${onLoad} />
-            <${AuditDetailModal} entry=${detail} onClose=${() => setDetail(null)} onRestore=${async (e) => { setDetail(null); await confirmRestore(e); }} />
+            <div class="shrink-0">
+                <${Pagination} data=${data} pageSignal=${pageSignal} onLoad=${onLoad} />
+            </div>
+            <${AuditDetailModal} entry=${detail} onClose=${() => setDetail(null)} />
         </div>
     `;
 }

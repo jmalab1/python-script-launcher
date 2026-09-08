@@ -1,7 +1,7 @@
 import { html } from '../../vendor/standalone-preact.esm.js';
 import { useState, useEffect } from '../../vendor/standalone-preact.esm.js';
 import { esc } from '../utils.js';
-import { profileFolders } from '../state.js';
+import { profileTags } from '../state.js';
 import { saveProfile, loadProfiles, checkAllScripts, openNativeFileDialog } from '../api.js';
 
 export function ProfileModal({ isOpen, onClose, profile }) {
@@ -98,11 +98,11 @@ export function ProfileModal({ isOpen, onClose, profile }) {
                                 class="w-full bg-white dark:bg-gray-900/30 border border-gray-300 dark:border-gray-700/60 rounded-lg px-3 py-2 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-violet-500 focus:ring-0 focus:ring-offset-0 transition" />
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Folder</label>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tag</label>
                             <select value=${group} onChange=${e => setGroup(e.target.value)}
                                 class="w-full bg-white dark:bg-gray-900/30 border border-gray-300 dark:border-gray-700/60 rounded-lg px-3 py-2 text-sm text-gray-800 dark:text-gray-100 focus:border-violet-500 focus:ring-0 focus:ring-offset-0 transition">
-                                <option value="">No folder</option>
-                                ${profileFolders.value.map(f => html`<option value=${f.id} selected=${group === f.id}>${f.name}</option>`)}
+                                <option value="">No tag</option>
+                                ${profileTags.value.map(f => html`<option value=${f.id} selected=${group === f.id}>${f.name}</option>`)}
                             </select>
                         </div>
                         <div>

@@ -35,3 +35,9 @@ When adding or editing code, always include a unit test (or update existing ones
 ## Server restart
 
 - After changes to backend files (`launcher/`), restart the server so the changes take effect. Run `make restart` from the project root.
+
+## Documentation updates
+
+- After completing any change, update the relevant documentation (e.g. `README.md`) to reflect it before finishing.
+- This includes new or changed features, commands, config, behavior, or usage instructions.
+- Keep docs accurate and in the existing style of the file being edited.
