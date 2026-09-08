@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -50,7 +51,7 @@ def test_app_registers_the_schedules_panel_and_modal():
     assert "currentPanel.value === 'schedules'" in app, "panel not gated on route"
     assert 'id="panel-schedules"' in app, "panel markup missing"
     assert "<${ScheduleModal}" in app, "ScheduleModal not rendered"
-    assert "setInterval(loadSchedules, 5000)" in app, "panel polling missing"
+    assert re.search(r"setInterval\(\(\) => loadSchedules\(\)\.catch\(\(\) => \{\}\), 5000\)", app), "panel polling missing"
     assert "loadSchedules()" in app.split("async function init")[1], "schedules not loaded on init"
 
 

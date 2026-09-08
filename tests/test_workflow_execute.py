@@ -120,6 +120,33 @@ def test_missing_profiles_abort_by_default_but_are_skipped_with_continue_on_erro
     assert "1. Pass" in run["steps"]
 
 
+def test_missing_script_file_follows_the_same_continue_on_error_rules(new_run, runner_env):
+    """Regression: a deleted script used to fail the run even with
+    continue_on_error, unlike a missing profile."""
+    ghost = {"id": "p_gone", "name": "Gone", "args": [], "custom_args": [],
+             "script_path": str(runner_env["pass"]) + ".deleted"}
+
+    rid = new_run("wf_script_cont")
+    runner.execute_workflow({"name": "MS", "continue_on_error": True, "steps": [
+        {"type": "sequential", "profile_id": "p_gone", "profile": dict(ghost)},
+        {"type": "sequential", "profile_id": "p_pass"},
+    ]}, rid, time.time())
+    run = runner.active_runs[rid]
+    assert run["status"] == "completed", run["workflow_log"]
+    assert run["steps"]["1. Gone"]["status"] == "failed"
+    assert any("script not found" in line for line in run["workflow_log"])
+    assert run["steps"]["2. Pass"]["status"] == "completed"
+
+    rid = new_run("wf_script_abort")
+    runner.execute_workflow({"name": "MS2", "steps": [
+        {"type": "sequential", "profile_id": "p_gone", "profile": dict(ghost)},
+        {"type": "sequential", "profile_id": "p_pass"},
+    ]}, rid, time.time())
+    run = runner.active_runs[rid]
+    assert run["status"] == "failed"
+    assert "2. Pass" not in run["steps"]
+
+
 def test_parallel_groups_run_all_profiles_with_per_step_args(new_run, runner_env):
     rid = new_run("wf_par")
     runner.execute_workflow({"name": "P", "steps": [

@@ -3,10 +3,19 @@ import time
 import threading
 from ..storage import load_json, save_json, save_history
 from ..config import COL_PROFILES, COL_WORKFLOWS
-from ..runner import run_script, execute_workflow, active_runs, run_lock, run_counter, build_custom_args, build_command
+from ..runner import (
+    run_script, execute_workflow, active_runs, run_lock,
+    build_custom_args, build_command, prune_active_runs,
+)
+
+# Run ids are unique per process: millisecond start time plus a
+# monotonically increasing counter. Lives here (not in runner) so the
+# global statement mutates the same counter that is read.
+run_counter = 0
 
 
 def handle_poll_all():
+    prune_active_runs()
     with run_lock:
         runs = {
             k: {
@@ -56,6 +65,7 @@ def start_profile_run(profile, arg_values=None, extra_args=None, trigger="manual
 
     started_at = time.time()
 
+    prune_active_runs()
     with run_lock:
         run_counter += 1
         run_id = f"prof_{int(started_at * 1000)}_{run_counter}"
@@ -82,6 +92,7 @@ def start_profile_run(profile, arg_values=None, extra_args=None, trigger="manual
         with run_lock:
             status = "failed" if active_runs[run_id].get("returncode", 0) != 0 else "completed"
             active_runs[run_id]["status"] = status
+            active_runs[run_id]["finished_at"] = time.time()
             returncode = active_runs[run_id].get("returncode")
             output_copy = list(active_runs[run_id]["output"])
         save_history(
@@ -94,7 +105,7 @@ def start_profile_run(profile, arg_values=None, extra_args=None, trigger="manual
     return {"run_id": run_id}, None
 
 
-def handle_run_profile(data, send_error=None):
+def handle_run_profile(data):
     profile_id = data.get("profile_id")
     profiles = load_json(COL_PROFILES)
     profile = next((p for p in profiles if p["id"] == profile_id), None)
@@ -118,6 +129,7 @@ def start_workflow_run(workflow, trigger="manual", schedule=None):
     global run_counter
     started_at = time.time()
 
+    prune_active_runs()
     with run_lock:
         run_counter += 1
         run_id = f"wf_{int(started_at * 1000)}_{run_counter}"

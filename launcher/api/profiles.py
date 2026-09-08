@@ -1,14 +1,25 @@
 import copy
+import functools
 import time
 import uuid
-from ..storage import load_json, save_json, record_audit, changed_fields
+from ..storage import load_json, save_json, record_audit, changed_fields, collection_lock
 from ..config import COL_PROFILES, COL_SCHEDULES
+
+
+def _locked(fn):
+    """Serialize read-modify-write access to the profiles collection."""
+    @functools.wraps(fn)
+    def wrapper(*args, **kwargs):
+        with collection_lock(COL_PROFILES):
+            return fn(*args, **kwargs)
+    return wrapper
 
 
 def handle_list():
     return load_json(COL_PROFILES)
 
 
+@_locked
 def handle_create(data):
     profiles = load_json(COL_PROFILES)
     profile = data
@@ -31,6 +42,7 @@ def handle_create(data):
     return profile
 
 
+@_locked
 def handle_delete(profile_id):
     profiles = load_json(COL_PROFILES)
     target = next((p for p in profiles if p.get("id") == profile_id), None)
@@ -50,6 +62,7 @@ def handle_delete(profile_id):
     return {"ok": True}
 
 
+@_locked
 def handle_restore(profile_id):
     profiles = load_json(COL_PROFILES)
     target = next((p for p in profiles if p.get("id") == profile_id), None)
@@ -69,16 +82,18 @@ def handle_restore(profile_id):
     return target
 
 
+@_locked
 def handle_permanent_delete(profile_id):
     profiles = load_json(COL_PROFILES)
     target = next((p for p in profiles if p.get("id") == profile_id), None)
     profiles = [p for p in profiles if p.get("id") != profile_id]
     save_json(COL_PROFILES, profiles)
     if target:
-        schedules = load_json(COL_SCHEDULES)
-        removed_schedules = [s["id"] for s in schedules if s.get("target_id") == profile_id]
-        if removed_schedules:
-            save_json(COL_SCHEDULES, [s for s in schedules if s.get("target_id") != profile_id])
+        with collection_lock(COL_SCHEDULES):
+            schedules = load_json(COL_SCHEDULES)
+            removed_schedules = [s["id"] for s in schedules if s.get("target_id") == profile_id]
+            if removed_schedules:
+                save_json(COL_SCHEDULES, [s for s in schedules if s.get("target_id") != profile_id])
         record_audit(
             "permanently_deleted",
             "profile",
@@ -90,6 +105,7 @@ def handle_permanent_delete(profile_id):
     return {"ok": True}
 
 
+@_locked
 def handle_duplicate(profile_id):
     profiles = load_json(COL_PROFILES)
     index = next((i for i, p in enumerate(profiles) if p.get("id") == profile_id), None)
@@ -122,6 +138,7 @@ def handle_duplicate(profile_id):
     return duplicate
 
 
+@_locked
 def handle_reorder(data):
     order = data.get("order") or []
     profiles = load_json(COL_PROFILES)

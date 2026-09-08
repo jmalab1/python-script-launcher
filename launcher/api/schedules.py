@@ -1,14 +1,24 @@
 import copy
+import functools
 import time
 import uuid
 from datetime import datetime
 
-from ..storage import load_json, save_json, record_audit, changed_fields
+from ..storage import load_json, save_json, record_audit, changed_fields, collection_lock
 from ..config import COL_SCHEDULES, COL_PROFILES, COL_WORKFLOWS
 from .. import scheduler
 from ..scheduler import parse_cron, next_after, describe_cron
 
 PREVIEW_COUNT = 3
+
+
+def _locked(fn):
+    """Serialize read-modify-write access to the schedules collection."""
+    @functools.wraps(fn)
+    def wrapper(*args, **kwargs):
+        with collection_lock(COL_SCHEDULES):
+            return fn(*args, **kwargs)
+    return wrapper
 
 
 def _find_target(target_type, target_id):
@@ -61,6 +71,7 @@ def _next_run_at(cron_expr):
     return nxt.timestamp() if nxt else None
 
 
+@_locked
 def handle_create(data):
     """Create or update a schedule. Returns (schedule, error)."""
     error = _validate(data)
@@ -112,6 +123,7 @@ def handle_create(data):
     return schedule, None
 
 
+@_locked
 def handle_toggle(schedule_id):
     """Enable/disable a schedule. Returns (schedule, error)."""
     schedules = load_json(COL_SCHEDULES)
@@ -137,6 +149,7 @@ def handle_toggle(schedule_id):
     return target, None
 
 
+@_locked
 def handle_run_now(schedule_id):
     """Fire a schedule immediately without touching its cadence."""
     schedules = load_json(COL_SCHEDULES)
@@ -149,9 +162,18 @@ def handle_run_now(schedule_id):
     sched["last_run_at"] = time.time()
     sched["last_run_id"] = run_id
     save_json(COL_SCHEDULES, schedules)
+    record_audit(
+        "run_now",
+        "schedule",
+        schedule_id,
+        _audit_name(sched),
+        after=copy.deepcopy(sched),
+        details={"run_id": run_id},
+    )
     return {"run_id": run_id}, None
 
 
+@_locked
 def handle_delete(schedule_id):
     schedules = load_json(COL_SCHEDULES)
     target = next((s for s in schedules if s.get("id") == schedule_id), None)

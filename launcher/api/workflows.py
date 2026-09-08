@@ -1,8 +1,18 @@
 import copy
+import functools
 import time
 import uuid
-from ..storage import load_json, save_json, record_audit, changed_fields
+from ..storage import load_json, save_json, record_audit, changed_fields, collection_lock
 from ..config import COL_WORKFLOWS, COL_PROFILES, COL_SCHEDULES
+
+
+def _locked(fn):
+    """Serialize read-modify-write access to the workflows collection."""
+    @functools.wraps(fn)
+    def wrapper(*args, **kwargs):
+        with collection_lock(COL_WORKFLOWS):
+            return fn(*args, **kwargs)
+    return wrapper
 
 
 def handle_list():
@@ -28,6 +38,7 @@ def _embed_profile_snapshots(workflow):
             entry["profile"] = copy.deepcopy(profile)
 
 
+@_locked
 def handle_create(data):
     workflows = load_json(COL_WORKFLOWS)
     workflow = data
@@ -51,6 +62,7 @@ def handle_create(data):
     return workflow
 
 
+@_locked
 def handle_delete(workflow_id):
     workflows = load_json(COL_WORKFLOWS)
     target = next((w for w in workflows if w.get("id") == workflow_id), None)
@@ -70,6 +82,7 @@ def handle_delete(workflow_id):
     return {"ok": True}
 
 
+@_locked
 def handle_restore(workflow_id):
     workflows = load_json(COL_WORKFLOWS)
     target = next((w for w in workflows if w.get("id") == workflow_id), None)
@@ -89,16 +102,18 @@ def handle_restore(workflow_id):
     return target
 
 
+@_locked
 def handle_permanent_delete(workflow_id):
     workflows = load_json(COL_WORKFLOWS)
     target = next((w for w in workflows if w.get("id") == workflow_id), None)
     workflows = [w for w in workflows if w.get("id") != workflow_id]
     save_json(COL_WORKFLOWS, workflows)
     if target:
-        schedules = load_json(COL_SCHEDULES)
-        removed_schedules = [s["id"] for s in schedules if s.get("target_id") == workflow_id]
-        if removed_schedules:
-            save_json(COL_SCHEDULES, [s for s in schedules if s.get("target_id") != workflow_id])
+        with collection_lock(COL_SCHEDULES):
+            schedules = load_json(COL_SCHEDULES)
+            removed_schedules = [s["id"] for s in schedules if s.get("target_id") == workflow_id]
+            if removed_schedules:
+                save_json(COL_SCHEDULES, [s for s in schedules if s.get("target_id") != workflow_id])
         record_audit(
             "permanently_deleted",
             "workflow",
@@ -110,6 +125,7 @@ def handle_permanent_delete(workflow_id):
     return {"ok": True}
 
 
+@_locked
 def handle_duplicate(workflow_id):
     workflows = load_json(COL_WORKFLOWS)
     index = next((i for i, w in enumerate(workflows) if w.get("id") == workflow_id), None)
@@ -140,6 +156,7 @@ def handle_duplicate(workflow_id):
     return duplicate
 
 
+@_locked
 def handle_reorder(data):
     order = data.get("order") or []
     workflows = load_json(COL_WORKFLOWS)

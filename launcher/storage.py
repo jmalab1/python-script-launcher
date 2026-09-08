@@ -14,6 +14,26 @@ _history_lock = threading.RLock()
 _audit_lock = threading.RLock()
 AUDIT_MAX = 1000
 
+# Per-collection read-modify-write locks. API handlers and the scheduler
+# rewrite whole collections via load/save pairs; without these, concurrent
+# modifications can silently overwrite each other.
+_collection_locks = {}
+_collection_locks_guard = threading.Lock()
+
+
+def collection_lock(collection):
+    """Return the lock guarding a collection's read-modify-write sections.
+
+    The lock is reentrant, so code that already holds it may call
+    functions that take it again without deadlocking.
+    """
+    with _collection_locks_guard:
+        lock = _collection_locks.get(collection)
+        if lock is None:
+            lock = threading.RLock()
+            _collection_locks[collection] = lock
+        return lock
+
 _TABLES = {
     "profiles": "profiles",
     "workflows": "workflows",
@@ -33,15 +53,27 @@ _LEGACY_FILES = {
 }
 
 
+def _repair_db_ownership():
+    """Best-effort ownership fix for a read-only DB file (POSIX only).
+
+    Happens when the server was previously run by another user (for
+    example root) and left launcher.db behind. Never raises: startup must
+    continue even if the file stays read-only, so writes fail later with
+    a clearer error instead of crashing the server.
+    """
+    if os.name == "nt" or not hasattr(os, "getuid"):
+        return
+    try:
+        uid = os.getuid()
+        os.chown(DB_PATH, uid, -1)
+        log.info("Fixed ownership of %s for uid %d", DB_PATH, uid)
+    except Exception:
+        log.warning("Cannot fix ownership of %s — DB may be read-only", DB_PATH)
+
+
 def _get_conn():
     if DB_PATH.exists() and not os.access(DB_PATH, os.W_OK):
-        try:
-            import shutil
-            uid = os.getuid()
-            DB_PATH.chown(uid, -1)
-            log.info("Fixed ownership of %s for uid %d", DB_PATH, uid)
-        except (OSError, PermissionError):
-            log.warning("Cannot fix ownership of %s — DB may be read-only", DB_PATH)
+        _repair_db_ownership()
     DATA_DIR.mkdir(exist_ok=True)
     conn = sqlite3.connect(str(DB_PATH), timeout=10, check_same_thread=False)
     conn.execute("PRAGMA journal_mode=WAL")
@@ -278,6 +310,27 @@ def update_history(run_id, status=None, returncode=None, output=None, workflow_l
         target["timestamp"] = time.time()
         save_json(COL_HISTORY, history)
         return True
+
+
+def remove_history(predicate):
+    """Remove history entries matching predicate; returns how many were removed.
+
+    The load-modify-save runs under the history lock so that entries
+    written by concurrent run completions cannot be lost.
+    """
+    with _history_lock:
+        history = load_history()
+        remaining = [e for e in history if not predicate(e)]
+        removed = len(history) - len(remaining)
+        if removed:
+            save_json(COL_HISTORY, remaining)
+        return removed
+
+
+def replace_history(entries):
+    """Atomically replace the whole history collection."""
+    with _history_lock:
+        save_json(COL_HISTORY, list(entries))
 
 
 def load_audit():

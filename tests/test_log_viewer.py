@@ -29,7 +29,8 @@ def test_app_renders_logs_panel_and_polls_for_new_lines():
     assert "import { LogViewer } from './components/LogViewer.js'" in src
     assert "currentPanel.value === 'logs'" in src
     assert "loadLogs()" in src
-    assert "setInterval(pollLogs, 2000)" in src
+    assert re.search(r"setInterval\(\(\) => pollLogs\(\)\.catch\(\(\) => \{\}\), 2000\)", src), \
+        "log polling must swallow transient fetch errors so the timer keeps running"
 
 
 def test_logs_api_calls_hit_the_log_endpoints():

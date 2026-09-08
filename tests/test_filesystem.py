@@ -1,4 +1,5 @@
 import sys
+import threading
 
 import pytest
 
@@ -59,6 +60,45 @@ def test_script_exists_only_reports_real_files(fs_tree):
 @pytest.mark.skipif(sys.platform == "win32", reason="drives only exist on Windows")
 def test_list_drives_returns_nothing_on_posix():
     assert fs.list_drives() == []
+
+
+def test_tk_dialogs_run_directly_on_the_main_thread(fs_tree, monkeypatch):
+    monkeypatch.setattr(fs, "_tk_dialog", lambda: {"path": str(fs_tree / "tool.py")})
+    assert fs._execute_dialog(fs._tk_dialog) == {"path": str(fs_tree / "tool.py")}
+
+
+def test_tk_dialogs_from_worker_threads_are_serviced_by_pump_dialogs(monkeypatch):
+    """Regression: Tk must run on the main thread (macOS crashes otherwise),
+    so worker threads queue the dialog for server.main()'s pump loop."""
+    monkeypatch.setattr(fs, "_tk_dialog", lambda: {"path": "/tmp/tool.py"})
+    box = {}
+
+    def worker():
+        box["result"] = fs._execute_dialog(fs._tk_dialog)
+
+    t = threading.Thread(target=worker, daemon=True)
+    t.start()
+    fs.pump_dialogs(timeout=5)
+    t.join(timeout=5)
+    assert not t.is_alive(), "worker must not wait forever for the dialog"
+    assert box["result"] == {"path": "/tmp/tool.py"}
+
+
+def test_pump_dialogs_drains_every_queued_dialog(monkeypatch):
+    monkeypatch.setattr(fs, "_tk_dialog", lambda: "dialog")
+
+    results = []
+
+    def worker():
+        results.append(fs._run_on_main_thread(fs._tk_dialog))
+
+    threads = [threading.Thread(target=worker, daemon=True) for _ in range(3)]
+    for t in threads:
+        t.start()
+    fs.pump_dialogs(timeout=5)
+    for t in threads:
+        t.join(timeout=5)
+    assert results == ["dialog", "dialog", "dialog"]
 
 
 def test_open_file_dialog_validates_selection_and_reports_missing_dialogs(fs_tree, monkeypatch):

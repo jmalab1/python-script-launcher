@@ -10,7 +10,13 @@ async function api(method, path, body) {
     const opts = { method, headers: { 'Content-Type': 'application/json' } };
     if (body) opts.body = JSON.stringify(body);
     const res = await fetch(path, opts);
-    return res.json();
+    try {
+        return await res.json();
+    } catch (err) {
+        // Non-JSON bodies (server error pages) or empty responses fail loudly
+        // instead of surfacing as undefined data downstream.
+        throw new Error(`${method} ${path} failed (${res.status})`);
+    }
 }
 
 export async function loadProfiles() {

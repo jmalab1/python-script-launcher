@@ -63,12 +63,20 @@ function App() {
     }, []);
 
     useEffect(() => {
+        let cancelled = false;
         async function init() {
-            await Promise.all([loadProfiles(), loadWorkflows(), loadSchedules(), loadProfileHistory()]);
-            await checkAllScripts();
-            setInitialized(true);
+            try {
+                await Promise.all([loadProfiles(), loadWorkflows(), loadSchedules(), loadProfileHistory()]);
+                await checkAllScripts();
+                if (!cancelled) setInitialized(true);
+            } catch (err) {
+                // A transient server hiccup must not leave the app stuck on
+                // "Loading..." forever — retry until the server responds.
+                if (!cancelled) setTimeout(init, 2000);
+            }
         }
         init();
+        return () => { cancelled = true; };
     }, []);
 
     useEffect(() => {
@@ -80,26 +88,26 @@ function App() {
         if (scheduleTimer) clearInterval(scheduleTimer);
 
         if (currentPanel.value === 'profiles') {
-            loadProfileHistory();
-            const t = setInterval(loadProfileHistory, 3000);
+            loadProfileHistory().catch(() => {});
+            const t = setInterval(() => loadProfileHistory().catch(() => {}), 3000);
             setProfileTimer(t);
         }
         if (currentPanel.value === 'workflows') {
-            loadWorkflowHistory();
-            const t = setInterval(loadWorkflowHistory, 3000);
+            loadWorkflowHistory().catch(() => {});
+            const t = setInterval(() => loadWorkflowHistory().catch(() => {}), 3000);
             setWorkflowTimer(t);
         }
         if (currentPanel.value === 'schedules') {
-            loadSchedules();
-            const t = setInterval(loadSchedules, 5000);
+            loadSchedules().catch(() => {});
+            const t = setInterval(() => loadSchedules().catch(() => {}), 5000);
             setScheduleTimer(t);
         }
         if (currentPanel.value === 'audit') {
-            loadAudit();
+            loadAudit().catch(() => {});
         }
         if (currentPanel.value === 'logs') {
-            loadLogs();
-            const t = setInterval(pollLogs, 2000);
+            loadLogs().catch(() => {});
+            const t = setInterval(() => pollLogs().catch(() => {}), 2000);
             setLogTimer(t);
         }
 

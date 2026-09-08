@@ -18,6 +18,13 @@ This is a **portable Python web launcher** that must run on any system with Pyth
 - When adding a new stdlib import, verify it exists in Python 3.8+ (the minimum supported version).
 - Frontend (`static/js/`, `index.html`) uses vanilla JS — no npm, no bundler, no transpilation.
 
+## Comments & clarity — write for a junior dev
+
+- Every code comment, docstring, and commit message must be concise and plain-English — a junior dev should understand it on first read.
+- Comment the *why*, not the *what*. Skip comments that just restate the code.
+- No jargon, acronyms, or clever shorthand without a brief explanation.
+- These same rules apply to edits made to this file (AGENTS.md): keep instructions short, direct, and easy to follow.
+
 ## Tests are required
 
 When adding or editing code, always include a unit test (or update existing ones) that covers the change.
@@ -26,7 +33,7 @@ When adding or editing code, always include a unit test (or update existing ones
 - Run the full suite with:
   `python3 -m pytest tests/`
 - Isolation conventions:
-  - Use the `store` fixture from `tests/conftest.py` — it redirects every module-level path (`workflows.WORKFLOWS_FILE`, `profiles.PROFILES_FILE`, `runner.PROFILES_FILE`, `storage.HISTORY_FILE`, etc.) to a tmp dir. Tests that touch disk or runs must request it.
+  - Use the `store` fixture from `tests/conftest.py` — it repoints the module-level store paths (`config.DB_PATH`, `storage.DB_PATH`, etc.) to a throwaway SQLite database in a tmp dir. Tests that touch disk or runs must request it.
   - Use pytest's built-in `tmp_path` for scratch files and `monkeypatch` for patching (never leave globals mutated).
   - Use the `new_run` fixture for tests that create `runner.active_runs` entries.
 - Frontend (JS) behavior is covered by source-inspection tests (e.g. `test_confirm_modal.py`) that assert on the files in `static/js/components/` — follow that pattern for UI changes.
@@ -35,6 +42,13 @@ When adding or editing code, always include a unit test (or update existing ones
 ## Server restart
 
 - After changes to backend files (`launcher/`), restart the server so the changes take effect. Run `make restart` from the project root.
+
+### Agent shell runs as root — keep server state user-owned
+
+- The agent's terminal runs as root, but the user runs under a normal account. If the agent runs `make restart` (or starts the server) directly, the server and its files (`server.log`, `data/launcher.db*`, `data/server.log*`) end up owned by root. The user's own `make restart` then fails: it cannot kill the server or overwrite `server.log`, which looks like a confusing mix of "Server not running" and "Permission denied".
+- Find the account that owns the project files (`ls -la Makefile`) — call it `<user>` below.
+- When the agent needs to restart the server, run it as that account instead: `sudo -u <user> make restart`.
+- Before finishing, check `ls -la server.log data/` and chown any root-owned files back: `chown -R <user>:<user> server.log data/`. Root-owned leftovers block the user's next restart even after the server is stopped.
 
 ## Documentation updates
 

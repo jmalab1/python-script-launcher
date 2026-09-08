@@ -73,7 +73,13 @@ export function RunModal({ isOpen, onClose, runId, title, runType }) {
     }
 
     async function loadFromHistory(rid, rType) {
-        const hist = await fetchHistoryRun(rid, rType);
+        let hist;
+        try {
+            hist = await fetchHistoryRun(rid, rType);
+        } catch (err) {
+            setOutput(['Could not load run data.']);
+            return;
+        }
         if (hist.error) {
             setOutput(['Run data not found.']);
             return;
@@ -92,7 +98,12 @@ export function RunModal({ isOpen, onClose, runId, title, runType }) {
     async function pollActiveRun(rid) {
         if (timerRef.current) { clearInterval(timerRef.current); }
         timerRef.current = setInterval(async () => {
-            const data = await pollRun(rid);
+            let data;
+            try {
+                data = await pollRun(rid);
+            } catch (err) {
+                return; // transient fetch failure — keep polling
+            }
             if (data.error) {
                 clearInterval(timerRef.current);
                 timerRef.current = null;

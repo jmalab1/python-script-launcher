@@ -2,6 +2,7 @@ import os
 import sys
 import subprocess
 import threading
+import time
 from datetime import datetime
 
 from .storage import load_json, save_json, save_history, update_history
@@ -10,8 +11,13 @@ from .config import COL_PROFILES
 DEFAULT_DATE_FORMAT = "%Y-%m-%d"
 
 active_runs = {}
-run_counter = 0
 run_lock = threading.Lock()
+
+# Finished runs are kept pollable for a grace period (the run modal falls
+# back to history for anything older), and their total count is capped so
+# active_runs cannot grow without bound over a long-lived server.
+FINISHED_RUN_TTL_SECONDS = 600
+MAX_FINISHED_RUNS = 50
 
 _POPEN_KWARGS = {}
 if os.name == "nt":
@@ -186,6 +192,7 @@ def execute_workflow(workflow, run_id, started_at, trigger="manual", schedule=No
     with run_lock:
         status = "failed" if active_runs[run_id].get("failed") else "completed"
         active_runs[run_id]["status"] = status
+        active_runs[run_id]["finished_at"] = time.time()
         active_runs[run_id]["workflow_log"].append(f"Workflow {status}")
         final_log = list(active_runs[run_id]["workflow_log"])
         final_steps = active_runs[run_id].get("steps", {})
@@ -207,7 +214,10 @@ def _run_step(profile, extra_args, run_id, continue_on_error, arg_overrides=None
             steps = active_runs[run_id].setdefault("steps", {})
             steps[display_name] = {"output": [], "status": "failed", "returncode": -1, "step": n}
             active_runs[run_id]["workflow_log"].append(f"[SKIP] Step {n} ({step_name}): script not found: {script_path}")
-            active_runs[run_id]["failed"] = True
+            # Mirror the missing-profile behavior: with continue_on_error the
+            # step is skipped and the run can still complete.
+            if not continue_on_error:
+                active_runs[run_id]["failed"] = True
         return
 
     overrides = arg_overrides or {}
@@ -231,7 +241,9 @@ def _run_step(profile, extra_args, run_id, continue_on_error, arg_overrides=None
             steps[display_name]["output"].append(line)
 
     with run_lock:
-        rc = step_result["returncode"] or 0
+        rc = step_result["returncode"]
+        if rc is None:
+            rc = 0
         steps[display_name]["returncode"] = rc
         if rc != 0:
             steps[display_name]["status"] = "failed"
@@ -242,3 +254,34 @@ def _run_step(profile, extra_args, run_id, continue_on_error, arg_overrides=None
         else:
             steps[display_name]["status"] = "completed"
             active_runs[run_id]["workflow_log"].append(f"[DONE] Step {n} ({step_name}) completed successfully")
+
+
+def prune_active_runs():
+    """Drop finished runs so active_runs cannot grow without bound.
+
+    Running runs are always kept. Finished runs stay pollable for
+    FINISHED_RUN_TTL_SECONDS, and at most MAX_FINISHED_RUNS finished runs
+    are retained; older ones remain available through run history.
+    """
+    with run_lock:
+        _prune_active_runs_locked()
+
+
+def _prune_active_runs_locked():
+    now = time.time()
+    finished = []
+    for run_id, entry in active_runs.items():
+        if entry.get("status") in ("completed", "failed"):
+            # Entries without a finish stamp (injected tests, older data)
+            # get the full grace period instead of being dropped immediately.
+            finished.append((run_id, entry.get("finished_at") or now))
+    finished.sort(key=lambda item: item[1])
+    expired = [run_id for run_id, finished_at in finished if finished_at <= now - FINISHED_RUN_TTL_SECONDS]
+    expired_set = set(expired)
+    for run_id in expired:
+        del active_runs[run_id]
+    remaining = [(run_id, ts) for run_id, ts in finished if run_id not in expired_set]
+    excess = len(remaining) - MAX_FINISHED_RUNS
+    if excess > 0:
+        for run_id, _ts in remaining[:excess]:
+            del active_runs[run_id]

@@ -102,6 +102,19 @@ def setup_file_logging():
         log.warning("Could not open log file %s: %s", log_file(), e)
 
 
+def _is_within(path, directory):
+    """True if `path` is inside `directory` (or equals it).
+
+    Uses Path.relative_to rather than Path.is_relative_to, which is only
+    available from Python 3.9 while this app supports 3.8+.
+    """
+    try:
+        Path(path).relative_to(directory)
+        return True
+    except ValueError:
+        return False
+
+
 class LauncherHandler(http.server.SimpleHTTPRequestHandler):
 
     protocol_version = "HTTP/1.1"
@@ -157,8 +170,12 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
                     self._json_response(result)
 
             elif path == "/api/history":
-                page = int(query.get("page", ["1"])[0])
-                per_page = int(query.get("per_page", ["15"])[0])
+                try:
+                    page = int(query.get("page", ["1"])[0])
+                    per_page = int(query.get("per_page", ["15"])[0])
+                except ValueError:
+                    self._json_response({"error": "page and per_page must be integers"}, 400)
+                    return
                 type_filter = query.get("type", [None])[0]
                 self._json_response(history.handle_list(page, per_page, type_filter))
 
@@ -172,8 +189,12 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
                     self._json_response({"error": "Not found"}, 404)
 
             elif path == "/api/audit":
-                page = int(query.get("page", ["1"])[0])
-                per_page = int(query.get("per_page", ["20"])[0])
+                try:
+                    page = int(query.get("page", ["1"])[0])
+                    per_page = int(query.get("per_page", ["20"])[0])
+                except ValueError:
+                    self._json_response({"error": "page and per_page must be integers"}, 400)
+                    return
                 action_filter = query.get("action", [None])[0]
                 entity_filter = query.get("entity", [None])[0]
                 self._json_response(audit.handle_list(page, per_page, action_filter, entity_filter))
@@ -218,14 +239,15 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
     def _serve_static(self, path):
         static_dir = STATIC_DIR.resolve()
         rel = urllib.parse.unquote(path[len("/static/"):])
-        file_path = (static_dir / rel).resolve()
         try:
-            if not file_path.is_relative_to(static_dir):
-                log.warning("Path traversal attempt blocked: %s", path)
-                self.send_error(403)
-                return
+            file_path = (static_dir / rel).resolve()
+            within = _is_within(file_path, static_dir)
         except Exception:
             log.exception("Error resolving static path: %s", path)
+            self.send_error(403)
+            return
+        if not within:
+            log.warning("Path traversal attempt blocked: %s", path)
             self.send_error(403)
             return
         if not file_path.exists() or not file_path.is_file():
@@ -331,7 +353,7 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
                 self._json_response(result)
 
             elif path == "/api/run/profile":
-                result, status, error = runs.handle_run_profile(data, self.send_error)
+                result, status, error = runs.handle_run_profile(data)
                 if error:
                     self._json_response(error, status)
                 else:
@@ -441,8 +463,16 @@ def main():
     scheduler.start()
     if os.name == "nt":
         threading.Timer(1.0, lambda: webbrowser.open(f"http://127.0.0.1:{PORT}")).start()
+    # serve_forever runs on a worker thread so the main thread stays free
+    # to service Tk file dialogs queued by HTTP workers (Tk must run on
+    # the main thread on macOS).
+    server_thread = threading.Thread(
+        target=server.serve_forever, name="http-server", daemon=True,
+    )
+    server_thread.start()
     try:
-        server.serve_forever()
+        while True:
+            filesystem.pump_dialogs(0.5)
     except KeyboardInterrupt:
         log.info("Shutting down.")
         server.shutdown()

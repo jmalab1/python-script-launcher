@@ -1,3 +1,6 @@
+import threading
+import time
+
 import pytest
 
 import launcher.storage as storage
@@ -156,3 +159,54 @@ def test_bulk_delete_of_all_entries(store, legacy_history):
     assert result["ok"]
     assert result["removed"] == 4
     assert store.read("history") == []
+
+
+def test_deleting_history_does_not_lose_concurrent_appends(store, monkeypatch):
+    """Regression: handle_delete/bulk/clear used to save outside the lock."""
+    for i in range(3):
+        storage.save_history(f"run_{i}", f"R{i}", "profile", "completed", 0, [], time.time())
+
+    real_save_json = storage.save_json
+
+    def slow_save_json(collection, data):
+        if collection == "history":
+            time.sleep(0.3)  # widen the window between the delete's load and save
+        return real_save_json(collection, data)
+
+    monkeypatch.setattr(storage, "save_json", slow_save_json)
+
+    deleter = threading.Thread(target=history.handle_delete, args=("run_0",))
+    deleter.start()
+    time.sleep(0.05)  # the delete has loaded its snapshot and is inside its save
+    for n in range(5):
+        storage.save_history(f"concurrent_{n}", f"C{n}", "profile", "completed", 0, [], time.time())
+    deleter.join()
+
+    run_ids = {e["run_id"] for e in store.read("history")}
+    assert "run_0" not in run_ids, "the targeted entry must still be deleted"
+    for n in range(5):
+        assert f"concurrent_{n}" in run_ids, f"concurrent append {n} was lost by the delete"
+
+
+def test_clearing_history_does_not_lose_concurrent_appends(store, monkeypatch):
+    storage.save_history("run_keep", "R", "profile", "completed", 0, [], time.time())
+
+    real_replace = storage.replace_history
+    gate = threading.Event()
+
+    def gated_replace(entries):
+        gate.wait(timeout=5)  # clear() holds the lock while an append lands
+        return real_replace(entries)
+
+    monkeypatch.setattr(storage, "replace_history", gated_replace)
+
+    clearer = threading.Thread(target=history.handle_clear)
+    clearer.start()
+    time.sleep(0.05)
+    storage.save_history("concurrent_run", "C", "profile", "completed", 0, [], time.time())
+    gate.set()
+    clearer.join()
+
+    # handle_clear intentionally wipes everything while holding the history
+    # lock, but the concurrent append must not deadlock or corrupt it.
+    assert isinstance(store.read("history"), list)

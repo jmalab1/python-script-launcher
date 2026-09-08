@@ -143,7 +143,7 @@ minute hour day-of-month month day-of-week
 - Times are **local wall-clock time**, minute granularity. On DST change days a scheduled wall-clock time may be skipped or run twice, like a real cron.
 - **Missed runs are skipped**: if Tiller is not running when a run is due, the next run happens at the next normal occurrence.
 - **No overlap**: a schedule will not start a new run while its previous run is still active; the run starts on the next tick once the previous one finishes (ticks are every `SCHEDULER_TICK_SECONDS`).
-- **Run now** fires a schedule immediately without changing its cadence.
+- **Run now** fires a schedule immediately without changing its cadence; the firing is recorded in the **Audit** panel.
 - Scheduled runs use the profile's stored argument values (as shown on the card) and appear in **Run History** with a "Scheduled" badge. Profile and workflow cards show a clock badge while an enabled schedule exists.
 - Moving a profile or workflow to the trash pauses its schedule (the card shows "Target in trash"); restoring resumes it. **Permanently deleting** a target deletes its schedules.
 
@@ -256,4 +256,4 @@ Requires the same dev setup as the e2e tests (`pip install -r requirements-dev.t
 
 ## Requirements
 
-Python 3.10+ with only the standard library — no packages needed to run the app. Unit tests additionally need pytest, and the e2e tests need pytest-playwright (`pip install -r requirements-dev.txt`).
+Python 3.8+ with only the standard library — no packages needed to run the app. Unit tests additionally need pytest, and the e2e tests need pytest-playwright (`pip install -r requirements-dev.txt`).

@@ -274,42 +274,45 @@ def run_tick(now=None, fire=None):
     one tick, recomputes missing next_run_at values, and fires every
     enabled schedule whose next_run_at has passed.
     """
-    from .storage import load_json, save_json
+    from .storage import load_json, save_json, collection_lock
     from .config import COL_SCHEDULES
 
     now = now or datetime.now()
     fire = fire or fire_schedule
     now_ts = now.timestamp()
-    schedules = load_json(COL_SCHEDULES)
-    fired = []
-    changed = False
-    for sched in schedules:
-        if not sched.get("enabled"):
-            continue
-        try:
-            expr = sched.get("cron", "")
-            fields = parse_cron(expr)
-            next_run = sched.get("next_run_at")
-            if next_run is None:
+    # The whole load-fire-save pass holds the schedules collection lock so
+    # it cannot interleave with API edits and lose them.
+    with collection_lock(COL_SCHEDULES):
+        schedules = load_json(COL_SCHEDULES)
+        fired = []
+        changed = False
+        for sched in schedules:
+            if not sched.get("enabled"):
+                continue
+            try:
+                expr = sched.get("cron", "")
+                fields = parse_cron(expr)
+                next_run = sched.get("next_run_at")
+                if next_run is None:
+                    sched["next_run_at"] = _ts(next_after(fields, now))
+                    changed = True
+                    continue
+                if next_run > now_ts:
+                    continue
+                if _schedule_busy(sched):
+                    continue
+                run_id = fire(sched)
+                if run_id:
+                    sched["last_run_at"] = now_ts
+                    sched["last_run_id"] = run_id
+                    sched["last_status"] = None
+                    fired.append((sched.get("id"), run_id))
                 sched["next_run_at"] = _ts(next_after(fields, now))
                 changed = True
-                continue
-            if next_run > now_ts:
-                continue
-            if _schedule_busy(sched):
-                continue
-            run_id = fire(sched)
-            if run_id:
-                sched["last_run_at"] = now_ts
-                sched["last_run_id"] = run_id
-                sched["last_status"] = None
-                fired.append((sched.get("id"), run_id))
-            sched["next_run_at"] = _ts(next_after(fields, now))
-            changed = True
-        except Exception:
-            log.exception("Scheduler tick failed for schedule %s", sched.get("id"))
-    if changed:
-        save_json(COL_SCHEDULES, schedules)
+            except Exception:
+                log.exception("Scheduler tick failed for schedule %s", sched.get("id"))
+        if changed:
+            save_json(COL_SCHEDULES, schedules)
     return fired
 
 
@@ -319,27 +322,28 @@ def _skip_missed(now=None):
     Called on server start: any due time that passed while the server was
     down is skipped and the next occurrence is scheduled instead.
     """
-    from .storage import load_json, save_json
+    from .storage import load_json, save_json, collection_lock
     from .config import COL_SCHEDULES
 
     now = now or datetime.now()
     now_ts = now.timestamp()
-    schedules = load_json(COL_SCHEDULES)
-    changed = False
-    for sched in schedules:
-        if not sched.get("enabled"):
-            continue
-        next_run = sched.get("next_run_at")
-        if next_run is not None and next_run > now_ts:
-            continue
-        try:
-            fields = parse_cron(sched.get("cron", ""))
-        except ValueError:
-            continue
-        sched["next_run_at"] = _ts(next_after(fields, now))
-        changed = True
-    if changed:
-        save_json(COL_SCHEDULES, schedules)
+    with collection_lock(COL_SCHEDULES):
+        schedules = load_json(COL_SCHEDULES)
+        changed = False
+        for sched in schedules:
+            if not sched.get("enabled"):
+                continue
+            next_run = sched.get("next_run_at")
+            if next_run is not None and next_run > now_ts:
+                continue
+            try:
+                fields = parse_cron(sched.get("cron", ""))
+            except ValueError:
+                continue
+            sched["next_run_at"] = _ts(next_after(fields, now))
+            changed = True
+        if changed:
+            save_json(COL_SCHEDULES, schedules)
 
 
 def _loop():

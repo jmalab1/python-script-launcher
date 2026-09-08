@@ -1,5 +1,4 @@
-from ..storage import save_json, load_history
-from ..config import COL_HISTORY
+from ..storage import load_history, remove_history, replace_history
 
 
 def summarize_entry(entry):
@@ -58,23 +57,18 @@ def handle_detail(entry_key, type_filter=None):
 
 
 def handle_delete(entry_key):
-    all_history = load_history()
-    remaining = [e for e in all_history if e.get("id") != entry_key]
-    if len(remaining) == len(all_history):
-        remaining = [e for e in all_history if e.get("run_id") != entry_key]
-    save_json(COL_HISTORY, remaining)
+    removed = remove_history(lambda e: e.get("id") == entry_key)
+    if not removed:
+        remove_history(lambda e: e.get("run_id") == entry_key)
     return {"ok": True}
 
 
 def handle_bulk_delete(ids):
-    all_history = load_history()
     id_set = set(ids)
-    remaining = [e for e in all_history if e.get("id") not in id_set]
-    removed = len(all_history) - len(remaining)
-    save_json(COL_HISTORY, remaining)
+    removed = remove_history(lambda e: e.get("id") in id_set)
     return {"ok": True, "removed": removed}
 
 
 def handle_clear():
-    save_json(COL_HISTORY, [])
+    replace_history([])
     return {"ok": True}

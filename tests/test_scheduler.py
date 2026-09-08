@@ -1,3 +1,4 @@
+import threading
 import time
 from datetime import datetime
 
@@ -245,6 +246,37 @@ def test_run_tick_fires_once_the_previous_run_finished(store, sched_state, monke
     fired = run_tick(now=dt(2026, 9, 8, 10, 30), fire=lambda s: "new_run")
     assert fired == [("s1", "new_run")]
     assert "s1" not in scheduler._last_scheduled_run
+
+
+def test_scheduler_tick_does_not_lose_concurrent_edits(store, sched_state, monkeypatch):
+    """Regression: the tick rewrote the schedules collection with no lock,
+    so API edits landing mid-tick were silently reverted."""
+    import launcher.api.schedules as schedules_api
+    import launcher.storage as storage
+
+    seed_schedule(store, next_run_at=1000.0)
+    real_save_json = storage.save_json
+
+    def slow_save_json(collection, data):
+        if collection == "schedules":
+            time.sleep(0.3)  # widen the tick's save window
+        return real_save_json(collection, data)
+
+    monkeypatch.setattr(storage, "save_json", slow_save_json)
+
+    tick = threading.Thread(
+        target=run_tick,
+        kwargs={"now": dt(2026, 9, 8, 10, 30), "fire": lambda s: "run_1"},
+    )
+    tick.start()
+    time.sleep(0.05)  # the tick has loaded its snapshot and is inside its save
+    result, error = schedules_api.handle_toggle("s1")
+    assert error is None
+    tick.join()
+
+    saved = store.read("schedules")[0]
+    assert saved["enabled"] is False, "the toggle applied during the tick must survive"
+    assert saved["last_run_id"] == "run_1", "state persisted by the tick must survive"
 
 
 def test_run_tick_end_to_end_with_real_fire(store, tmp_path, new_run, sched_state):

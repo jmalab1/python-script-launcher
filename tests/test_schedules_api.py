@@ -185,6 +185,17 @@ def test_run_now_missing_schedule_returns_error(store):
     assert error
 
 
+def test_run_now_records_an_audit_entry(store, profile_env, new_run, sched_state):
+    sched, _ = schedules_api.handle_create(make_data())
+    result, _ = schedules_api.handle_run_now(sched["id"])
+    wait_done(result["run_id"])  # join the background run thread before it can leak
+    entry = load_audit()[-1]
+    assert entry["action"] == "run_now"
+    assert entry["entity_type"] == "schedule"
+    assert entry["entity_id"] == sched["id"]
+    assert entry["details"]["run_id"] == result["run_id"]
+
+
 # -------------------------------------------------------------------- delete
 
 
