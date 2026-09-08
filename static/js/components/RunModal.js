@@ -9,6 +9,7 @@ export function RunModal({ isOpen, onClose, runId, title, runType }) {
     const [tabs, setTabs] = useState([]);
     const [activeTab, setActiveTab] = useState('workflow');
     const [currentStep, setCurrentStep] = useState('');
+    const [command, setCommand] = useState(null);
     const timerRef = useRef(null);
     const outputRef = useRef(null);
     const activeTabRef = useRef('workflow');
@@ -31,11 +32,23 @@ export function RunModal({ isOpen, onClose, runId, title, runType }) {
         return lines;
     }
 
+    function commandFor(data) {
+        const stepData = data.steps || {};
+        const tab = activeTabRef.current;
+        if (tab !== 'workflow' && stepData[tab]?.command) {
+            return stepData[tab].command;
+        }
+        return data.command || null;
+    }
+
     function switchTab(name) {
         activeTabRef.current = name;
         setActiveTab(name);
         const data = lastDataRef.current;
-        if (data) setOutput(linesFor(data));
+        if (data) {
+            setOutput(linesFor(data));
+            setCommand(commandFor(data));
+        }
     }
 
     function renderLines(lines) {
@@ -69,6 +82,7 @@ export function RunModal({ isOpen, onClose, runId, title, runType }) {
         setStatus(hist.status || 'completed');
         updateTabs(hist.steps || {});
         setOutput(linesFor(hist));
+        setCommand(commandFor(hist));
         if ((hist.status === 'running' || hist.status === 'starting') && !autoPolledRef.current) {
             autoPolledRef.current = true;
             pollActiveRun(rid);
@@ -90,6 +104,7 @@ export function RunModal({ isOpen, onClose, runId, title, runType }) {
             updateTabs(data.steps || {});
             lastDataRef.current = data;
             setOutput(linesFor(data));
+            setCommand(commandFor(data));
             if (outputRef.current) outputRef.current.scrollTop = outputRef.current.scrollHeight;
 
             if (data.status === 'completed' || data.status === 'failed') {
@@ -109,6 +124,7 @@ export function RunModal({ isOpen, onClose, runId, title, runType }) {
         setActiveTab('workflow');
         activeTabRef.current = 'workflow';
         setCurrentStep('');
+        setCommand(null);
 
         if (runType) {
             loadFromHistory(runId, runType);
@@ -178,8 +194,11 @@ export function RunModal({ isOpen, onClose, runId, title, runType }) {
                         </div>
                     ` : ''}
                     <div class="flex-1 overflow-hidden p-4">
-                        <div ref=${outputRef} class="h-full bg-gray-950 rounded-xl p-4 font-mono text-xs leading-relaxed overflow-y-auto text-gray-300 whitespace-pre-wrap break-all">
-                            ${renderLines(output)}
+                        <div class="h-full flex flex-col gap-2">
+                            ${command ? html`<div class="shrink-0 bg-gray-900 rounded-lg px-3 py-2 font-mono text-xs text-gray-300 border border-gray-800 break-all"><span class="text-gray-500">Command: </span>${esc(Array.isArray(command) ? command.join(' ') : String(command))}</div>` : ''}
+                            <div ref=${outputRef} class="flex-1 min-h-0 bg-gray-950 rounded-xl p-4 font-mono text-xs leading-relaxed overflow-y-auto text-gray-300 whitespace-pre-wrap break-all">
+                                ${renderLines(output)}
+                            </div>
                         </div>
                     </div>
                     <div class="shrink-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700/60 px-6 py-3 rounded-b-2xl flex justify-end">

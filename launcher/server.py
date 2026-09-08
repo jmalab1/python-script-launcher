@@ -246,11 +246,6 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
                 result = workflows.handle_delete(workflow_id)
                 self._json_response(result)
 
-            elif path.startswith("/api/audit/"):
-                entry_id = path.split("/")[-1]
-                result = audit.handle_delete(entry_id)
-                self._json_response(result)
-
             elif path == "/api/history":
                 result = history.handle_clear()
                 self._json_response(result)

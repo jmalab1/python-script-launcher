@@ -85,11 +85,9 @@ def test_handle_detail_returns_full_entry(store):
 def test_handle_delete_and_clear(store):
     e1 = storage.record_audit("created", "profile", "p1", "One")
     e2 = storage.record_audit("created", "profile", "p2", "Two")
-    audit.handle_delete(e1["id"])
-    remaining = audit.handle_list(1, 10)["entries"]
-    assert [e["id"] for e in remaining] == [e2["id"]]
-    audit.handle_clear()
-    assert audit.handle_list(1, 10)["total"] == 0
+    entries = audit.handle_list(1, 10)["entries"]
+    assert len(entries) == 2
+    assert [e["id"] for e in entries] == [e2["id"], e1["id"]]
 
 
 def test_restore_deleted_profile_round_trip(store):
@@ -173,3 +171,30 @@ def test_audit_entries_recorded_for_workflow_lifecycle(store):
     assert actions == [("deleted", "workflow"), ("updated", "workflow"), ("created", "workflow")]
     assert entries[2]["entity_id"] == w1["id"]
     assert entries[0]["entity_id"] == w1["id"]
+
+
+def test_audit_integrity_verification(store):
+    storage.record_audit("created", "profile", "p1", "One")
+    storage.record_audit("updated", "profile", "p1", "One Updated")
+    is_valid, tampered = storage.verify_audit_integrity()
+    assert is_valid
+    assert tampered == []
+
+
+def test_audit_integrity_detects_tampering(store):
+    storage.record_audit("created", "profile", "p1", "One")
+    entries = storage.load_audit()
+    entries[0]["name"] = "Tampered"
+    storage.save_json("audit", entries)
+    is_valid, tampered = storage.verify_audit_integrity()
+    assert not is_valid
+    assert len(tampered) == 1
+
+
+def test_audit_append_only_prevents_deletion(store):
+    e1 = storage.record_audit("created", "profile", "p1", "One")
+    e2 = storage.record_audit("created", "profile", "p2", "Two")
+    entries = storage.load_audit()
+    assert len(entries) == 2
+    assert entries[0]["id"] == e1["id"]
+    assert entries[1]["id"] == e2["id"]

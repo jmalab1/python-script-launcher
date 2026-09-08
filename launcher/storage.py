@@ -1,3 +1,4 @@
+import hashlib
 import json
 import logging
 import os
@@ -164,6 +165,46 @@ def save_json(collection, data):
         conn.close()
 
 
+def append_audit(entry):
+    """Append a single audit entry without rewriting the entire table."""
+    table = _TABLES["audit"]
+    DATA_DIR.mkdir(exist_ok=True)
+    conn = _get_conn()
+    try:
+        _init_db(conn)
+        entry_id = entry.get("id")
+        if entry_id is None:
+            entry_id = uuid.uuid4().hex
+            entry["id"] = entry_id
+        entry["_hash"] = _compute_entry_hash(entry)
+        conn.execute(
+            f'INSERT INTO "{table}" (id, json) VALUES (?, ?)',
+            (str(entry_id), json.dumps(entry, ensure_ascii=False)),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def _compute_entry_hash(entry):
+    """Compute a hash of the audit entry content for integrity verification."""
+    entry_copy = {k: v for k, v in entry.items() if k != "_hash"}
+    content = json.dumps(entry_copy, sort_keys=True, ensure_ascii=False)
+    return hashlib.sha256(content.encode()).hexdigest()
+
+
+def verify_audit_integrity():
+    """Verify the integrity of the audit log. Returns (is_valid, tampered_entries)."""
+    with _audit_lock:
+        entries = load_audit()
+        tampered = []
+        for entry in entries:
+            expected_hash = _compute_entry_hash(entry)
+            if entry.get("_hash") != expected_hash:
+                tampered.append(entry.get("id"))
+        return len(tampered) == 0, tampered
+
+
 def load_history():
     with _history_lock:
         history = load_json(COL_HISTORY)
@@ -177,7 +218,7 @@ def load_history():
         return history
 
 
-def save_history(run_id, name, run_type, status, returncode, output, started_at, workflow_log=None, steps=None):
+def save_history(run_id, name, run_type, status, returncode, output, started_at, workflow_log=None, steps=None, command=None):
     entry = {
         "id": uuid.uuid4().hex,
         "run_id": run_id,
@@ -194,6 +235,8 @@ def save_history(run_id, name, run_type, status, returncode, output, started_at,
         entry["workflow_log"] = workflow_log
     if steps is not None:
         entry["steps"] = steps
+    if command is not None:
+        entry["command"] = command
     with _history_lock:
         history = load_history()
         history.append(entry)
@@ -234,6 +277,9 @@ def load_audit():
             if not entry.get("id"):
                 entry["id"] = uuid.uuid4().hex
                 changed = True
+            if "_hash" not in entry:
+                entry["_hash"] = _compute_entry_hash(entry)
+                changed = True
         if changed:
             save_json(COL_AUDIT, entries)
         return entries
@@ -264,9 +310,9 @@ def record_audit(action, entity_type, entity_id, name, before=None, after=None, 
     if details is not None:
         entry["details"] = details
     with _audit_lock:
+        append_audit(entry)
         entries = load_audit()
-        entries.append(entry)
         if len(entries) > AUDIT_MAX:
             entries = entries[-AUDIT_MAX:]
-        save_json(COL_AUDIT, entries)
+            save_json(COL_AUDIT, entries)
     return entry

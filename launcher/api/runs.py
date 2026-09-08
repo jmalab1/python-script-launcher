@@ -3,7 +3,7 @@ import time
 import threading
 from ..storage import load_json, save_json, save_history
 from ..config import COL_PROFILES, COL_WORKFLOWS
-from ..runner import run_script, execute_workflow, active_runs, run_lock, run_counter, build_custom_args
+from ..runner import run_script, execute_workflow, active_runs, run_lock, run_counter, build_custom_args, build_command
 
 
 def handle_poll_all():
@@ -50,7 +50,8 @@ def handle_run_profile(data, send_error):
         return None, 400, {"error": f"Script not found: {profile.get('script_path', '')}"}
 
     built_args = build_custom_args(profile.get("custom_args", []), arg_values)
-    static_args = profile.get("args", [])
+    full_args = profile.get("args", []) + built_args + data.get("args", [])
+    command = build_command(profile["script_path"], full_args)
 
     started_at = time.time()
 
@@ -67,15 +68,13 @@ def handle_run_profile(data, send_error):
     profile_name = profile.get("name", "Unnamed")
 
     def do_run():
-        for line in run_script(
-            profile["script_path"], static_args + built_args + data.get("args", []), run_id
-        ):
+        for line in run_script(profile["script_path"], full_args, run_id):
             pass
         with run_lock:
             status = "failed" if active_runs[run_id].get("returncode", 0) != 0 else "completed"
             active_runs[run_id]["status"] = status
             output_copy = list(active_runs[run_id]["output"])
-        save_history(run_id, profile_name, "profile", status, active_runs[run_id].get("returncode"), output_copy, started_at)
+        save_history(run_id, profile_name, "profile", status, active_runs[run_id].get("returncode"), output_copy, started_at, command=command)
 
     threading.Thread(target=do_run, daemon=True).start()
     return {"run_id": run_id}, 200, None

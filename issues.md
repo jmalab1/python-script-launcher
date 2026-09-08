@@ -1,2 +1,2 @@
-- workflows steps once created should be a snapshot of a profile at creation time. edits to a profile or vice versa should not affect one another.
-- history run ids change when deleting, ideally should remain the same
+- ~~workflows steps once created should be a snapshot of a profile at creation time. edits to a profile or vice versa should not affect one another.~~ (resolved — snapshots are embedded at creation and preserved on re-save)
+- ~~history run ids change when deleting, ideally should remain the same~~ (resolved — # column now shows stable short UUID instead of positional row number)

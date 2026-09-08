@@ -36,7 +36,6 @@ def test_audit_api_calls_hit_the_audit_endpoints():
     assert re.search(r"api\('GET', '/api/audit\?' \+ params", src)
     assert "auditAction.value" in src and "auditEntity.value" in src, "filters must be sent with the list request"
     assert "api('GET', '/api/audit/' + entryId)" in src
-    assert "api('DELETE', '/api/audit/' + entryId)" in src
     assert re.search(r"api\('POST', `/api/audit/\$\{entryId\}/restore`\)", src)
 
 
@@ -51,7 +50,7 @@ def test_audit_table_has_action_and_entity_filters():
 def test_audit_table_rows_offer_restore_and_delete_actions():
     src = read(COMPONENTS / "AuditTable.js")
     assert "isDeleted" in src and "confirmRestore(e)" in src, "deleted rows must expose a restore button"
-    assert "deleteAuditEntry(pendingDelete.id)" in src
+    assert "deleteAuditEntry" not in src, "delete functionality should be removed"
 
 
 def test_audit_detail_modal_shows_before_and_after_snapshots():
@@ -63,7 +62,7 @@ def test_audit_detail_modal_shows_before_and_after_snapshots():
     assert "action === 'deleted'" in src, "restore must only be offered for deleted entries"
 
 
-def test_audit_table_uses_shared_pagination_and_confirm_modal():
+def test_audit_table_uses_shared_pagination():
     src = read(COMPONENTS / "AuditTable.js")
     assert "<${Pagination} data=${data} pageSignal=${pageSignal} onLoad=${onLoad} />" in src
-    assert src.count("<${ConfirmModal}") >= 1, "delete needs confirmation"
+    assert "ConfirmModal" not in src, "confirm modal should not be used for audit entries"

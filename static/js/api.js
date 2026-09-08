@@ -123,11 +123,6 @@ export async function fetchAuditDetail(entryId) {
     return api('GET', '/api/audit/' + entryId);
 }
 
-export async function deleteAuditEntry(entryId) {
-    await api('DELETE', '/api/audit/' + entryId);
-    await loadAudit();
-}
-
 export async function restoreAuditEntry(entryId) {
     await api('POST', `/api/audit/${entryId}/restore`);
     await Promise.all([loadProfiles(), loadWorkflows(), loadAudit()]);

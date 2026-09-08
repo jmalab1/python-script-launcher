@@ -1,3 +1,4 @@
+import sys
 import time
 
 import pytest
@@ -97,6 +98,17 @@ def test_run_profile_applies_static_custom_and_overridden_args(store, runs_env):
     assert error is None
     info = wait_done(body["run_id"])
     assert info["output"] == ["static --flag v2 --cb extra\n"], info["output"]
+
+
+def test_profile_history_records_the_command_that_ran(store, runs_env):
+    data = {"profile_id": "p2", "args": ["extra"], "arg_values": {"--flag": "v2"}}
+    body, status, error = runs.handle_run_profile(data, None)
+    assert error is None
+    wait_done(body["run_id"])
+    entry = last_history(store)
+    assert entry["command"] == [
+        sys.executable, str(runs_env["echo"]), "static", "--flag", "v2", "--cb", "extra",
+    ], entry["command"]
 
 
 def test_run_profile_formats_date_custom_args(store, runs_env):

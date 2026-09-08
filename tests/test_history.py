@@ -68,6 +68,19 @@ def test_save_history_produces_uniquely_addressable_entries(store, legacy_histor
     assert history.handle_detail(saved["id"], "profile")["output"] == ["hello"]
 
 
+def test_save_history_records_the_command_when_provided(store):
+    cmd = ["/usr/bin/python3", "s.py", "--flag", "v"]
+    storage.save_history("prof_cmd", "Cmd", "profile", "completed", 0, ["out"], 1.0, command=cmd)
+    saved = store.read("history")[-1]
+    assert saved["command"] == cmd
+    assert history.handle_detail("prof_cmd", "profile")["command"] == cmd
+
+
+def test_save_history_omits_the_command_when_not_provided(store):
+    storage.save_history("wf_nocmd", "W", "workflow", "completed", 0, ["out"], 1.0)
+    assert "command" not in store.read("history")[-1]
+
+
 def test_delete_via_legacy_run_id_fallback(store, legacy_history):
     history.handle_delete("wf_2")
     left = store.read("history")

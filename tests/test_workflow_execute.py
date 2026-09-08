@@ -1,3 +1,4 @@
+import sys
 import time
 
 import pytest
@@ -232,3 +233,23 @@ def test_arg_values_override_snapshots_and_parallel_groups_use_snapshot_names(ne
     assert run["steps"]["1. Snapshot"]["output"] == ["--flag over\n"], run["steps"]["1. Snapshot"]["output"]
     assert any("SnapPar" in line for line in run["workflow_log"])
     assert not any("[SKIP]" in line for line in run["workflow_log"])
+
+
+def test_build_command_returns_the_full_argv():
+    cmd = runner.build_command("script.py", ["--flag", "v"])
+    assert cmd == [sys.executable, "script.py", "--flag", "v"], cmd
+
+
+def test_workflow_steps_record_the_command_that_ran(new_run, store, runner_env):
+    rid = new_run("wf_cmd")
+    runner.execute_workflow({"name": "Cmd", "steps": [
+        {"type": "sequential", "profile_id": "p_echo", "args": ["extra"], "arg_values": {"--flag": "v2"}},
+        {"type": "parallel", "profiles": [{"profile_id": "p_pass"}]},
+    ]}, rid, time.time())
+
+    step = runner.active_runs[rid]["steps"]["1. Echo"]
+    assert step["command"] == [sys.executable, str(runner_env["echo"]), "--flag", "v2", "--cb", "extra"], step["command"]
+
+    entry = last_history(store)
+    assert entry["steps"]["1. Echo"]["command"] == [sys.executable, str(runner_env["echo"]), "--flag", "v2", "--cb", "extra"]
+    assert entry["steps"]["2. Pass"]["command"] == [sys.executable, str(runner_env["pass"])]

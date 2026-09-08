@@ -34,16 +34,7 @@ def handle_detail(entry_id):
     return matches[0]
 
 
-def handle_delete(entry_id):
-    entries = load_audit()
-    remaining = [e for e in entries if e.get("id") != entry_id]
-    save_json(COL_AUDIT, remaining)
-    return {"ok": True}
 
-
-def handle_clear():
-    save_json(COL_AUDIT, [])
-    return {"ok": True}
 
 
 def handle_restore(entry_id):

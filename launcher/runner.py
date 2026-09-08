@@ -25,8 +25,13 @@ _CHILD_ENV = {
 }
 
 
+def build_command(script_path, args):
+    """Return the full argv used to launch a script, for history/logging."""
+    return [sys.executable, script_path] + list(args)
+
+
 def run_script(script_path, args, run_id, result=None):
-    cmd = [sys.executable, script_path] + args
+    cmd = build_command(script_path, args)
     try:
         proc = subprocess.Popen(
             cmd,
@@ -206,10 +211,14 @@ def _run_step(profile, extra_args, run_id, continue_on_error, arg_overrides=None
     built_args = build_custom_args(profile.get("custom_args", []), overrides)
 
     args = built_args + list(extra_args)
+    cmd = build_command(script_path, args)
 
     with run_lock:
         steps = active_runs[run_id].setdefault("steps", {})
-        steps[display_name] = {"output": [], "status": "running", "returncode": None, "step": n}
+        steps[display_name] = {
+            "output": [], "status": "running", "returncode": None, "step": n,
+            "command": cmd,
+        }
         active_runs[run_id]["workflow_log"].append(f"[RUN] Step {n}: {step_name}")
         active_runs[run_id]["current_step"] = display_name
 

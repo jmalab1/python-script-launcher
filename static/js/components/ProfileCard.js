@@ -63,6 +63,7 @@ export function ProfileCard({ profile, onEdit, onRun }) {
                                 if (c.type === 'checkbox') return html`
                                     <label class="inline-flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300 cursor-pointer">
                                         <input type="checkbox" id=${`arg-${p.id}-${i}`} data-profile=${p.id} data-idx=${i}
+                                            checked=${c.value === 'true'}
                                             onChange=${(e) => handleArgChange(e.target)}
                                             class="w-3.5 h-3.5 rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900/30 text-violet-500 focus:ring-violet-500/50 focus:ring-offset-0" />
                                         ${esc(c.label || c.name)}
