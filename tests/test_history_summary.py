@@ -42,6 +42,14 @@ def test_missing_or_inverted_timestamps_yield_duration_none(store):
     assert all(e["duration"] is None for e in entries), entries
 
 
+def test_running_entry_reports_no_duration_yet(store):
+    store["history"].write_text(json.dumps([
+        {"id": "r", "type": "workflow", "status": "running", "started_at": 100.0, "timestamp": 104.2},
+    ]))
+    entry = history.handle_list(1, 50, None)["entries"][0]
+    assert entry["duration"] is None, entry
+
+
 def test_type_filter_respected_and_summary_only_on_workflow_entries(store):
     store["history"].write_text(json.dumps([
         {"id": "e", "type": "profile", "started_at": 1.0, "timestamp": 3.0},

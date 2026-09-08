@@ -138,6 +138,27 @@ export function WorkflowModal({ isOpen, onClose, workflow }) {
                                 ${esc(ca.label || ca.name)}
                             </label>`;
                     }
+                    if (ca.type === 'date') {
+                        return html`
+                            <div class="flex items-center gap-1.5">
+                                <label class="text-[11px] text-gray-500 dark:text-gray-400 whitespace-nowrap">${esc(ca.label || ca.name)}</label>
+                                <input type="date" value=${eff}
+                                    onChange=${e => onSet(ca.name, e.target.value)}
+                                    class="w-36 bg-white dark:bg-gray-900/30 border border-gray-300 dark:border-gray-700/60 rounded px-2 py-1 text-xs text-gray-800 dark:text-gray-100 focus:border-violet-500 focus:ring-0 focus:ring-offset-0 transition" />
+                            </div>`;
+                    }
+                    if (ca.type === 'enum') {
+                        const opts = String(ca.options || '').split(',').map(s => s.trim()).filter(Boolean);
+                        return html`
+                            <div class="flex items-center gap-1.5">
+                                <label class="text-[11px] text-gray-500 dark:text-gray-400 whitespace-nowrap">${esc(ca.label || ca.name)}</label>
+                                <select onChange=${e => onSet(ca.name, e.target.value)}
+                                    class="max-w-[14rem] bg-white dark:bg-gray-900/30 border border-gray-300 dark:border-gray-700/60 rounded px-2 py-1 text-xs text-gray-800 dark:text-gray-100 focus:border-violet-500 focus:ring-0 focus:ring-offset-0 transition">
+                                    <option value="" selected=${eff === ''}>-- select --</option>
+                                    ${opts.map(opt => html`<option value=${opt} selected=${eff === opt}>${esc(opt)}</option>`)}
+                                </select>
+                            </div>`;
+                    }
                     return html`
                         <div class="flex items-center gap-1.5">
                             <label class="text-[11px] text-gray-500 dark:text-gray-400 whitespace-nowrap">${esc(ca.label || ca.name)}</label>

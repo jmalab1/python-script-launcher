@@ -162,6 +162,59 @@ def test_embedded_profile_snapshot_is_used_at_run_time(new_run, runner_env):
     assert run["steps"]["1. Snapshot"]["output"] == ["--flag snap\n"], run["steps"]["1. Snapshot"]["output"]
 
 
+def test_workflow_creates_a_running_history_entry_then_finalizes_it_in_place(new_run, store, runner_env, monkeypatch):
+    saved_statuses = []
+    real_save_history = storage.save_history
+
+    def spy_save_history(run_id, name, run_type, status, returncode, output, started_at, **kw):
+        saved_statuses.append(status)
+        return real_save_history(run_id, name, run_type, status, returncode, output, started_at, **kw)
+
+    monkeypatch.setattr(runner, "save_history", spy_save_history)
+
+    rid = new_run("wf_live")
+    runner.execute_workflow({"name": "Live", "steps": [
+        {"type": "sequential", "profile_id": "p_pass"},
+    ]}, rid, time.time())
+
+    assert saved_statuses == ["running"], "only the initial entry is saved; the finish updates it in place"
+    entries = storage.load_json(store["history"])
+    assert len(entries) == 1, "finished run must not duplicate its history entry"
+    entry = entries[0]
+    assert entry["run_id"] == rid and entry["type"] == "workflow" and entry["status"] == "completed"
+    assert entry["workflow_log"][0] == "Starting workflow: Live"
+    assert entry["workflow_log"][-1] == "Workflow completed"
+    assert entry["steps"]["1. Pass"]["status"] == "completed"
+    assert "[RUN] Step 1: Pass" in entry["output_preview"]
+
+
+def test_workflow_history_entry_stays_addressable_after_finishing(new_run, store, runner_env):
+    import launcher.api.history as history
+
+    rid = new_run("wf_addr")
+    runner.execute_workflow({"name": "Addr", "steps": [
+        {"type": "sequential", "profile_id": "p_pass"},
+    ]}, rid, time.time())
+    detail = history.handle_detail(rid, "workflow")
+    assert detail is not None and detail["status"] == "completed"
+    listed = [e for e in history.handle_list(1, 50, "workflow")["entries"] if e["run_id"] == rid]
+    assert len(listed) == 1 and listed[0]["duration"] is not None and listed[0]["duration"] >= 0
+
+
+def test_workflow_aborting_on_a_missing_profile_still_finalizes_history(new_run, store, runner_env):
+    rid = new_run("wf_miss_hist")
+    runner.execute_workflow({"name": "M", "steps": [
+        {"type": "sequential", "profile_id": "ghost"},
+        {"type": "sequential", "profile_id": "p_pass"},
+    ]}, rid, time.time())
+    entries = storage.load_json(store["history"])
+    assert len(entries) == 1
+    entry = entries[0]
+    assert entry["status"] == "failed"
+    assert any("[SKIP]" in line for line in entry["workflow_log"])
+    assert entry["steps"] == {}
+
+
 def test_arg_values_override_snapshots_and_parallel_groups_use_snapshot_names(new_run, runner_env):
     rid = new_run("wf_snap2")
     runner.execute_workflow({"name": "Snap2", "steps": [

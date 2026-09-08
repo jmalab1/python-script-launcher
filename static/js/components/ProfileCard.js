@@ -67,6 +67,28 @@ export function ProfileCard({ profile, onEdit, onRun }) {
                                             class="w-3.5 h-3.5 rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900/30 text-violet-500 focus:ring-violet-500/50 focus:ring-offset-0" />
                                         ${esc(c.label || c.name)}
                                     </label>`;
+                                if (c.type === 'date') return html`
+                                    <div class="flex items-center gap-1.5">
+                                        <label class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">${esc(c.label || c.name)}</label>
+                                        <input type="date" id=${`arg-${p.id}-${i}`} data-profile=${p.id} data-idx=${i}
+                                            value=${esc(c.value || c.default || '')}
+                                            onChange=${(e) => handleArgChange(e.target)}
+                                            class="w-36 bg-white dark:bg-gray-900/30 border border-gray-300 dark:border-gray-700/60 rounded px-2 py-1 text-xs text-gray-800 dark:text-gray-100 focus:border-violet-500 focus:ring-0 focus:ring-offset-0 transition" />
+                                    </div>`;
+                                if (c.type === 'enum') {
+                                    const cur = c.value || c.default || '';
+                                    const opts = String(c.options || '').split(',').map(s => s.trim()).filter(Boolean);
+                                    return html`
+                                        <div class="flex items-center gap-1.5">
+                                            <label class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">${esc(c.label || c.name)}</label>
+                                            <select id=${`arg-${p.id}-${i}`} data-profile=${p.id} data-idx=${i}
+                                                onChange=${(e) => handleArgChange(e.target)}
+                                                class="max-w-[14rem] bg-white dark:bg-gray-900/30 border border-gray-300 dark:border-gray-700/60 rounded px-2 py-1 text-xs text-gray-800 dark:text-gray-100 focus:border-violet-500 focus:ring-0 focus:ring-offset-0 transition">
+                                                <option value="" selected=${cur === ''}>-- select --</option>
+                                                ${opts.map(opt => html`<option value=${opt} selected=${cur === opt}>${esc(opt)}</option>`)}
+                                            </select>
+                                        </div>`;
+                                }
                                 return html`
                                     <div class="flex items-center gap-1.5">
                                         <label class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">${esc(c.label || c.name)}</label>

@@ -6,7 +6,9 @@ def summarize_entry(entry):
     summary = dict(entry)
     started_at = entry.get("started_at")
     timestamp = entry.get("timestamp")
-    if (
+    if entry.get("status") == "running":
+        summary["duration"] = None
+    elif (
         isinstance(started_at, (int, float))
         and isinstance(timestamp, (int, float))
         and timestamp >= started_at

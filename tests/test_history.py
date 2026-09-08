@@ -74,3 +74,39 @@ def test_delete_via_legacy_run_id_fallback(store, legacy_history):
     history.handle_delete("wf_2")
     left = storage.load_json(store["history"])
     assert all(e["run_id"] != "wf_2" for e in left)
+
+
+def test_update_history_rewrites_the_newest_entry_for_a_run_in_place(store, legacy_history):
+    ok = storage.update_history(
+        "wf_2", status="completed", output=["WF NEW", "tail"],
+        workflow_log=["log a", "log b"], steps={"1. A": {"status": "completed"}},
+    )
+    assert ok is True
+    left = storage.load_json(store["history"])
+    assert len(left) == 4, "update must not append a duplicate entry"
+    updated = [e for e in left if e["run_id"] == "wf_2"]
+    assert len(updated) == 2, "legacy duplicates stay untouched except the newest"
+    newest = updated[-1]
+    assert newest["name"] == "New" and newest["status"] == "completed"
+    assert newest["output"] == ["WF NEW", "tail"]
+    assert newest["output_preview"] == "WF NEWtail"
+    assert newest["workflow_log"] == ["log a", "log b"]
+    assert newest["steps"] == {"1. A": {"status": "completed"}}
+    older = updated[0]
+    assert older["status"] == "completed" and older["output"] == ["WF OLD"]
+
+
+def test_update_history_only_touches_the_fields_it_is_given(store):
+    storage.save_history("wf_x", "W", "workflow", "running", None, [], 1.0, workflow_log=[], steps={})
+    before = storage.load_json(store["history"])[-1]
+    storage.update_history("wf_x", status="failed")
+    after = storage.load_json(store["history"])[-1]
+    assert after["status"] == "failed"
+    assert after["id"] == before["id"] and after["started_at"] == before["started_at"]
+    assert after["workflow_log"] == [] and after["steps"] == {}
+    assert after["timestamp"] >= before["timestamp"], "timestamp is refreshed so duration covers the whole run"
+
+
+def test_update_history_returns_false_for_unknown_run_ids(store, legacy_history):
+    assert storage.update_history("wf_404", status="completed") is False
+    assert len(storage.load_json(store["history"])) == 4

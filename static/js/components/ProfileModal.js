@@ -45,10 +45,15 @@ export function ProfileModal({ isOpen, onClose, profile }) {
         const trimmedScript = scriptPath.trim();
         if (!trimmedName || !trimmedScript) { alert('Name and script path are required.'); return; }
         const argsList = args.trim() ? args.trim().split('\n').map(s => s.trim()).filter(Boolean) : [];
-        const builtCustomArgs = customArgs.map(ca => ({
-            name: ca.name.trim(), label: (ca.label || ca.name).trim(),
-            type: ca.type || 'text', default: ca.default || '', value: ca.value || ca.default || '',
-        })).filter(ca => ca.name);
+        const builtCustomArgs = customArgs.map(ca => {
+            const built = {
+                name: ca.name.trim(), label: (ca.label || ca.name).trim(),
+                type: ca.type || 'text', default: ca.default || '', value: ca.value || ca.default || '',
+            };
+            if (built.type === 'date') built.format = (ca.format || '').trim();
+            if (built.type === 'enum') built.options = (ca.options || '').trim();
+            return built;
+        }).filter(ca => ca.name);
         await saveProfile({ id: editingId, name: trimmedName, script_path: trimmedScript, args: argsList, custom_args: builtCustomArgs });
         await loadProfiles();
         await checkAllScripts();
@@ -108,7 +113,7 @@ export function ProfileModal({ isOpen, onClose, profile }) {
                                 ${!customArgs.length ? html`
                                     <div class="text-xs text-gray-400 py-2">No custom fields defined.</div>
                                 ` : customArgs.map((ca, i) => html`
-                                    <div class="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg">
+                                    <div class="flex items-center flex-wrap gap-2 p-2 bg-gray-50 dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg">
                                         <input type="text" value=${ca.name} placeholder="Flag (--name)"
                                             onInput=${e => updateCustomArg(i, 'name', e.target.value)}
                                             class="flex-1 bg-white dark:bg-gray-900/30 border border-gray-300 dark:border-gray-700/60 rounded px-2 py-1 text-xs text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-violet-500 focus:ring-0 focus:ring-offset-0 transition" />
@@ -119,11 +124,25 @@ export function ProfileModal({ isOpen, onClose, profile }) {
                                             class="bg-white dark:bg-gray-900/30 border border-gray-300 dark:border-gray-700/60 rounded px-2 py-1 text-xs text-gray-800 dark:text-gray-100 focus:border-violet-500 focus:ring-0 focus:ring-offset-0 transition">
                                             <option value="text" selected=${ca.type === 'text'}>Text</option>
                                             <option value="checkbox" selected=${ca.type === 'checkbox'}>Checkbox</option>
+                                            <option value="date" selected=${ca.type === 'date'}>Date</option>
+                                            <option value="enum" selected=${ca.type === 'enum'}>Enum</option>
                                         </select>
                                         ${ca.type !== 'checkbox' ? html`
-                                            <input type="text" value=${ca.default || ''} placeholder="Default"
+                                            <input type=${ca.type === 'date' ? 'date' : 'text'} value=${ca.default || ''} placeholder="Default"
                                                 onInput=${e => updateCustomArg(i, 'default', e.target.value)}
-                                                class="flex-1 bg-white dark:bg-gray-900/30 border border-gray-300 dark:border-gray-700/60 rounded px-2 py-1 text-xs text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-violet-500 focus:ring-0 focus:ring-offset-0 transition" />
+                                                class="flex-1 min-w-[9rem] bg-white dark:bg-gray-900/30 border border-gray-300 dark:border-gray-700/60 rounded px-2 py-1 text-xs text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-violet-500 focus:ring-0 focus:ring-offset-0 transition" />
+                                        ` : ''}
+                                        ${ca.type === 'date' ? html`
+                                            <input type="text" value=${ca.format || ''} placeholder="Format (%Y-%m-%d)"
+                                                title="strftime-style format applied when the script runs, e.g. %d/%m/%Y — defaults to %Y-%m-%d"
+                                                onInput=${e => updateCustomArg(i, 'format', e.target.value)}
+                                                class="flex-1 min-w-[9rem] bg-white dark:bg-gray-900/30 border border-gray-300 dark:border-gray-700/60 rounded px-2 py-1 text-xs font-mono text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-violet-500 focus:ring-0 focus:ring-offset-0 transition" />
+                                        ` : ''}
+                                        ${ca.type === 'enum' ? html`
+                                            <input type="text" value=${ca.options || ''} placeholder="Options (comma-separated)"
+                                                title="Comma-separated choices for the dropdown, e.g. debug, info, warn"
+                                                onInput=${e => updateCustomArg(i, 'options', e.target.value)}
+                                                class="flex-1 min-w-[9rem] bg-white dark:bg-gray-900/30 border border-gray-300 dark:border-gray-700/60 rounded px-2 py-1 text-xs text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-violet-500 focus:ring-0 focus:ring-offset-0 transition" />
                                         ` : ''}
                                         <button onClick=${() => removeCustomArg(i)} class="p-1 text-gray-400 hover:text-red-500 transition">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
@@ -131,6 +150,20 @@ export function ProfileModal({ isOpen, onClose, profile }) {
                                     </div>
                                 `)}
                             </div>
+                            ${customArgs.some(ca => ca.type === 'date') ? html`
+                                <div class="mt-2 text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                                    <span class="font-medium text-gray-600 dark:text-gray-300">Date format</span> — strftime-style tokens applied when the script runs.
+                                    Example: <span class="font-mono">%d/%m/%Y</span> → 07/09/2026, <span class="font-mono">%d.%m.%y</span> → 07.09.26.
+                                    Tokens: <span class="font-mono">%Y</span> 2026, <span class="font-mono">%y</span> 26, <span class="font-mono">%m</span> 09, <span class="font-mono">%d</span> 07, <span class="font-mono">%B</span> September, <span class="font-mono">%b</span> Sep.
+                                    Leave blank for <span class="font-mono">%Y-%m-%d</span>.
+                                </div>
+                            ` : ''}
+                            ${customArgs.some(ca => ca.type === 'enum') ? html`
+                                <div class="mt-2 text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                                    <span class="font-medium text-gray-600 dark:text-gray-300">Enum options</span> — comma-separated choices for the dropdown, e.g. <span class="font-mono">debug, info, warn</span>.
+                                    The argument is only passed to the script when a value is selected.
+                                </div>
+                            ` : ''}
                             <button onClick=${addCustomArg} class="mt-2 text-xs text-violet-500 hover:text-violet-600 font-medium">+ Add Argument Field</button>
                         </div>
                     </div>

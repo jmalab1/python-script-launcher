@@ -3,7 +3,7 @@ import time
 import threading
 from ..storage import load_json, save_json, save_history
 from ..config import PROFILES_FILE, HISTORY_FILE
-from ..runner import run_script, execute_workflow, active_runs, run_lock, run_counter
+from ..runner import run_script, execute_workflow, active_runs, run_lock, run_counter, build_custom_args
 
 
 def handle_poll_all():
@@ -49,20 +49,7 @@ def handle_run_profile(data, send_error):
     if not os.path.isfile(profile.get("script_path", "")):
         return None, 400, {"error": f"Script not found: {profile.get('script_path', '')}"}
 
-    custom_args = profile.get("custom_args", [])
-    built_args = []
-    for ca in custom_args:
-        flag = ca.get("name", "")
-        if not flag:
-            continue
-        val = arg_values.get(flag, ca.get("value", ca.get("default", "")))
-        if ca.get("type") == "checkbox":
-            if val == "true":
-                built_args.append(flag)
-        else:
-            if val:
-                built_args.append(flag)
-                built_args.append(str(val))
+    built_args = build_custom_args(profile.get("custom_args", []), arg_values)
     static_args = profile.get("args", [])
 
     started_at = time.time()

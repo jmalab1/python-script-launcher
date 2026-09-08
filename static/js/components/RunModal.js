@@ -13,6 +13,7 @@ export function RunModal({ isOpen, onClose, runId, title, runType }) {
     const outputRef = useRef(null);
     const activeTabRef = useRef('workflow');
     const lastDataRef = useRef(null);
+    const autoPolledRef = useRef(false);
     activeTabRef.current = activeTab;
 
     function linesFor(data) {
@@ -68,6 +69,10 @@ export function RunModal({ isOpen, onClose, runId, title, runType }) {
         setStatus(hist.status || 'completed');
         updateTabs(hist.steps || {});
         setOutput(linesFor(hist));
+        if ((hist.status === 'running' || hist.status === 'starting') && !autoPolledRef.current) {
+            autoPolledRef.current = true;
+            pollActiveRun(rid);
+        }
     }
 
     async function pollActiveRun(rid) {
@@ -97,6 +102,7 @@ export function RunModal({ isOpen, onClose, runId, title, runType }) {
     useEffect(() => {
         if (!isOpen || !runId) return;
         lastDataRef.current = null;
+        autoPolledRef.current = false;
         setOutput([]);
         setStatus('starting');
         setTabs([]);

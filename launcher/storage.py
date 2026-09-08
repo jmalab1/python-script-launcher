@@ -54,3 +54,29 @@ def save_history(run_id, name, run_type, status, returncode, output, started_at,
         history = load_history()
         history.append(entry)
         save_json(HISTORY_FILE, history)
+
+
+def update_history(run_id, status=None, returncode=None, output=None, workflow_log=None, steps=None):
+    """Update the newest history entry for run_id in place. Returns True if found."""
+    with _history_lock:
+        history = load_history()
+        target = None
+        for entry in history:
+            if entry.get("run_id") == run_id:
+                target = entry
+        if target is None:
+            return False
+        if status is not None:
+            target["status"] = status
+        if returncode is not None:
+            target["returncode"] = returncode
+        if output is not None:
+            target["output"] = output
+            target["output_preview"] = "".join(output[-20:]) if output else ""
+        if workflow_log is not None:
+            target["workflow_log"] = workflow_log
+        if steps is not None:
+            target["steps"] = steps
+        target["timestamp"] = time.time()
+        save_json(HISTORY_FILE, history)
+        return True

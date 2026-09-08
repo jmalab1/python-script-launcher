@@ -2,8 +2,12 @@ import os
 import sys
 import subprocess
 import threading
-from .storage import load_json, save_json, save_history
+from datetime import datetime
+
+from .storage import load_json, save_json, save_history, update_history
 from .config import PROFILES_FILE
+
+DEFAULT_DATE_FORMAT = "%Y-%m-%d"
 
 active_runs = {}
 run_counter = 0
@@ -61,6 +65,35 @@ def _next_step_name(run_id, step_name):
     return n, f"{n}. {step_name}"
 
 
+def format_date_value(value, fmt=None):
+    fmt = fmt or DEFAULT_DATE_FORMAT
+    try:
+        return datetime.strptime(value, "%Y-%m-%d").strftime(fmt)
+    except ValueError:
+        return value
+
+
+def build_custom_args(custom_args, arg_values=None):
+    overrides = arg_values or {}
+    built = []
+    for ca in custom_args or []:
+        flag = ca.get("name", "")
+        if not flag:
+            continue
+        val = overrides.get(flag, ca.get("value", ca.get("default", "")))
+        if ca.get("type") == "checkbox":
+            if val == "true":
+                built.append(flag)
+        else:
+            if val:
+                out = str(val)
+                if ca.get("type") == "date":
+                    out = format_date_value(out, ca.get("format"))
+                built.append(flag)
+                built.append(out)
+    return built
+
+
 def _resolve_profile(profile_map, entry):
     snapshot = entry.get("profile")
     if snapshot:
@@ -76,8 +109,16 @@ def execute_workflow(workflow, run_id, started_at):
     continue_on_error = workflow.get("continue_on_error", False)
 
     with run_lock:
-        active_runs[run_id]["workflow_log"] = [f"Starting workflow: {workflow.get('name', 'Unnamed')}"]
+        workflow_log = [f"Starting workflow: {workflow.get('name', 'Unnamed')}"]
+        active_runs[run_id]["workflow_log"] = workflow_log
         active_runs[run_id]["status"] = "running"
+
+    # Record the run up front so it stays visible in history (status: running)
+    # even if the run modal is closed before it finishes.
+    save_history(
+        run_id, workflow.get("name", "Unnamed"), "workflow", "running", None,
+        list(workflow_log), started_at, workflow_log=list(workflow_log), steps={},
+    )
 
     for step in steps:
         step_type = step.get("type", "sequential")
@@ -123,10 +164,10 @@ def execute_workflow(workflow, run_id, started_at):
             if not profile:
                 with run_lock:
                     active_runs[run_id]["workflow_log"].append(f"[SKIP] Profile not found: {step.get('profile_id')}")
+                    if not continue_on_error:
+                        active_runs[run_id]["failed"] = True
                 if not continue_on_error:
-                    with run_lock:
-                        active_runs[run_id]["status"] = "failed"
-                    return
+                    break
                 continue
 
             _run_step(profile, step.get("args", []), run_id, continue_on_error, step.get("arg_values", {}))
@@ -138,7 +179,12 @@ def execute_workflow(workflow, run_id, started_at):
         status = "failed" if active_runs[run_id].get("failed") else "completed"
         active_runs[run_id]["status"] = status
         active_runs[run_id]["workflow_log"].append(f"Workflow {status}")
-    save_history(run_id, workflow.get("name", "Unnamed"), "workflow", status, None, active_runs[run_id]["workflow_log"], started_at, workflow_log=active_runs[run_id]["workflow_log"], steps=active_runs[run_id].get("steps", {}))
+        final_log = list(active_runs[run_id]["workflow_log"])
+        final_steps = active_runs[run_id].get("steps", {})
+    update_history(
+        run_id, status=status, output=final_log,
+        workflow_log=final_log, steps=final_steps,
+    )
 
 
 def _run_step(profile, extra_args, run_id, continue_on_error, arg_overrides=None):
@@ -157,20 +203,7 @@ def _run_step(profile, extra_args, run_id, continue_on_error, arg_overrides=None
         return
 
     overrides = arg_overrides or {}
-    custom_args = profile.get("custom_args", [])
-    built_args = []
-    for ca in custom_args:
-        flag = ca.get("name", "")
-        if not flag:
-            continue
-        val = overrides.get(flag, ca.get("value", ca.get("default", "")))
-        if ca.get("type") == "checkbox":
-            if val == "true":
-                built_args.append(flag)
-        else:
-            if val:
-                built_args.append(flag)
-                built_args.append(str(val))
+    built_args = build_custom_args(profile.get("custom_args", []), overrides)
 
     args = built_args + list(extra_args)
 
