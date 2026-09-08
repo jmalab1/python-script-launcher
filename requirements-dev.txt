@@ -1,0 +1,2 @@
+# Development-only dependencies. The app itself must stay stdlib-only.
+pytest>=7.0

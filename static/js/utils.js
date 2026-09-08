@@ -6,6 +6,14 @@ export function formatTime(ts) {
     return ts ? new Date(ts * 1000).toLocaleTimeString() : '-';
 }
 
+export function formatDuration(seconds) {
+    if (seconds == null || seconds < 0) return '-';
+    if (seconds < 60) return `${seconds.toFixed(1)}s`;
+    const m = Math.floor(seconds / 60);
+    const s = Math.round(seconds % 60);
+    return `${m}m ${String(s).padStart(2, '0')}s`;
+}
+
 export function colorizeStatus(status) {
     return status === 'completed' ? 'text-green-600 dark:text-green-400'
         : status === 'failed' ? 'text-red-600 dark:text-red-400'

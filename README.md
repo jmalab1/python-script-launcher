@@ -128,7 +128,7 @@ static/                  # Frontend assets
   fonts/                 # Inter font
 
 scripts/                 # Example Python scripts
-tests/                   # Test suite (plain asserts, no pytest)
+tests/                   # pytest suite (dev-only; app stays stdlib-only)
 data/                    # Runtime data (gitignored)
 ```
 
@@ -148,20 +148,19 @@ The `scripts/` directory contains demo scripts:
 
 ## Running Tests
 
-Tests use plain script-style asserts (no pytest):
+Tests use pytest (a dev-only dependency; the app itself needs nothing installed):
 
 ```bash
-python3 tests/test_workflows.py
-python3 tests/test_workflow_execute.py
-python3 tests/test_workflow_steps.py
+python3 -m pytest tests/
 ```
 
-Run the full suite:
+Run a single file or test:
 
 ```bash
-python3 tests/test_workflows.py && python3 tests/test_workflow_execute.py && python3 tests/test_workflow_steps.py
+python3 -m pytest tests/test_workflows.py
+python3 -m pytest tests/test_workflow_execute.py -k parallel
 ```
 
 ## Requirements
 
-Python 3.10+ with only the standard library. No third-party packages needed.
+Python 3.10+ with only the standard library — no packages needed to run the app. Unit tests additionally need pytest (`pip install pytest` or `pip install -r requirements-dev.txt`).

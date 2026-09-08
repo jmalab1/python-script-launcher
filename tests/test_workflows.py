@@ -1,66 +1,70 @@
 import json
-import shutil
-import sys
-import tempfile
 import time
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import launcher.api.workflows as workflows
 
-tmp = Path(tempfile.mkdtemp())
-workflows.WORKFLOWS_FILE = tmp / "workflows.json"
-workflows.PROFILES_FILE = tmp / "profiles.json"
 
-try:
-    # 1. empty store lists empty
+def write_profiles(store, data):
+    (store["profiles"]).write_text(json.dumps(data))
+
+
+def test_handle_list_empty(store):
     assert workflows.handle_list() == []
-    print("PASS: handle_list returns empty list when the file is missing")
 
-    # 2. create assigns an id and persists
+
+def test_handle_create_assigns_id_and_persists(store):
     w1 = workflows.handle_create({"name": "Chain", "steps": []})
     assert w1["id"].startswith("workflow_")
-    saved = json.loads(workflows.WORKFLOWS_FILE.read_text())
+    saved = json.loads(store["workflows"].read_text())
     assert [w["id"] for w in saved] == [w1["id"]]
-    print("PASS: handle_create assigns an id and persists")
 
-    # 3. create with same id replaces instead of duplicating
+
+def test_handle_create_upserts_on_duplicate_id(store):
+    w1 = workflows.handle_create({"name": "Chain", "steps": []})
     workflows.handle_create({"id": w1["id"], "name": "Chain Updated", "steps": []})
-    saved = json.loads(workflows.WORKFLOWS_FILE.read_text())
+    saved = json.loads(store["workflows"].read_text())
     assert len(saved) == 1 and saved[0]["name"] == "Chain Updated"
-    print("PASS: handle_create upserts on duplicate id")
 
-    # 4. explicit id is preserved
+
+def test_handle_create_keeps_explicit_ids(store):
     w2 = workflows.handle_create({"id": "custom", "name": "Other"})
     assert w2["id"] == "custom"
+
+
+def test_handle_delete_removes_only_target(store):
+    w1 = workflows.handle_create({"name": "Chain", "steps": []})
+    workflows.handle_create({"id": "custom", "name": "Other"})
     time.sleep(0.002)
     w3 = workflows.handle_create({"name": "Third"})
-    print("PASS: handle_create keeps explicit ids")
-
-    # 5. delete removes only the target
     workflows.handle_delete("custom")
-    saved = json.loads(workflows.WORKFLOWS_FILE.read_text())
+    saved = json.loads(store["workflows"].read_text())
     assert [w["id"] for w in saved] == [w1["id"], w3["id"]], saved
-    print("PASS: handle_delete removes only the target workflow")
 
-    # 6. reorder honors order, ignores unknown ids, tolerates empty order
+
+def test_handle_reorder_applies_order_and_survives_unknown_or_empty_ids(store):
+    w1 = workflows.handle_create({"name": "Chain", "steps": []})
+    time.sleep(0.002)
+    w3 = workflows.handle_create({"name": "Third"})
     ids = [w["id"] for w in workflows.handle_list()]
+    assert ids == [w1["id"], w3["id"]]
+
     workflows.handle_reorder({"order": list(reversed(ids))})
     assert [w["id"] for w in workflows.handle_list()] == list(reversed(ids))
+
     workflows.handle_reorder({"order": [w3["id"], "ghost_id"]})
     after = [w["id"] for w in workflows.handle_list()]
     assert after == [w3["id"], w1["id"]], after
+
     workflows.handle_reorder({"order": None})
     assert [w["id"] for w in workflows.handle_list()] == [w3["id"], w1["id"]]
-    print("PASS: handle_reorder applies order and survives unknown/empty ids")
 
-    # 7. create embeds a snapshot of each referenced profile into the steps
-    (tmp / "profiles.json").write_text(json.dumps([
+
+def test_handle_create_embeds_profile_snapshots_into_steps(store):
+    write_profiles(store, [
         {"id": "p1", "name": "One", "script_path": "/x/one.py", "args": [],
          "custom_args": [{"name": "--a", "type": "text", "value": "1"}]},
         {"id": "p2", "name": "Two", "script_path": "/x/two.py", "args": [], "custom_args": []},
-    ]))
+    ])
     w4 = workflows.handle_create({"name": "Snap", "steps": [
         {"type": "sequential", "profile_id": "p1", "args": []},
         {"type": "parallel", "profiles": [{"profile_id": "p2", "args": []}, {"profile_id": "ghost", "args": []}]},
@@ -69,18 +73,33 @@ try:
     assert w4["steps"][0]["profile"]["custom_args"] == [{"name": "--a", "type": "text", "value": "1"}]
     assert w4["steps"][1]["profiles"][0]["profile"]["name"] == "Two"
     assert "profile" not in w4["steps"][1]["profiles"][1]
-    print("PASS: handle_create embeds profile snapshots into steps")
 
-    # 8. snapshots are deep copies: later profile edits don't leak into saved workflows
-    (tmp / "profiles.json").write_text(json.dumps([
+
+def test_workflow_snapshots_stay_stable_when_profiles_change(store):
+    write_profiles(store, [
+        {"id": "p1", "name": "One", "script_path": "/x/one.py", "args": [],
+         "custom_args": [{"name": "--a", "type": "text", "value": "1"}]},
+    ])
+    w4 = workflows.handle_create({"name": "Snap", "steps": [
+        {"type": "sequential", "profile_id": "p1", "args": []},
+    ]})
+
+    write_profiles(store, [
         {"id": "p1", "name": "Renamed", "script_path": "/x/changed.py", "args": [], "custom_args": []},
-    ]))
+    ])
     saved_w4 = next(w for w in workflows.handle_list() if w["id"] == w4["id"])
     assert saved_w4["steps"][0]["profile"]["name"] == "One"
     assert saved_w4["steps"][0]["profile"]["script_path"] == "/x/one.py"
-    print("PASS: workflow snapshots stay stable when profiles change")
 
-    # 9. editing a workflow keeps its existing snapshot instead of re-syncing
+
+def test_handle_create_keeps_existing_snapshot_on_upsert(store):
+    write_profiles(store, [
+        {"id": "p1", "name": "One", "script_path": "/x/one.py", "args": [], "custom_args": []},
+    ])
+    w4 = workflows.handle_create({"name": "Snap", "steps": [
+        {"type": "sequential", "profile_id": "p1", "args": []},
+    ]})
+
     workflows.handle_create({"id": w4["id"], "name": "Snap Edited", "steps": [
         {"type": "sequential", "profile_id": "p1",
          "profile": {"id": "p1", "name": "One", "script_path": "/x/one.py", "args": [], "custom_args": []},
@@ -89,37 +108,51 @@ try:
     saved_w4 = next(w for w in workflows.handle_list() if w["id"] == w4["id"])
     assert saved_w4["steps"][0]["profile"]["name"] == "One"
     assert saved_w4["steps"][0]["profile"]["script_path"] == "/x/one.py"
-    print("PASS: handle_create keeps an existing snapshot on upsert")
-    # 10. duplicate copies a workflow with a new id, unique name and deep-copied steps
-    saved_before = json.loads(workflows.WORKFLOWS_FILE.read_text())
-    source = next(w for w in saved_before if w["id"] == w4["id"])
+
+
+def test_handle_duplicate_copies_workflow_with_steps_and_snapshots(store):
+    write_profiles(store, [
+        {"id": "p1", "name": "One", "script_path": "/x/one.py", "args": [], "custom_args": []},
+    ])
+    w4 = workflows.handle_create({"name": "Snap", "steps": [
+        {"type": "sequential", "profile_id": "p1", "args": []},
+    ]})
+    source = next(w for w in json.loads(store["workflows"].read_text()) if w["id"] == w4["id"])
+
     dup = workflows.handle_duplicate(w4["id"])
     assert dup["id"].startswith("workflow_") and dup["id"] != w4["id"]
-    assert dup["name"] == "Snap Edited (copy)"
-    saved = json.loads(workflows.WORKFLOWS_FILE.read_text())
+    assert dup["name"] == "Snap (copy)"
+    saved = json.loads(store["workflows"].read_text())
     dup_saved = next(w for w in saved if w["id"] == dup["id"])
     assert [w["id"] for w in saved][-2:] == [w4["id"], dup["id"]]
     assert dup_saved["steps"] == source["steps"]
     assert dup_saved["steps"][0]["profile"]["name"] == "One"
-    print("PASS: handle_duplicate copies a workflow with steps and snapshots")
 
-    # 11. duplicate is a deep copy: editing the source steps does not affect the duplicate
+
+def test_handle_duplicate_deep_copies_workflow_steps(store):
+    write_profiles(store, [
+        {"id": "p1", "name": "One", "script_path": "/x/one.py", "args": [], "custom_args": []},
+    ])
+    w4 = workflows.handle_create({"name": "Snap", "steps": [
+        {"type": "sequential", "profile_id": "p1", "args": []},
+    ]})
+    dup = workflows.handle_duplicate(w4["id"])
+
+    source = next(w for w in json.loads(store["workflows"].read_text()) if w["id"] == w4["id"])
     source["steps"][0]["profile"]["name"] = "Mutated"
     workflows.handle_create({"id": w4["id"], **source})
-    saved = json.loads(workflows.WORKFLOWS_FILE.read_text())
+    saved = json.loads(store["workflows"].read_text())
     dup_saved = next(w for w in saved if w["id"] == dup["id"])
     assert dup_saved["steps"][0]["profile"]["name"] == "One", dup_saved
-    print("PASS: handle_duplicate deep copies workflow steps")
 
-    # 12. duplicate bumps the name when a copy already exists
+
+def test_handle_duplicate_keeps_workflow_names_unique_across_repeats(store):
+    w4 = workflows.handle_create({"name": "Snap", "steps": []})
+    dup = workflows.handle_duplicate(w4["id"])
     dup2 = workflows.handle_duplicate(w4["id"])
-    assert dup2["name"] == "Snap Edited (copy 2)"
-    print("PASS: handle_duplicate keeps workflow names unique across repeats")
+    assert dup["name"] == "Snap (copy)"
+    assert dup2["name"] == "Snap (copy 2)"
 
-    # 13. duplicate of a missing id returns None
+
+def test_handle_duplicate_returns_none_for_unknown_workflows(store):
     assert workflows.handle_duplicate("ghost_id") is None
-    print("PASS: handle_duplicate returns None for unknown workflows")
-finally:
-    shutil.rmtree(tmp, ignore_errors=True)
-
-print("\nALL TESTS PASSED")

@@ -1,6 +1,6 @@
 import { html } from '../../vendor/standalone-preact.esm.js';
 import { useState } from '../../vendor/standalone-preact.esm.js';
-import { esc, formatTime, colorizeStatus } from '../utils.js';
+import { esc, formatTime, formatDuration, colorizeStatus } from '../utils.js';
 import { Pagination } from './Pagination.js';
 import { deleteHistoryEntry } from '../api.js';
 import { ConfirmModal } from './ConfirmModal.js';
@@ -30,14 +30,14 @@ export function HistoryTable({ data, pageSignal, onLoad, type, onOpenRun }) {
                         <th class="text-left py-2 px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">#</th>
                         <th class="text-left py-2 px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Name</th>
                         <th class="text-left py-2 px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Status</th>
-                        <th class="text-left py-2 px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Output</th>
+                        <th class="text-left py-2 px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Duration</th>
                         <th class="text-right py-2 px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Time</th>
                         <th class="w-8"></th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100 dark:divide-gray-700/60">
                     ${data.entries.map((e, idx) => {
-                        const preview = (e.output_preview || '').replace(/\n/g, ' ').substring(0, 60);
+                        const stepsFailed = e.steps_total != null && e.steps_ok < e.steps_total;
                         const sc = colorizeStatus(e.status);
                         const rowNum = data.total - (data.page - 1) * data.per_page - idx;
                         const entryKey = e.id || e.run_id;
@@ -48,7 +48,9 @@ export function HistoryTable({ data, pageSignal, onLoad, type, onOpenRun }) {
                                 <td class="py-2 px-3 text-gray-400">${rowNum}</td>
                                 <td class="py-2 px-3 font-medium text-gray-800 dark:text-gray-200">${esc(e.name)}</td>
                                 <td class="py-2 px-3"><span class=${sc}>${e.status}</span></td>
-                                <td class="py-2 px-3 text-gray-500 dark:text-gray-400 font-mono truncate max-w-[200px]">${esc(preview)}</td>
+                                <td class="py-2 px-3 text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                                    ${formatDuration(e.duration)}${e.steps_total != null ? html` · <span class=${stepsFailed ? 'text-red-500 dark:text-red-400' : ''}>${e.steps_ok}/${e.steps_total} steps</span>` : ''}
+                                </td>
                                 <td class="py-2 px-3 text-right text-gray-500 dark:text-gray-400 whitespace-nowrap">${formatTime(e.started_at)}</td>
                                 <td class="py-2 px-1">
                                     <button onClick=${(ev) => { ev.stopPropagation(); setPendingDelete({ id: entryKey, name: e.name }); }}

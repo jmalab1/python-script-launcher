@@ -2,6 +2,27 @@ from ..storage import save_json, load_history
 from ..config import HISTORY_FILE
 
 
+def summarize_entry(entry):
+    summary = dict(entry)
+    started_at = entry.get("started_at")
+    timestamp = entry.get("timestamp")
+    if (
+        isinstance(started_at, (int, float))
+        and isinstance(timestamp, (int, float))
+        and timestamp >= started_at
+    ):
+        summary["duration"] = round(timestamp - started_at, 1)
+    else:
+        summary["duration"] = None
+    if entry.get("type") == "workflow" and isinstance(entry.get("steps"), dict):
+        steps = entry["steps"]
+        summary["steps_total"] = len(steps)
+        summary["steps_ok"] = sum(
+            1 for s in steps.values() if s.get("status") == "completed"
+        )
+    return summary
+
+
 def handle_list(page, per_page, type_filter):
     all_history = load_history()
     if type_filter:
@@ -11,7 +32,7 @@ def handle_list(page, per_page, type_filter):
     start = (page - 1) * per_page
     end = start + per_page
     return {
-        "entries": all_history[start:end],
+        "entries": [summarize_entry(e) for e in all_history[start:end]],
         "total": total,
         "page": page,
         "per_page": per_page,
