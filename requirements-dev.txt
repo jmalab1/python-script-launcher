@@ -5,5 +5,5 @@ pytest>=7.0
 # After installing, fetch a browser: python3 -m playwright install chromium
 pytest-playwright>=0.5
 
-# Animated-GIF output for the screencast demo (scripts/make_screencast.py --gif)
+# Animated-GIF output for the screencast demo (scripts/dev/make_screencast.py --gif)
 pillow>=10.0

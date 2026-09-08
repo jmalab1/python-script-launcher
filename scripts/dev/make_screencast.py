@@ -8,8 +8,8 @@ while recording video.
 
 The finished recording is written to demo/launcher_demo.webm by default:
 
-    python3 scripts/make_screencast.py
-    python3 scripts/make_screencast.py --output demo/tour.webm --headed
+    python3 scripts/dev/make_screencast.py
+    python3 scripts/dev/make_screencast.py --output demo/tour.webm --headed
 
 Requires the dev dependencies (pytest-playwright) and Chromium:
     pip install -r requirements-dev.txt
@@ -30,9 +30,9 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 SERVER_MAIN = ROOT / "tests" / "e2e" / "server_main.py"
-EXAMPLE_SCRIPTS = ROOT / "scripts"
+EXAMPLE_SCRIPTS = ROOT / "scripts" / "testing"
 
 
 def _free_port():

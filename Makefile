@@ -44,4 +44,4 @@ test-e2e:
 	python3 -m pytest tests/e2e/
 
 demo:
-	python3 scripts/make_screencast.py
+	python3 scripts/dev/make_screencast.py

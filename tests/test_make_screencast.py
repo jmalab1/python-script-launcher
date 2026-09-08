@@ -1,8 +1,9 @@
 """Source-inspection tests for the screencast demo generator.
 
-scripts/make_screencast.py is a dev tool (like the e2e tests) rather than app
-code, so these tests inspect its source instead of running the full recording,
-which would be slow and need a display-free browser launch on every test run.
+scripts/dev/make_screencast.py is a dev tool (like the e2e tests) rather than
+app code, so these tests inspect its source instead of running the full
+recording, which would be slow and need a display-free browser launch on every
+test run.
 They pin down the properties that keep the demo safe and complete: isolated
 data dir, real server boot, video recording, and full panel coverage.
 """
@@ -11,7 +12,7 @@ import ast
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-SCRIPT = ROOT / "scripts" / "make_screencast.py"
+SCRIPT = ROOT / "scripts" / "dev" / "make_screencast.py"
 
 
 def _source():
@@ -23,7 +24,7 @@ def _tree():
 
 
 def test_screencast_script_exists_and_parses():
-    assert SCRIPT.exists(), "scripts/make_screencast.py is missing"
+    assert SCRIPT.exists(), "scripts/dev/make_screencast.py is missing"
     _tree()  # raises SyntaxError on malformed source
 
 

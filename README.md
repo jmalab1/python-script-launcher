@@ -189,7 +189,9 @@ static/                  # Frontend assets
   vendor/                # Vendored Preact + Tailwind
   fonts/                 # Inter font
 
-scripts/                 # Example Python scripts + dev tooling (screencast demo)
+scripts/                 # Demo material for exercising the launcher
+  testing/               # Example scripts (profiles, workflows, failure tests)
+  dev/                   # Dev tooling (screencast demo generator)
 tests/                   # pytest suite (dev-only; app stays stdlib-only)
   e2e/                   # Playwright end-to-end browser tests
 data/                    # Runtime data (gitignored)
@@ -197,7 +199,7 @@ data/                    # Runtime data (gitignored)
 
 ## Example Scripts
 
-The `scripts/` directory contains demo scripts:
+The `scripts/testing/` directory holds example scripts for exercising the launcher:
 
 | Script | Purpose | Key Arguments |
 |---|---|---|
@@ -208,6 +210,8 @@ The `scripts/` directory contains demo scripts:
 | `send_email.py` | Email simulation | `--to`, `--subject` |
 | `backup.py` | File backup | `--dir`, `--compress` |
 | `unstable_task.py` | Random failures | `--fail-rate` |
+
+Dev tooling (not part of the example workload) lives in `scripts/dev/`.
 
 ## Running Tests
 
@@ -243,13 +247,13 @@ Notes:
 
 ### Demo Screencast
 
-`scripts/make_screencast.py` records a narrated-less video tour of the app with Playwright. It boots the real server on a free port with a throwaway data directory, seeds it with realistic profiles, a workflow, schedules, and run history (built from the example scripts), then drives the browser through every panel — running a profile with live output, executing a workflow, the schedule editor's live cron preview, the audit trail, server logs, and the theme toggle — while recording the screen.
+`scripts/dev/make_screencast.py` records a narrated-less video tour of the app with Playwright. It boots the real server on a free port with a throwaway data directory, seeds it with realistic profiles, a workflow, schedules, and run history (built from the example scripts), then drives the browser through every panel — running a profile with live output, executing a workflow, the schedule editor's live cron preview, the audit trail, server logs, and the theme toggle — while recording the screen.
 
 ```bash
 make demo                                    # writes demo/launcher_demo.webm
-python3 scripts/make_screencast.py --headed  # watch while it records
-python3 scripts/make_screencast.py --output demo/tour.webm --pause 1.5
-python3 scripts/make_screencast.py --gif demo/launcher_demo.gif   # also an animated GIF
+python3 scripts/dev/make_screencast.py --headed  # watch while it records
+python3 scripts/dev/make_screencast.py --output demo/tour.webm --pause 1.5
+python3 scripts/dev/make_screencast.py --gif demo/launcher_demo.gif   # also an animated GIF
 ```
 
 Requires the same dev setup as the e2e tests (`pip install -r requirements-dev.txt` and `python3 -m playwright install chromium`). The `--gif` mode samples screenshots during the tour and assembles them with Pillow (also in `requirements-dev.txt`), resizing to `--gif-width` (default 800px); identical adjacent frames are merged so the pacing matches the recording. The output lands in `demo/` (gitignored); the throwaway data directory is removed afterwards.
