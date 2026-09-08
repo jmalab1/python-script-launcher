@@ -32,6 +32,15 @@ _LEGACY_FILES = {
 
 
 def _get_conn():
+    if DB_PATH.exists() and not os.access(DB_PATH, os.W_OK):
+        try:
+            import shutil
+            uid = os.getuid()
+            DB_PATH.chown(uid, -1)
+            log.info("Fixed ownership of %s for uid %d", DB_PATH, uid)
+        except (OSError, PermissionError):
+            log.warning("Cannot fix ownership of %s — DB may be read-only", DB_PATH)
+    DATA_DIR.mkdir(exist_ok=True)
     conn = sqlite3.connect(str(DB_PATH), timeout=10, check_same_thread=False)
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA foreign_keys=ON")
