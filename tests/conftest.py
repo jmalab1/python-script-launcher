@@ -8,43 +8,43 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 
-@pytest.fixture
-def store(tmp_path, monkeypatch):
-    """Redirect every module-level store path to a temp dir.
+class _Store:
+    """Redirect every module-level store path to a temp SQLite DB.
 
     The api/runner/storage modules each import their path constants from
-    launcher.config at module level, so every copy must be patched.
-    Returns a dict of the redirected paths.
+    launcher.config at module level, so DB_PATH must be patched.
+    Provides seed/read helpers for test data setup.
     """
+
+    def __init__(self, db_path):
+        self._db_path = db_path
+
+    def seed(self, table, data):
+        """Write a list of dicts into the given collection table."""
+        from launcher.storage import save_json
+        save_json(table, list(data))
+
+    def read(self, table):
+        """Read all rows from the given collection table as a list of dicts."""
+        from launcher.storage import load_json
+        return load_json(table)
+
+
+@pytest.fixture
+def store(tmp_path, monkeypatch):
+    """Redirect every module-level store path to a temp SQLite DB."""
     import launcher.config as config
     import launcher.storage as storage
-    import launcher.runner as runner
-    import launcher.api.history as history
-    import launcher.api.profiles as profiles
-    import launcher.api.workflows as workflows
-    import launcher.api.runs as runs
-    import launcher.api.audit as audit
 
-    paths = {
-        "profiles": tmp_path / "profiles.json",
-        "workflows": tmp_path / "workflows.json",
-        "history": tmp_path / "history.json",
-        "audit": tmp_path / "audit.json",
-    }
-    monkeypatch.setattr(config, "WORKFLOWS_FILE", paths["workflows"])
-    monkeypatch.setattr(storage, "HISTORY_FILE", paths["history"])
-    monkeypatch.setattr(storage, "AUDIT_FILE", paths["audit"])
-    monkeypatch.setattr(runner, "PROFILES_FILE", paths["profiles"])
-    monkeypatch.setattr(history, "HISTORY_FILE", paths["history"])
-    monkeypatch.setattr(profiles, "PROFILES_FILE", paths["profiles"])
-    monkeypatch.setattr(workflows, "PROFILES_FILE", paths["profiles"])
-    monkeypatch.setattr(workflows, "WORKFLOWS_FILE", paths["workflows"])
-    monkeypatch.setattr(runs, "PROFILES_FILE", paths["profiles"])
-    monkeypatch.setattr(runs, "HISTORY_FILE", paths["history"])
-    monkeypatch.setattr(audit, "AUDIT_FILE", paths["audit"])
-    monkeypatch.setattr(audit, "PROFILES_FILE", paths["profiles"])
-    monkeypatch.setattr(audit, "WORKFLOWS_FILE", paths["workflows"])
-    return paths
+    db_path = tmp_path / "launcher.db"
+    monkeypatch.setattr(config, "DB_PATH", db_path)
+    monkeypatch.setattr(config, "DATA_DIR", tmp_path)
+    monkeypatch.setattr(storage, "DB_PATH", db_path)
+    monkeypatch.setattr(storage, "DATA_DIR", tmp_path)
+    storage._db_initialized = False
+
+    s = _Store(db_path)
+    yield s
 
 
 @pytest.fixture

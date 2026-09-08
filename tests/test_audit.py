@@ -1,5 +1,3 @@
-import json
-
 import launcher.storage as storage
 import launcher.api.audit as audit
 import launcher.api.profiles as profiles
@@ -15,7 +13,7 @@ def test_record_audit_appends_entry_with_fields(store):
     assert entry["entity_type"] == "profile"
     assert entry["entity_id"] == "p1"
     assert entry["name"] == "One"
-    saved = json.loads(store["audit"].read_text())
+    saved = store.read("audit")
     assert saved[-1]["after"] == {"id": "p1", "name": "One"}
 
 
@@ -25,12 +23,12 @@ def test_record_audit_omits_empty_snapshots(store):
 
 
 def test_load_audit_backfills_missing_ids(store):
-    store["audit"].write_text(json.dumps([
+    store.seed("audit", [
         {"action": "created", "entity_type": "profile", "entity_id": "p1", "name": "One"},
-    ]))
+    ])
     entries = storage.load_audit()
     assert entries[0]["id"]
-    assert json.loads(store["audit"].read_text())[0]["id"] == entries[0]["id"]
+    assert store.read("audit")[0]["id"] == entries[0]["id"]
 
 
 def test_record_audit_caps_entries(store, monkeypatch):

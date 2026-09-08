@@ -11,6 +11,7 @@ import webbrowser
 from pathlib import Path
 
 from .config import PORT, DATA_DIR, INDEX_FILE, STATIC_DIR
+
 from .api import profiles, workflows, runs, history, filesystem, audit
 from . import compress
 
@@ -243,10 +244,6 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
             elif path.startswith("/api/workflows/"):
                 workflow_id = path.split("/")[-1]
                 result = workflows.handle_delete(workflow_id)
-                self._json_response(result)
-
-            elif path == "/api/audit":
-                result = audit.handle_clear()
                 self._json_response(result)
 
             elif path.startswith("/api/audit/"):

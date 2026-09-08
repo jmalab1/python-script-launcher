@@ -5,7 +5,7 @@ import threading
 from datetime import datetime
 
 from .storage import load_json, save_json, save_history, update_history
-from .config import PROFILES_FILE
+from .config import COL_PROFILES
 
 DEFAULT_DATE_FORMAT = "%Y-%m-%d"
 
@@ -102,7 +102,7 @@ def _resolve_profile(profile_map, entry):
 
 
 def execute_workflow(workflow, run_id, started_at):
-    profiles = load_json(PROFILES_FILE)
+    profiles = load_json(COL_PROFILES)
     profile_map = {p["id"]: p for p in profiles}
 
     steps = workflow.get("steps", [])

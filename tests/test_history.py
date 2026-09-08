@@ -1,5 +1,3 @@
-import json
-
 import pytest
 
 import launcher.storage as storage
@@ -23,7 +21,7 @@ def legacy_history(store):
          "output": ["WF NEW"], "output_preview": "WF NEW", "started_at": 1788827247.0,
          "timestamp": 1788827247.1},
     ]
-    store["history"].write_text(json.dumps(legacy))
+    store.seed("history", legacy)
     return legacy
 
 
@@ -51,7 +49,7 @@ def test_delete_by_entry_id_removes_exactly_one_entry_and_siblings_survive(store
 
     ok = history.handle_delete(unstable["id"])
     assert ok["ok"]
-    left = storage.load_json(store["history"])
+    left = store.read("history")
     assert len(left) == 3, len(left)
     assert any(e["name"] == "Generate Report" and e["run_id"] == "prof_4" for e in left)
     assert all(e["name"] != "Unstable" for e in left)
@@ -65,14 +63,14 @@ def test_legacy_run_id_lookup_prefers_newest_matching_entry(store, legacy_histor
 def test_save_history_produces_uniquely_addressable_entries(store, legacy_history):
     storage.save_history("prof_1788828044000_13", "invalid file", "profile", "completed", 0,
                          ["hello"], 1788828044.9)
-    saved = storage.load_json(store["history"])[-1]
+    saved = store.read("history")[-1]
     assert saved["id"] and saved["run_id"] == "prof_1788828044000_13"
     assert history.handle_detail(saved["id"], "profile")["output"] == ["hello"]
 
 
 def test_delete_via_legacy_run_id_fallback(store, legacy_history):
     history.handle_delete("wf_2")
-    left = storage.load_json(store["history"])
+    left = store.read("history")
     assert all(e["run_id"] != "wf_2" for e in left)
 
 
@@ -82,7 +80,7 @@ def test_update_history_rewrites_the_newest_entry_for_a_run_in_place(store, lega
         workflow_log=["log a", "log b"], steps={"1. A": {"status": "completed"}},
     )
     assert ok is True
-    left = storage.load_json(store["history"])
+    left = store.read("history")
     assert len(left) == 4, "update must not append a duplicate entry"
     updated = [e for e in left if e["run_id"] == "wf_2"]
     assert len(updated) == 2, "legacy duplicates stay untouched except the newest"
@@ -98,9 +96,9 @@ def test_update_history_rewrites_the_newest_entry_for_a_run_in_place(store, lega
 
 def test_update_history_only_touches_the_fields_it_is_given(store):
     storage.save_history("wf_x", "W", "workflow", "running", None, [], 1.0, workflow_log=[], steps={})
-    before = storage.load_json(store["history"])[-1]
+    before = store.read("history")[-1]
     storage.update_history("wf_x", status="failed")
-    after = storage.load_json(store["history"])[-1]
+    after = store.read("history")[-1]
     assert after["status"] == "failed"
     assert after["id"] == before["id"] and after["started_at"] == before["started_at"]
     assert after["workflow_log"] == [] and after["steps"] == {}
@@ -109,7 +107,7 @@ def test_update_history_only_touches_the_fields_it_is_given(store):
 
 def test_update_history_returns_false_for_unknown_run_ids(store, legacy_history):
     assert storage.update_history("wf_404", status="completed") is False
-    assert len(storage.load_json(store["history"])) == 4
+    assert len(store.read("history")) == 4
 
 
 def test_bulk_delete_removes_matching_entries(store, legacy_history):
@@ -119,7 +117,7 @@ def test_bulk_delete_removes_matching_entries(store, legacy_history):
     result = history.handle_bulk_delete(target)
     assert result["ok"]
     assert result["removed"] == 2
-    left = storage.load_json(store["history"])
+    left = store.read("history")
     assert len(left) == 2
     assert all(e["name"] not in ("Unstable", "New") for e in left)
 
@@ -128,14 +126,14 @@ def test_bulk_delete_removes_nothing_for_unknown_ids(store, legacy_history):
     result = history.handle_bulk_delete(["nonexistent_id_1", "nonexistent_id_2"])
     assert result["ok"]
     assert result["removed"] == 0
-    assert len(storage.load_json(store["history"])) == 4
+    assert len(store.read("history")) == 4
 
 
 def test_bulk_delete_with_empty_ids(store, legacy_history):
     result = history.handle_bulk_delete([])
     assert result["ok"]
     assert result["removed"] == 0
-    assert len(storage.load_json(store["history"])) == 4
+    assert len(store.read("history")) == 4
 
 
 def test_bulk_delete_of_all_entries(store, legacy_history):
@@ -144,4 +142,4 @@ def test_bulk_delete_of_all_entries(store, legacy_history):
     result = history.handle_bulk_delete(all_ids)
     assert result["ok"]
     assert result["removed"] == 4
-    assert storage.load_json(store["history"]) == []
+    assert store.read("history") == []

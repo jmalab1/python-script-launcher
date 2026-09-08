@@ -4,7 +4,7 @@ import { esc, formatTime } from '../utils.js';
 import { Pagination } from './Pagination.js';
 import { ConfirmModal } from './ConfirmModal.js';
 import { auditPage, auditAction, auditEntity } from '../state.js';
-import { fetchAuditDetail, deleteAuditEntry, clearAudit, restoreAuditEntry } from '../api.js';
+import { fetchAuditDetail, deleteAuditEntry, restoreAuditEntry } from '../api.js';
 
 function formatAuditTime(ts) {
     return ts ? new Date(ts * 1000).toLocaleString() : '-';
@@ -95,7 +95,6 @@ function AuditDetailModal({ entry, onClose, onRestore }) {
 
 export function AuditTable({ data, pageSignal, onLoad }) {
     const [pendingDelete, setPendingDelete] = useState(null);
-    const [pendingClear, setPendingClear] = useState(false);
     const [detail, setDetail] = useState(null);
 
     if (!data || !data.entries || !data.entries.length) {
@@ -104,18 +103,10 @@ export function AuditTable({ data, pageSignal, onLoad }) {
             <div>
                 <div class="flex items-center justify-between gap-3 mb-3">
                     <${AuditFilters} onLoad=${onLoad} />
-                    <button onClick=${() => setPendingClear(true)}
-                        class="text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 px-2.5 py-1.5 rounded-lg transition disabled:opacity-40"
-                        disabled=${!filtered}>Clear log</button>
                 </div>
                 <div class="text-center py-8 text-sm text-gray-500 dark:text-gray-400">
                     ${filtered ? 'No audit entries match the current filters.' : 'No audit entries yet.'}
                 </div>
-                <${ConfirmModal} isOpen=${pendingClear} onClose=${() => setPendingClear(false)}
-                    onConfirm=${clearAudit}
-                    title="Clear audit log"
-                    message="This will permanently remove all audit entries. Profiles and workflows are not affected. This action cannot be undone."
-                    confirmLabel="Clear log" />
             </div>
         `;
     }
@@ -140,10 +131,6 @@ export function AuditTable({ data, pageSignal, onLoad }) {
         <div>
             <div class="flex items-center justify-between gap-3 mb-3">
                 <${AuditFilters} onLoad=${onLoad} />
-                <button onClick=${() => setPendingClear(true)}
-                    class="text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 px-2.5 py-1.5 rounded-lg transition">
-                    Clear log
-                </button>
             </div>
             <table class="w-full text-xs">
                 <thead>
@@ -201,11 +188,6 @@ export function AuditTable({ data, pageSignal, onLoad }) {
                 onConfirm=${confirmDelete}
                 title="Delete audit entry"
                 message=${html`This will permanently delete the audit entry for <span class="font-medium text-gray-700 dark:text-gray-200">${esc(pendingDelete ? pendingDelete.name : '')}</span>. This action cannot be undone.`} />
-            <${ConfirmModal} isOpen=${pendingClear} onClose=${() => setPendingClear(false)}
-                onConfirm=${clearAudit}
-                title="Clear audit log"
-                message="This will permanently remove all audit entries. Profiles and workflows are not affected. This action cannot be undone."
-                confirmLabel="Clear log" />
             <${AuditDetailModal} entry=${detail} onClose=${() => setDetail(null)} onRestore=${async (e) => { setDetail(null); await confirmRestore(e); }} />
         </div>
     `;

@@ -1,11 +1,10 @@
-import json
 import time
 
 import launcher.api.workflows as workflows
 
 
 def write_profiles(store, data):
-    (store["profiles"]).write_text(json.dumps(data))
+    store.seed("profiles", data)
 
 
 def test_handle_list_empty(store):
@@ -15,14 +14,14 @@ def test_handle_list_empty(store):
 def test_handle_create_assigns_id_and_persists(store):
     w1 = workflows.handle_create({"name": "Chain", "steps": []})
     assert w1["id"].startswith("workflow_")
-    saved = json.loads(store["workflows"].read_text())
+    saved = store.read("workflows")
     assert [w["id"] for w in saved] == [w1["id"]]
 
 
 def test_handle_create_upserts_on_duplicate_id(store):
     w1 = workflows.handle_create({"name": "Chain", "steps": []})
     workflows.handle_create({"id": w1["id"], "name": "Chain Updated", "steps": []})
-    saved = json.loads(store["workflows"].read_text())
+    saved = store.read("workflows")
     assert len(saved) == 1 and saved[0]["name"] == "Chain Updated"
 
 
@@ -37,7 +36,7 @@ def test_handle_delete_removes_only_target(store):
     time.sleep(0.002)
     w3 = workflows.handle_create({"name": "Third"})
     workflows.handle_delete("custom")
-    saved = json.loads(store["workflows"].read_text())
+    saved = store.read("workflows")
     assert [w["id"] for w in saved] == [w1["id"], w3["id"]], saved
 
 
@@ -117,12 +116,12 @@ def test_handle_duplicate_copies_workflow_with_steps_and_snapshots(store):
     w4 = workflows.handle_create({"name": "Snap", "steps": [
         {"type": "sequential", "profile_id": "p1", "args": []},
     ]})
-    source = next(w for w in json.loads(store["workflows"].read_text()) if w["id"] == w4["id"])
+    source = next(w for w in store.read("workflows") if w["id"] == w4["id"])
 
     dup = workflows.handle_duplicate(w4["id"])
     assert dup["id"].startswith("workflow_") and dup["id"] != w4["id"]
     assert dup["name"] == "Snap (copy)"
-    saved = json.loads(store["workflows"].read_text())
+    saved = store.read("workflows")
     dup_saved = next(w for w in saved if w["id"] == dup["id"])
     assert [w["id"] for w in saved][-2:] == [w4["id"], dup["id"]]
     assert dup_saved["steps"] == source["steps"]
@@ -138,10 +137,10 @@ def test_handle_duplicate_deep_copies_workflow_steps(store):
     ]})
     dup = workflows.handle_duplicate(w4["id"])
 
-    source = next(w for w in json.loads(store["workflows"].read_text()) if w["id"] == w4["id"])
+    source = next(w for w in store.read("workflows") if w["id"] == w4["id"])
     source["steps"][0]["profile"]["name"] = "Mutated"
     workflows.handle_create({"id": w4["id"], **source})
-    saved = json.loads(store["workflows"].read_text())
+    saved = store.read("workflows")
     dup_saved = next(w for w in saved if w["id"] == dup["id"])
     assert dup_saved["steps"][0]["profile"]["name"] == "One", dup_saved
 

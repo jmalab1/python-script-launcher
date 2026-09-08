@@ -2,7 +2,7 @@ import os
 import time
 import threading
 from ..storage import load_json, save_json, save_history
-from ..config import PROFILES_FILE, HISTORY_FILE
+from ..config import COL_PROFILES, COL_WORKFLOWS
 from ..runner import run_script, execute_workflow, active_runs, run_lock, run_counter, build_custom_args
 
 
@@ -41,7 +41,7 @@ def handle_run_profile(data, send_error):
     global run_counter
     profile_id = data.get("profile_id")
     arg_values = data.get("arg_values", {})
-    profiles = load_json(PROFILES_FILE)
+    profiles = load_json(COL_PROFILES)
     profile = next((p for p in profiles if p["id"] == profile_id), None)
     if not profile:
         return None, 404, {"error": "Profile not found"}
@@ -84,9 +84,7 @@ def handle_run_profile(data, send_error):
 def handle_run_workflow(data):
     global run_counter
     workflow_id = data.get("workflow_id")
-    workflows = load_json(PROFILES_FILE)
-    from ..config import WORKFLOWS_FILE
-    all_workflows = load_json(WORKFLOWS_FILE)
+    all_workflows = load_json(COL_WORKFLOWS)
     workflow = next((w for w in all_workflows if w["id"] == workflow_id), None)
     if not workflow:
         return None, 404, {"error": "Workflow not found"}

@@ -1,13 +1,11 @@
-import json
-
 import launcher.storage as storage
 import launcher.api.history as history
 
 
 def test_profile_entry_gets_duration_and_no_step_summary(store):
-    store["history"].write_text(json.dumps([
+    store.seed("history", [
         {"id": "a", "type": "profile", "started_at": 100.0, "timestamp": 104.2},
-    ]))
+    ])
     result = history.handle_list(1, 50, None)
     entry = result["entries"][0]
     assert entry["duration"] == 4.2, entry
@@ -15,7 +13,7 @@ def test_profile_entry_gets_duration_and_no_step_summary(store):
 
 
 def test_workflow_entry_gets_duration_plus_ok_total_step_counts(store):
-    store["history"].write_text(json.dumps([
+    store.seed("history", [
         {
             "id": "b",
             "type": "workflow",
@@ -27,35 +25,35 @@ def test_workflow_entry_gets_duration_plus_ok_total_step_counts(store):
                 "3. C": {"status": "completed"},
             },
         },
-    ]))
+    ])
     entry = history.handle_list(1, 50, None)["entries"][0]
     assert entry["duration"] == 5.0, entry
     assert entry["steps_total"] == 3 and entry["steps_ok"] == 2, entry
 
 
 def test_missing_or_inverted_timestamps_yield_duration_none(store):
-    store["history"].write_text(json.dumps([
+    store.seed("history", [
         {"id": "c", "type": "profile"},
         {"id": "d", "type": "profile", "started_at": 300.0, "timestamp": 299.0},
-    ]))
+    ])
     entries = history.handle_list(1, 50, None)["entries"]
     assert all(e["duration"] is None for e in entries), entries
 
 
 def test_running_entry_reports_no_duration_yet(store):
-    store["history"].write_text(json.dumps([
+    store.seed("history", [
         {"id": "r", "type": "workflow", "status": "running", "started_at": 100.0, "timestamp": 104.2},
-    ]))
+    ])
     entry = history.handle_list(1, 50, None)["entries"][0]
     assert entry["duration"] is None, entry
 
 
 def test_type_filter_respected_and_summary_only_on_workflow_entries(store):
-    store["history"].write_text(json.dumps([
+    store.seed("history", [
         {"id": "e", "type": "profile", "started_at": 1.0, "timestamp": 3.0},
         {"id": "f", "type": "workflow", "started_at": 1.0, "timestamp": 3.0,
          "steps": {"1. A": {"status": "completed"}}},
-    ]))
+    ])
     entries = history.handle_list(1, 50, "profile")["entries"]
     assert len(entries) == 1 and entries[0]["id"] == "e"
     assert entries[0]["duration"] == 2.0

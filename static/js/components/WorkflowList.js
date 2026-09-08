@@ -8,7 +8,7 @@ export function WorkflowList({ onEdit, onRun }) {
     if (!workflows.value.length) {
         return html`
             <div class="text-center py-16 text-gray-500 dark:text-gray-400">
-                <div class="text-4xl mb-3">&#128268;</div>
+                <div class="text-4xl mb-3">🔌</div>
                 <p>No workflows yet. Create one to chain profiles.</p>
             </div>
         `;

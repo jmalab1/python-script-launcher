@@ -1,5 +1,5 @@
 from ..storage import load_audit, load_json, save_json, record_audit
-from ..config import AUDIT_FILE, PROFILES_FILE, WORKFLOWS_FILE
+from ..config import COL_AUDIT, COL_PROFILES, COL_WORKFLOWS
 
 _LIST_FIELDS = ("id", "timestamp", "action", "entity_type", "entity_id", "name", "details")
 
@@ -37,12 +37,12 @@ def handle_detail(entry_id):
 def handle_delete(entry_id):
     entries = load_audit()
     remaining = [e for e in entries if e.get("id") != entry_id]
-    save_json(AUDIT_FILE, remaining)
+    save_json(COL_AUDIT, remaining)
     return {"ok": True}
 
 
 def handle_clear():
-    save_json(AUDIT_FILE, [])
+    save_json(COL_AUDIT, [])
     return {"ok": True}
 
 
@@ -58,15 +58,15 @@ def handle_restore(entry_id):
     if not isinstance(snapshot, dict) or not snapshot.get("id"):
         return None
     if entry.get("entity_type") == "profile":
-        path = PROFILES_FILE
+        collection = COL_PROFILES
     elif entry.get("entity_type") == "workflow":
-        path = WORKFLOWS_FILE
+        collection = COL_WORKFLOWS
     else:
         return None
-    entities = load_json(path)
+    entities = load_json(collection)
     entities = [e for e in entities if e.get("id") != snapshot["id"]]
     entities.append(snapshot)
-    save_json(path, entities)
+    save_json(collection, entities)
     record_audit(
         "restored",
         entry["entity_type"],

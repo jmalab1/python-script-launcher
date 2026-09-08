@@ -2,11 +2,11 @@ import copy
 import time
 import uuid
 from ..storage import load_json, save_json, record_audit, changed_fields
-from ..config import WORKFLOWS_FILE, PROFILES_FILE
+from ..config import COL_WORKFLOWS, COL_PROFILES
 
 
 def handle_list():
-    return load_json(WORKFLOWS_FILE)
+    return load_json(COL_WORKFLOWS)
 
 
 def _step_profile_entries(workflow):
@@ -19,7 +19,7 @@ def _step_profile_entries(workflow):
 
 
 def _embed_profile_snapshots(workflow):
-    profiles = {p.get("id"): p for p in load_json(PROFILES_FILE)}
+    profiles = {p.get("id"): p for p in load_json(COL_PROFILES)}
     for entry in _step_profile_entries(workflow):
         if entry.get("profile"):
             continue
@@ -29,7 +29,7 @@ def _embed_profile_snapshots(workflow):
 
 
 def handle_create(data):
-    workflows = load_json(WORKFLOWS_FILE)
+    workflows = load_json(COL_WORKFLOWS)
     workflow = data
     if not workflow.get("id"):
         workflow["id"] = f"workflow_{int(time.time() * 1000)}"
@@ -38,7 +38,7 @@ def handle_create(data):
     _embed_profile_snapshots(workflow)
     workflows = [w for w in workflows if w.get("id") != workflow["id"]]
     workflows.append(workflow)
-    save_json(WORKFLOWS_FILE, workflows)
+    save_json(COL_WORKFLOWS, workflows)
     record_audit(
         "created" if before is None else "updated",
         "workflow",
@@ -52,10 +52,10 @@ def handle_create(data):
 
 
 def handle_delete(workflow_id):
-    workflows = load_json(WORKFLOWS_FILE)
+    workflows = load_json(COL_WORKFLOWS)
     target = next((w for w in workflows if w.get("id") == workflow_id), None)
     workflows = [w for w in workflows if w.get("id") != workflow_id]
-    save_json(WORKFLOWS_FILE, workflows)
+    save_json(COL_WORKFLOWS, workflows)
     if target:
         record_audit(
             "deleted",
@@ -68,7 +68,7 @@ def handle_delete(workflow_id):
 
 
 def handle_duplicate(workflow_id):
-    workflows = load_json(WORKFLOWS_FILE)
+    workflows = load_json(COL_WORKFLOWS)
     index = next((i for i, w in enumerate(workflows) if w.get("id") == workflow_id), None)
     if index is None:
         return None
@@ -85,7 +85,7 @@ def handle_duplicate(workflow_id):
         n += 1
     duplicate["name"] = name
     workflows.insert(index + 1, duplicate)
-    save_json(WORKFLOWS_FILE, workflows)
+    save_json(COL_WORKFLOWS, workflows)
     record_audit(
         "created",
         "workflow",
@@ -99,14 +99,14 @@ def handle_duplicate(workflow_id):
 
 def handle_reorder(data):
     order = data.get("order") or []
-    workflows = load_json(WORKFLOWS_FILE)
+    workflows = load_json(COL_WORKFLOWS)
     by_id = {w.get("id"): w for w in workflows}
     ordered = [by_id[i] for i in order if i in by_id]
     ordered_set = {w.get("id") for w in ordered}
     ordered += [w for w in workflows if w.get("id") not in ordered_set]
     previous = [w.get("id") for w in workflows]
     current = [w.get("id") for w in ordered]
-    save_json(WORKFLOWS_FILE, ordered)
+    save_json(COL_WORKFLOWS, ordered)
     if current != previous:
         record_audit(
             "reordered",

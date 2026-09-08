@@ -1,4 +1,3 @@
-import json
 import time
 
 import pytest
@@ -16,7 +15,7 @@ def runs_env(store, tmp_path):
     slow_script = tmp_path / "slow.py"
     slow_script.write_text("import time\nprint('start', flush=True)\ntime.sleep(1.5)\nprint('done')\n")
 
-    (tmp_path / "profiles.json").write_text(json.dumps([
+    store.seed("profiles", [
         {"id": "p1", "name": "Simple", "script_path": str(pass_script), "args": [], "custom_args": []},
         {"id": "p2", "name": "Args", "script_path": str(echo_script), "args": ["static"], "custom_args": [
             {"name": "--flag", "type": "text", "value": "v1"},
@@ -33,11 +32,11 @@ def runs_env(store, tmp_path):
             {"name": "--level", "type": "enum", "options": "debug,info,warn", "value": "info"},
             {"name": "--unset", "type": "enum", "options": "a,b", "value": ""},
         ]},
-    ]))
-    (tmp_path / "workflows.json").write_text(json.dumps([
+    ])
+    store.seed("workflows", [
         {"id": "w1", "name": "Chain", "steps": [{"type": "sequential", "profile_id": "p1"}]},
         {"id": "w2", "name": "Long", "steps": [{"type": "sequential", "profile_id": "p4"}]},
-    ]))
+    ])
     return {"pass": pass_script, "echo": echo_script, "slow": slow_script}
 
 
@@ -52,7 +51,7 @@ def wait_done(run_id, timeout=10):
 
 
 def last_history(store):
-    return storage.load_json(store["history"])[-1]
+    return store.read("history")[-1]
 
 
 def test_polling_unknown_run_ids_returns_nothing(store):
@@ -153,7 +152,7 @@ def test_run_workflow_is_in_history_while_still_running_and_updates_in_place(sto
     # run survives the run modal being closed.
     deadline = time.time() + 5
     while time.time() < deadline:
-        entries = [e for e in storage.load_json(store["history"]) if e["run_id"] == rid]
+        entries = [e for e in store.read("history") if e["run_id"] == rid]
         if entries:
             break
         time.sleep(0.02)
@@ -163,7 +162,7 @@ def test_run_workflow_is_in_history_while_still_running_and_updates_in_place(sto
 
     info = wait_done(rid)
     assert info["status"] == "completed"
-    entries = [e for e in storage.load_json(store["history"]) if e["run_id"] == rid]
+    entries = [e for e in store.read("history") if e["run_id"] == rid]
     assert len(entries) == 1, "finishing the run must not append a second history entry"
     assert entries[0]["id"] == entry_id, "the existing entry should be updated, not replaced"
     assert entries[0]["status"] == "completed"

@@ -1,4 +1,3 @@
-import json
 import time
 
 import pytest
@@ -17,7 +16,7 @@ def runner_env(store, tmp_path):
     echo_script = tmp_path / "echo.py"
     echo_script.write_text("import sys\nprint(' '.join(sys.argv[1:]))\n")
 
-    (tmp_path / "profiles.json").write_text(json.dumps([
+    store.seed("profiles", [
         {"id": "p_pass", "name": "Pass", "script_path": str(pass_script), "args": [], "custom_args": []},
         {"id": "p_fail", "name": "Fail", "script_path": str(fail_script), "args": [], "custom_args": []},
         {"id": "p_echo", "name": "Echo", "script_path": str(echo_script), "args": ["static"], "custom_args": [
@@ -25,12 +24,12 @@ def runner_env(store, tmp_path):
             {"name": "--cb", "type": "checkbox", "value": "true"},
             {"name": "--off", "type": "checkbox", "value": "false"},
         ]},
-    ]))
+    ])
     return {"pass": pass_script, "fail": fail_script, "echo": echo_script}
 
 
 def last_history(store):
-    return storage.load_json(store["history"])[-1]
+    return store.read("history")[-1]
 
 
 def test_next_step_name_numbers_steps_per_run(new_run):
@@ -178,7 +177,7 @@ def test_workflow_creates_a_running_history_entry_then_finalizes_it_in_place(new
     ]}, rid, time.time())
 
     assert saved_statuses == ["running"], "only the initial entry is saved; the finish updates it in place"
-    entries = storage.load_json(store["history"])
+    entries = store.read("history")
     assert len(entries) == 1, "finished run must not duplicate its history entry"
     entry = entries[0]
     assert entry["run_id"] == rid and entry["type"] == "workflow" and entry["status"] == "completed"
@@ -207,7 +206,7 @@ def test_workflow_aborting_on_a_missing_profile_still_finalizes_history(new_run,
         {"type": "sequential", "profile_id": "ghost"},
         {"type": "sequential", "profile_id": "p_pass"},
     ]}, rid, time.time())
-    entries = storage.load_json(store["history"])
+    entries = store.read("history")
     assert len(entries) == 1
     entry = entries[0]
     assert entry["status"] == "failed"

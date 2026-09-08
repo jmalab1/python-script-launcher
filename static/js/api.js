@@ -128,11 +128,6 @@ export async function deleteAuditEntry(entryId) {
     await loadAudit();
 }
 
-export async function clearAudit() {
-    await api('DELETE', '/api/audit');
-    await loadAudit();
-}
-
 export async function restoreAuditEntry(entryId) {
     await api('POST', `/api/audit/${entryId}/restore`);
     await Promise.all([loadProfiles(), loadWorkflows(), loadAudit()]);
