@@ -44,7 +44,7 @@ export function Sidebar() {
         <aside class="hidden md:flex flex-col w-48 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700/60 shrink-0">
             <div class="flex items-center gap-2.5 px-5 py-4 border-b border-gray-200 dark:border-gray-700/60">
                 <svg class="w-7 h-7 text-violet-500 shrink-0" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><path d="M31.956 14.8C31.372 6.92 25.08.628 17.2.044V5.76a9.04 9.04 0 0 0 9.04 9.04h5.716ZM14.8 26.24v5.716C6.92 31.372.63 25.08.044 17.2H5.76a9.04 9.04 0 0 1 9.04 9.04Zm11.44-9.04h5.716c-.584 7.88-6.876 14.172-14.756 14.756V26.24a9.04 9.04 0 0 1 9.04-9.04ZM.044 14.8C.63 6.92 6.92.628 14.8.044V5.76a9.04 9.04 0 0 1-9.04 9.04H.044Z" fill="currentColor"/></svg>
-                <span class="text-[15px] font-bold text-gray-800 dark:text-gray-100 tracking-tight">Launcher</span>
+                <span class="text-[15px] font-bold text-gray-800 dark:text-gray-100 tracking-tight">Tiller</span>
             </div>
             <nav class="flex-1 px-3 py-3 space-y-0.5">
                 <button onClick=${() => showPanel('profiles')}
@@ -98,7 +98,7 @@ export function MobileHeader() {
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/></svg>
             </button>
             <svg class="w-6 h-6 text-violet-500 shrink-0" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><path d="M31.956 14.8C31.372 6.92 25.08.628 17.2.044V5.76a9.04 9.04 0 0 0 9.04 9.04h5.716ZM14.8 26.24v5.716C6.92 31.372.63 25.08.044 17.2H5.76a9.04 9.04 0 0 1 9.04 9.04Zm11.44-9.04h5.716c-.584 7.88-6.876 14.172-14.756 14.756V26.24a9.04 9.04 0 0 1 9.04-9.04ZM.044 14.8C.63 6.92 6.92.628 14.8.044V5.76a9.04 9.04 0 0 1-9.04 9.04H.044Z" fill="currentColor"/></svg>
-            <span class="text-sm font-bold text-gray-800 dark:text-gray-100">Launcher</span>
+            <span class="text-sm font-bold text-gray-800 dark:text-gray-100">Tiller</span>
             <div class="flex-1"></div>
             <button onClick=${toggleTheme}
                 class="p-1.5 rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/50">
@@ -122,7 +122,7 @@ export function MobileHeader() {
         <aside class="md:hidden ${sidebarOpen.value ? 'flex' : 'hidden'} fixed inset-y-0 left-0 z-50 flex-col w-48 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700/60">
             <div class="flex items-center gap-2.5 px-5 py-4 border-b border-gray-200 dark:border-gray-700/60">
                 <svg class="w-7 h-7 text-violet-500 shrink-0" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><path d="M31.956 14.8C31.372 6.92 25.08.628 17.2.044V5.76a9.04 9.04 0 0 0 9.04 9.04h5.716ZM14.8 26.24v5.716C6.92 31.372.63 25.08.044 17.2H5.76a9.04 9.04 0 0 1 9.04 9.04Zm11.44-9.04h5.716c-.584 7.88-6.876 14.172-14.756 14.756V26.24a9.04 9.04 0 0 1 9.04-9.04ZM.044 14.8C.63 6.92 6.92.628 14.8.044V5.76a9.04 9.04 0 0 1-9.04 9.04H.044Z" fill="currentColor"/></svg>
-                <span class="text-[15px] font-bold text-gray-800 dark:text-gray-100 tracking-tight">Launcher</span>
+                <span class="text-[15px] font-bold text-gray-800 dark:text-gray-100 tracking-tight">Tiller</span>
             </div>
             <nav class="flex-1 px-3 py-3 space-y-0.5">
                 <button onClick=${() => showPanel('profiles')}

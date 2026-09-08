@@ -432,11 +432,11 @@ def main():
         server = http.server.ThreadingHTTPServer(("127.0.0.1", PORT), LauncherHandler)
     except OSError as e:
         log.error("Could not start server on port %s: %s", PORT, e)
-        log.error("Is another instance of the launcher already running?")
+        log.error("Is another instance of Tiller already running?")
         if os.name == "nt":
             input("Press Enter to exit...")
         sys.exit(1)
-    log.info("Python Web Launcher running at http://127.0.0.1:%s", PORT)
+    log.info("Tiller running at http://127.0.0.1:%s", PORT)
     log.info("Press Ctrl+C to stop.")
     scheduler.start()
     if os.name == "nt":
