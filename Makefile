@@ -1,4 +1,4 @@
-.PHONY: start stop restart test test-e2e
+.PHONY: start stop restart test test-e2e demo
 
 PIDFILE := .server.pid
 
@@ -25,3 +25,6 @@ test:
 
 test-e2e:
 	python3 -m pytest tests/e2e/
+
+demo:
+	python3 scripts/make_screencast.py

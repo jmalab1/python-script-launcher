@@ -1,6 +1,8 @@
-# Python Web Launcher
+# Tiller
 
-A local, zero-dependency web tool for managing and running Python scripts through a browser UI. No `pip install`, no database, no build step -- just run it.
+Tiller is a local, zero-dependency web tool for managing and running Python scripts through a browser UI. No `pip install`, no database, no build step -- just run it.
+
+![Tiller demo](demo/launcher_demo.gif)
 
 ## Features
 
@@ -98,7 +100,7 @@ When a profile is added to a workflow, its current custom argument values are ca
 
 ## Scheduling Runs
 
-The **Schedules** panel runs profiles or workflows automatically while the launcher is running — for example "run this script every hour".
+The **Schedules** panel runs profiles or workflows automatically while Tiller is running — for example "run this script every hour".
 
 ### Creating a Schedule
 
@@ -139,7 +141,7 @@ minute hour day-of-month month day-of-week
 ### Behaviour
 
 - Times are **local wall-clock time**, minute granularity. On DST change days a scheduled wall-clock time may be skipped or run twice, like a real cron.
-- **Missed runs are skipped**: if the launcher is not running when a run is due, the next run happens at the next normal occurrence.
+- **Missed runs are skipped**: if Tiller is not running when a run is due, the next run happens at the next normal occurrence.
 - **No overlap**: a schedule will not start a new run while its previous run is still active; the run starts on the next tick once the previous one finishes (ticks are every `SCHEDULER_TICK_SECONDS`).
 - **Run now** fires a schedule immediately without changing its cadence.
 - Scheduled runs use the profile's stored argument values (as shown on the card) and appear in **Run History** with a "Scheduled" badge. Profile and workflow cards show a clock badge while an enabled schedule exists.
@@ -187,7 +189,7 @@ static/                  # Frontend assets
   vendor/                # Vendored Preact + Tailwind
   fonts/                 # Inter font
 
-scripts/                 # Example Python scripts
+scripts/                 # Example Python scripts + dev tooling (screencast demo)
 tests/                   # pytest suite (dev-only; app stays stdlib-only)
   e2e/                   # Playwright end-to-end browser tests
 data/                    # Runtime data (gitignored)
@@ -238,6 +240,19 @@ Notes:
 
 - Each run boots the server as a subprocess on a free port with a throwaway data directory, so e2e tests never touch your real `data/` store.
 - Tests run headless; add `--headed` to watch them in a visible browser window.
+
+### Demo Screencast
+
+`scripts/make_screencast.py` records a narrated-less video tour of the app with Playwright. It boots the real server on a free port with a throwaway data directory, seeds it with realistic profiles, a workflow, schedules, and run history (built from the example scripts), then drives the browser through every panel — running a profile with live output, executing a workflow, the schedule editor's live cron preview, the audit trail, server logs, and the theme toggle — while recording the screen.
+
+```bash
+make demo                                    # writes demo/launcher_demo.webm
+python3 scripts/make_screencast.py --headed  # watch while it records
+python3 scripts/make_screencast.py --output demo/tour.webm --pause 1.5
+python3 scripts/make_screencast.py --gif demo/launcher_demo.gif   # also an animated GIF
+```
+
+Requires the same dev setup as the e2e tests (`pip install -r requirements-dev.txt` and `python3 -m playwright install chromium`). The `--gif` mode samples screenshots during the tour and assembles them with Pillow (also in `requirements-dev.txt`), resizing to `--gif-width` (default 800px); identical adjacent frames are merged so the pacing matches the recording. The output lands in `demo/` (gitignored); the throwaway data directory is removed afterwards.
 
 ## Requirements
 

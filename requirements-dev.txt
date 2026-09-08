@@ -4,3 +4,6 @@ pytest>=7.0
 # End-to-end browser tests (tests/e2e).
 # After installing, fetch a browser: python3 -m playwright install chromium
 pytest-playwright>=0.5
+
+# Animated-GIF output for the screencast demo (scripts/make_screencast.py --gif)
+pillow>=10.0
