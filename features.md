@@ -15,10 +15,8 @@
 ## Low Priority
 
 - **Keyboard shortcuts** — `Ctrl+N` new profile, `Ctrl+R` run selected, `Esc` close modals.
-- **Profile grouping** — organize profiles into tags.
 - **Template variables** — `{date}`, `{timestamp}`, `{random}` placeholders in argument fields.
 - **Workflow conditional steps** — skip a step based on the previous step's output or exit code.
 - **Export run output** — save script output to a file from the run modal.
-- **Log rotation** — cap `server.log` size or auto-rotate.
 - **Browser notifications** — desktop notification when a workflow completes.
 - **Confirmation before running** — optional "are you sure?" for profiles with destructive arguments.

@@ -182,6 +182,17 @@ def test_audit_panel_lists_seeded_changes(page, launcher_server):
     expect(workflow_row).to_be_visible()
 
 
+def test_logs_panel_shows_live_server_log(page, launcher_server):
+    page.goto(launcher_server["base_url"])
+
+    page.get_by_role("button", name="Logs").click()
+    expect(page.get_by_role("heading", name="Server Logs", exact=True)).to_be_visible()
+
+    # Page load and API polling generate request lines in the server's own log.
+    line = page.locator("#panel-logs .font-mono > div", has_text="GET").first
+    expect(line).to_be_visible(timeout=10000)
+
+
 def test_theme_toggle_updates_root_class_and_persists(page, launcher_server):
     page.goto(launcher_server["base_url"])
     expect(page.get_by_role("heading", name="Profiles", exact=True)).to_be_visible()

@@ -3,16 +3,20 @@ import json
 import logging
 import mimetypes
 import os
+import re
 import sys
 import threading
+import time
 import traceback
 import urllib.parse
 import webbrowser
+from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
-from .config import PORT, DATA_DIR, INDEX_FILE, STATIC_DIR
+from .config import PORT, DATA_DIR, INDEX_FILE, STATIC_DIR, log_file
+from .config import LOG_MAX_BYTES, LOG_BACKUP_COUNT
 
-from .api import profiles, workflows, runs, history, filesystem, audit
+from .api import profiles, workflows, runs, history, filesystem, audit, logs
 from . import compress
 
 logging.basicConfig(
@@ -21,6 +25,80 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 log = logging.getLogger("launcher")
+
+
+class TimestampedRotatingFileHandler(RotatingFileHandler):
+    """Size-based rotation whose backups carry the rollover datetime.
+
+    Backups are named <log>.YYYY-MM-DD_HH-MM-SS instead of <log>.1, .2, ...
+    so it is obvious when each one was written. RotatingFileHandler's
+    default pruning only recognizes numeric suffixes, so getFilesToDelete
+    is overridden to prune the oldest timestamped backups.
+    """
+
+    SUFFIX_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}(?:-\d+)?$")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.namer = self._timestamped_name
+
+    def _timestamped_name(self, default_name):
+        stamp = time.strftime("%Y-%m-%d_%H-%M-%S")
+        candidate = f"{self.baseFilename}.{stamp}"
+        n = 1
+        while os.path.exists(candidate):
+            candidate = f"{self.baseFilename}.{stamp}-{n}"
+            n += 1
+        return candidate
+
+    def getFilesToDelete(self):
+        dir_name, base_name = os.path.split(self.baseFilename)
+        names = []
+        for name in os.listdir(dir_name):
+            if name.startswith(base_name + "."):
+                suffix = name[len(base_name) + 1:]
+                if self.SUFFIX_PATTERN.match(suffix):
+                    names.append(name)
+        names.sort()
+        excess = len(names) - self.backupCount
+        if excess <= 0:
+            return []
+        return [os.path.join(dir_name, name) for name in names[:excess]]
+
+    def doRollover(self):
+        super().doRollover()
+        # Unlike the numeric-shift scheme, timestamped names accumulate,
+        # so pruning has to happen explicitly after each rollover.
+        for path in self.getFilesToDelete():
+            os.remove(path)
+
+
+def setup_file_logging():
+    """Mirror log output into a rotating data/server.log.
+
+    The Makefile redirect only covers Unix dev runs; this gives every
+    launch path (Windows start.bat, plain python launcher.py, e2e
+    harness) a portable log file that the /api/logs endpoint can serve.
+    Rotation keeps the file from growing without bound.
+    """
+    if getattr(setup_file_logging, "_done", False):
+        return
+    setup_file_logging._done = True
+    try:
+        log_file().parent.mkdir(parents=True, exist_ok=True)
+        handler = TimestampedRotatingFileHandler(
+            log_file(),
+            maxBytes=LOG_MAX_BYTES,
+            backupCount=LOG_BACKUP_COUNT,
+            encoding="utf-8",
+        )
+        handler.setFormatter(logging.Formatter(
+            "%(asctime)s [%(levelname)s] %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S",
+        ))
+        logging.getLogger().addHandler(handler)
+    except OSError as e:
+        log.warning("Could not open log file %s: %s", log_file(), e)
 
 
 class LauncherHandler(http.server.SimpleHTTPRequestHandler):
@@ -98,6 +176,11 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
 
             elif path == "/api/runs":
                 self._json_response(runs.handle_poll_all())
+
+            elif path == "/api/logs":
+                lines = query.get("lines", ["500"])[0]
+                after = query.get("after", [None])[0]
+                self._json_response(logs.handle_list(lines=lines, after=after))
 
             elif path.startswith("/api/runs/"):
                 run_id = path.split("/")[-1]
@@ -304,6 +387,7 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
 
 def main():
     DATA_DIR.mkdir(exist_ok=True)
+    setup_file_logging()
     try:
         server = http.server.ThreadingHTTPServer(("127.0.0.1", PORT), LauncherHandler)
     except OSError as e:

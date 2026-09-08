@@ -29,7 +29,9 @@ def main():
     config.DB_PATH = data_dir / "launcher.db"
     config.PORT = port
 
-    from launcher.server import LauncherHandler
+    from launcher.server import LauncherHandler, setup_file_logging
+
+    setup_file_logging()
 
     server = http.server.ThreadingHTTPServer(("127.0.0.1", port), LauncherHandler)
     server.serve_forever()

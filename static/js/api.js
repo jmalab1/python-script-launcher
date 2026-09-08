@@ -3,6 +3,7 @@ import {
     profileHistoryPage, workflowHistoryPage,
     profileHistoryData, workflowHistoryData,
     auditPage, auditData, auditAction, auditEntity,
+    logData, logOffset,
 } from './state.js';
 
 async function api(method, path, body) {
@@ -137,4 +138,23 @@ export async function loadAudit() {
 
 export async function fetchAuditDetail(entryId) {
     return api('GET', '/api/audit/' + entryId);
+}
+
+const LOG_TAIL = 500;
+const LOG_BUFFER = 2000;
+
+export async function loadLogs() {
+    const data = await api('GET', '/api/logs?lines=' + LOG_TAIL);
+    logData.value = data.entries;
+    logOffset.value = data.next_offset;
+}
+
+export async function pollLogs() {
+    const data = await api('GET', '/api/logs?after=' + logOffset.value);
+    if (data.reset) {
+        logData.value = data.entries;
+    } else if (data.entries.length) {
+        logData.value = [...logData.value, ...data.entries].slice(-LOG_BUFFER);
+    }
+    logOffset.value = data.next_offset;
 }

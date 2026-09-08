@@ -6,11 +6,12 @@ import {
     profileHistoryPage, workflowHistoryPage,
     auditData, auditPage,
     profileTags, workflowTags,
+    logData,
 } from './state.js';
 import {
     loadProfiles, loadWorkflows, checkAllScripts,
     loadProfileHistory, loadWorkflowHistory,
-    loadAudit,
+    loadAudit, loadLogs, pollLogs,
 } from './api.js';
 import { Sidebar, MobileHeader } from './components/Sidebar.js';
 import { ProfileList } from './components/ProfileList.js';
@@ -19,6 +20,7 @@ import { WorkflowList } from './components/WorkflowList.js';
 import { WorkflowModal } from './components/WorkflowModal.js';
 import { HistoryTable } from './components/HistoryTable.js';
 import { AuditTable } from './components/AuditTable.js';
+import { LogViewer } from './components/LogViewer.js';
 import { RunModal } from './components/RunModal.js';
 import { TagManager } from './components/TagManager.js';
 
@@ -26,6 +28,7 @@ function App() {
     const [initialized, setInitialized] = useState(false);
     const [profileTimer, setProfileTimer] = useState(null);
     const [workflowTimer, setWorkflowTimer] = useState(null);
+    const [logTimer, setLogTimer] = useState(null);
 
     const [runOpen, setRunOpen] = useState(false);
     const [runId, setRunId] = useState(null);
@@ -67,6 +70,7 @@ function App() {
 
         if (profileTimer) clearInterval(profileTimer);
         if (workflowTimer) clearInterval(workflowTimer);
+        if (logTimer) clearInterval(logTimer);
 
         if (currentPanel.value === 'profiles') {
             loadProfileHistory();
@@ -81,10 +85,16 @@ function App() {
         if (currentPanel.value === 'audit') {
             loadAudit();
         }
+        if (currentPanel.value === 'logs') {
+            loadLogs();
+            const t = setInterval(pollLogs, 2000);
+            setLogTimer(t);
+        }
 
         return () => {
             if (profileTimer) clearInterval(profileTimer);
             if (workflowTimer) clearInterval(workflowTimer);
+            if (logTimer) clearInterval(logTimer);
         };
     }, [currentPanel.value, initialized]);
 
@@ -212,6 +222,25 @@ function App() {
                                     </header>
                                     <div class="p-3 flex-1 min-h-0 overflow-hidden">
                                         <${AuditTable} data=${auditData.value} pageSignal=${auditPage} onLoad=${loadAudit} />
+                                    </div>
+                                </div>
+                            </div>
+                        ` : ''}
+
+                        ${currentPanel.value === 'logs' ? html`
+                            <div id="panel-logs" class="panel flex flex-col flex-1 min-h-0">
+                                <div class="flex items-center justify-between mb-6 shrink-0">
+                                    <div class="min-w-0">
+                                        <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Server Logs</h1>
+                                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Live view of the launcher's own log file — new lines are tailed every 2 seconds.</p>
+                                    </div>
+                                </div>
+                                <div class="bg-white dark:bg-gray-800 shadow-xs rounded-xl border border-gray-200 dark:border-gray-700/60 flex flex-col flex-1 min-h-0">
+                                    <header class="px-5 py-4 border-b border-gray-100 dark:border-gray-700/60 shrink-0">
+                                        <h2 class="font-semibold text-gray-800 dark:text-gray-100">server.log</h2>
+                                    </header>
+                                    <div class="p-3 flex-1 min-h-0 overflow-hidden">
+                                        <${LogViewer} data=${logData.value} />
                                     </div>
                                 </div>
                             </div>

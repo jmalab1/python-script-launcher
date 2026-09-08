@@ -7,6 +7,7 @@ A local, zero-dependency web tool for managing and running Python scripts throug
 - **Profiles**: Reusable script presets with a name, script path, and arguments. Run with one click.
 - **Workflows**: Chain profiles as sequential steps or parallel groups, with configurable error handling.
 - **Run History**: Full audit log of every run with output capture and status tracking.
+- **Server Logs**: Built-in log viewer with live tailing, level highlighting, and text search; the log file rotates automatically.
 - **Custom Arguments**: Define typed input fields that appear on profile cards for quick parameter editing.
 - **Modern UI**: Dark/light theme, drag-to-reorder, responsive layout, terminal-style output viewer.
 
@@ -102,6 +103,10 @@ All config lives in `launcher/config.py`:
 |---|---|---|
 | `PORT` | `8765` | Server listen port |
 | `DATA_DIR` | `data/` | Where JSON data files are stored |
+| `LOG_MAX_BYTES` | `2000000` | Rotate `data/server.log` when it reaches this size (`0` disables rotation) |
+| `LOG_BACKUP_COUNT` | `3` | How many datetime-stamped copies (e.g. `server.log.2026-09-08_11-19-10`) to keep |
+
+The server mirrors its log output to `data/server.log` (rotated automatically at `LOG_MAX_BYTES`). The **Logs** panel in the UI tails this file with live updates, level highlighting, and text search, so it works on every platform regardless of how the server was launched — `python3 launcher.py`, the Makefile, or `start.bat` on Windows.
 
 ## Project Structure
 
@@ -121,6 +126,8 @@ launcher/                # Python backend
     runs.py              # Run execution and polling
     history.py           # History list, detail, delete
     filesystem.py        # Directory browsing, file dialog
+    audit.py             # Audit trail list and detail
+    logs.py              # Server log tailing for the Logs panel
 
 static/                  # Frontend assets
   js/                    # Preact components
@@ -164,7 +171,7 @@ python3 -m pytest tests/test_workflow_execute.py -k parallel
 
 ### End-to-End Browser Tests
 
-`tests/e2e/` contains Playwright tests that drive the real app — the stdlib server plus the browser UI — through actual page interactions (navigation, running profiles and workflows, modals, history, audit, theme toggle).
+`tests/e2e/` contains Playwright tests that drive the real app — the stdlib server plus the browser UI — through actual page interactions (navigation, running profiles and workflows, modals, history, audit, logs, theme toggle).
 
 They are part of the normal suite (`python3 -m pytest tests/`) and are skipped automatically when Playwright or Chromium is not installed. To run them:
 
