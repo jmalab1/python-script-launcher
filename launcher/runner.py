@@ -106,7 +106,7 @@ def _resolve_profile(profile_map, entry):
     return profile_map.get(entry.get("profile_id"))
 
 
-def execute_workflow(workflow, run_id, started_at):
+def execute_workflow(workflow, run_id, started_at, trigger="manual", schedule=None):
     profiles = load_json(COL_PROFILES)
     profile_map = {p["id"]: p for p in profiles}
 
@@ -123,6 +123,9 @@ def execute_workflow(workflow, run_id, started_at):
     save_history(
         run_id, workflow.get("name", "Unnamed"), "workflow", "running", None,
         list(workflow_log), started_at, workflow_log=list(workflow_log), steps={},
+        trigger=trigger,
+        schedule_id=schedule.get("id") if schedule else None,
+        schedule_name=schedule.get("name") if schedule else None,
     )
 
     for step in steps:

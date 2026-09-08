@@ -104,7 +104,10 @@ export function HistoryTable({ data, pageSignal, onLoad, type, onOpenRun }) {
                                             class="w-3.5 h-3.5 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 cursor-pointer" />
                                     </td>
                                     <td class="py-2 px-3 text-gray-400 font-mono text-[11px]">${rowId}</td>
-                                    <td class="py-2 px-3 font-medium text-gray-800 dark:text-gray-200">${esc(e.name)}</td>
+                                    <td class="py-2 px-3 font-medium text-gray-800 dark:text-gray-200">
+                                        ${esc(e.name)}
+                                        ${e.trigger === 'scheduled' ? html`<span class="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-violet-500/10 text-violet-600 dark:text-violet-400 align-middle" title="Started by a schedule">${esc('Scheduled')}</span>` : ''}
+                                    </td>
                                     <td class="py-2 px-3"><span class="inline-flex items-center gap-1.5 ${sc}">${e.status === 'running' ? html`<span class="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse"></span>` : ''}${e.status}</span></td>
                                     <td class="py-2 px-3 text-gray-500 dark:text-gray-400 whitespace-nowrap">
                                         ${formatDuration(e.duration)}${e.steps_total != null ? html` · <span class=${stepsFailed ? 'text-red-500 dark:text-red-400' : ''}>${e.steps_ok}/${e.steps_total} steps</span>` : ''}

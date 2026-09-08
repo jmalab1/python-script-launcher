@@ -2,7 +2,7 @@ import copy
 import time
 import uuid
 from ..storage import load_json, save_json, record_audit, changed_fields
-from ..config import COL_PROFILES
+from ..config import COL_PROFILES, COL_SCHEDULES
 
 
 def handle_list():
@@ -75,12 +75,17 @@ def handle_permanent_delete(profile_id):
     profiles = [p for p in profiles if p.get("id") != profile_id]
     save_json(COL_PROFILES, profiles)
     if target:
+        schedules = load_json(COL_SCHEDULES)
+        removed_schedules = [s["id"] for s in schedules if s.get("target_id") == profile_id]
+        if removed_schedules:
+            save_json(COL_SCHEDULES, [s for s in schedules if s.get("target_id") != profile_id])
         record_audit(
             "permanently_deleted",
             "profile",
             profile_id,
             target.get("name"),
             before=copy.deepcopy(target),
+            details={"schedules_removed": removed_schedules} if removed_schedules else None,
         )
     return {"ok": True}
 

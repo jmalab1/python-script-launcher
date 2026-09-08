@@ -19,6 +19,7 @@ _TABLES = {
     "workflows": "workflows",
     "history": "history",
     "audit": "audit",
+    "schedules": "schedules",
 }
 
 _db_initialized = False
@@ -75,6 +76,10 @@ def _init_db(conn):
             CREATE INDEX IF NOT EXISTS idx_history_run_id ON history(run_id);
             CREATE INDEX IF NOT EXISTS idx_history_type ON history(type);
             CREATE TABLE IF NOT EXISTS audit (
+                id TEXT PRIMARY KEY,
+                json TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS schedules (
                 id TEXT PRIMARY KEY,
                 json TEXT NOT NULL
             );
@@ -218,7 +223,7 @@ def load_history():
         return history
 
 
-def save_history(run_id, name, run_type, status, returncode, output, started_at, workflow_log=None, steps=None, command=None):
+def save_history(run_id, name, run_type, status, returncode, output, started_at, workflow_log=None, steps=None, command=None, trigger=None, schedule_id=None, schedule_name=None):
     entry = {
         "id": uuid.uuid4().hex,
         "run_id": run_id,
@@ -231,6 +236,12 @@ def save_history(run_id, name, run_type, status, returncode, output, started_at,
         "started_at": started_at,
         "timestamp": time.time(),
     }
+    if trigger is not None:
+        entry["trigger"] = trigger
+    if schedule_id is not None:
+        entry["schedule_id"] = schedule_id
+    if schedule_name is not None:
+        entry["schedule_name"] = schedule_name
     if workflow_log is not None:
         entry["workflow_log"] = workflow_log
     if steps is not None:

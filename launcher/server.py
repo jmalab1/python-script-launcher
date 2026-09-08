@@ -16,8 +16,9 @@ from pathlib import Path
 from .config import PORT, DATA_DIR, INDEX_FILE, STATIC_DIR, log_file
 from .config import LOG_MAX_BYTES, LOG_BACKUP_COUNT
 
-from .api import profiles, workflows, runs, history, filesystem, audit, logs
+from .api import profiles, workflows, runs, history, filesystem, audit, logs, schedules
 from . import compress
+from . import scheduler
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -143,6 +144,17 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
 
             elif path == "/api/workflows":
                 self._json_response(workflows.handle_list())
+
+            elif path == "/api/schedules":
+                self._json_response(schedules.handle_list())
+
+            elif path == "/api/schedules/preview":
+                cron_expr = query.get("cron", [""])[0]
+                result, error = schedules.handle_preview(cron_expr)
+                if error:
+                    self._json_response(error, 400)
+                else:
+                    self._json_response(result)
 
             elif path == "/api/history":
                 page = int(query.get("page", ["1"])[0])
@@ -290,6 +302,29 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
                 else:
                     self._json_response({"error": "Not found"}, 404)
 
+            elif path == "/api/schedules":
+                result, error = schedules.handle_create(data)
+                if error:
+                    self._json_response(error, 400)
+                else:
+                    self._json_response(result)
+
+            elif path.startswith("/api/schedules/") and path.endswith("/toggle"):
+                schedule_id = path[len("/api/schedules/"):-len("/toggle")]
+                result, error = schedules.handle_toggle(schedule_id)
+                if error:
+                    self._json_response(error, 404)
+                else:
+                    self._json_response(result)
+
+            elif path.startswith("/api/schedules/") and path.endswith("/run_now"):
+                schedule_id = path[len("/api/schedules/"):-len("/run_now")]
+                result, error = schedules.handle_run_now(schedule_id)
+                if error:
+                    self._json_response(error, 400)
+                else:
+                    self._json_response(result)
+
             elif path == "/api/history/bulk":
                 ids = data.get("ids", [])
                 result = history.handle_bulk_delete(ids)
@@ -347,6 +382,11 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
                 result = workflows.handle_delete(workflow_id)
                 self._json_response(result)
 
+            elif path.startswith("/api/schedules/"):
+                schedule_id = path.split("/")[-1]
+                result, error = schedules.handle_delete(schedule_id)
+                self._json_response(result)
+
             elif path == "/api/history":
                 result = history.handle_clear()
                 self._json_response(result)
@@ -398,6 +438,7 @@ def main():
         sys.exit(1)
     log.info("Python Web Launcher running at http://127.0.0.1:%s", PORT)
     log.info("Press Ctrl+C to stop.")
+    scheduler.start()
     if os.name == "nt":
         threading.Timer(1.0, lambda: webbrowser.open(f"http://127.0.0.1:{PORT}")).start()
     try:

@@ -8,6 +8,10 @@ COL_PROFILES = "profiles"
 COL_WORKFLOWS = "workflows"
 COL_HISTORY = "history"
 COL_AUDIT = "audit"
+COL_SCHEDULES = "schedules"
+
+# How often the scheduler thread wakes up to check for due schedules.
+SCHEDULER_TICK_SECONDS = 5
 
 STATIC_DIR = Path(__file__).parent.parent / "static"
 INDEX_FILE = Path(__file__).parent.parent / "index.html"

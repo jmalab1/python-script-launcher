@@ -1,5 +1,5 @@
 import {
-    profiles, workflows, scriptStatusCache,
+    profiles, workflows, schedules, scriptStatusCache,
     profileHistoryPage, workflowHistoryPage,
     profileHistoryData, workflowHistoryData,
     auditPage, auditData, auditAction, auditEntity,
@@ -19,6 +19,30 @@ export async function loadProfiles() {
 
 export async function loadWorkflows() {
     workflows.value = await api('GET', '/api/workflows');
+}
+
+export async function loadSchedules() {
+    schedules.value = await api('GET', '/api/schedules');
+}
+
+export async function saveSchedule(data) {
+    return api('POST', '/api/schedules', data);
+}
+
+export async function toggleSchedule(id) {
+    return api('POST', `/api/schedules/${id}/toggle`);
+}
+
+export async function runScheduleNow(id) {
+    return api('POST', `/api/schedules/${id}/run_now`);
+}
+
+export async function deleteSchedule(id) {
+    return api('DELETE', '/api/schedules/' + id);
+}
+
+export async function previewCron(cron) {
+    return api('GET', '/api/schedules/preview?cron=' + encodeURIComponent(cron));
 }
 
 export async function checkScriptExists(path) {

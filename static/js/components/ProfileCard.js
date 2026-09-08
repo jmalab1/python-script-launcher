@@ -1,6 +1,6 @@
 import { html, useState } from '../../vendor/standalone-preact.esm.js';
 import { esc } from '../utils.js';
-import { scriptStatusCache, TRASH_GROUP } from '../state.js';
+import { scriptStatusCache, schedules, TRASH_GROUP } from '../state.js';
 import { runProfile, saveProfile as apiSaveProfile, loadProfiles, duplicateProfile, restoreProfile, permanentDeleteProfile } from '../api.js';
 import { ConfirmModal } from './ConfirmModal.js';
 
@@ -13,6 +13,7 @@ export function ProfileCard({ profile, onEdit, onRun }) {
     const [pendingDelete, setPendingDelete] = useState(null);
     const [pendingPermanentDelete, setPendingPermanentDelete] = useState(null);
     const isTrashed = p.group === TRASH_GROUP;
+    const hasSchedule = schedules.value.some(s => s.enabled && s.target_type === 'profile' && s.target_id === p.id);
 
     async function handleRun() {
         if (scriptMissing) return;
@@ -72,6 +73,12 @@ export function ProfileCard({ profile, onEdit, onRun }) {
                     <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-100">${esc(p.name)}</h3>
                     <div class="flex flex-wrap items-center gap-1.5 mt-2">
                         ${scriptBadge}
+                        ${hasSchedule ? html`
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-violet-500/10 text-violet-600 dark:text-violet-400" title="Runs automatically on a schedule">
+                                <svg class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                Scheduled
+                            </span>
+                        ` : ''}
                         ${sa.map(a => html`<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-violet-500/10 text-violet-600 dark:text-violet-400">${esc(a)}</span>`)}
                     </div>
                     ${ca.length ? html`

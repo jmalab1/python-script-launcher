@@ -2,7 +2,7 @@ import copy
 import time
 import uuid
 from ..storage import load_json, save_json, record_audit, changed_fields
-from ..config import COL_WORKFLOWS, COL_PROFILES
+from ..config import COL_WORKFLOWS, COL_PROFILES, COL_SCHEDULES
 
 
 def handle_list():
@@ -95,12 +95,17 @@ def handle_permanent_delete(workflow_id):
     workflows = [w for w in workflows if w.get("id") != workflow_id]
     save_json(COL_WORKFLOWS, workflows)
     if target:
+        schedules = load_json(COL_SCHEDULES)
+        removed_schedules = [s["id"] for s in schedules if s.get("target_id") == workflow_id]
+        if removed_schedules:
+            save_json(COL_SCHEDULES, [s for s in schedules if s.get("target_id") != workflow_id])
         record_audit(
             "permanently_deleted",
             "workflow",
             workflow_id,
             target.get("name"),
             before=copy.deepcopy(target),
+            details={"schedules_removed": removed_schedules} if removed_schedules else None,
         )
     return {"ok": True}
 

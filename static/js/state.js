@@ -3,10 +3,11 @@ import { signal } from '../vendor/standalone-preact.esm.js';
 // App data (shared across components)
 export const profiles = signal([]);
 export const workflows = signal([]);
+export const schedules = signal([]);
 export const scriptStatusCache = signal({});
 
 // UI state
-export const PANELS = ['profiles', 'workflows', 'audit', 'logs'];
+export const PANELS = ['profiles', 'workflows', 'schedules', 'audit', 'logs'];
 
 function initialPanel() {
     const hash = location.hash.replace(/^#\/?/, '');

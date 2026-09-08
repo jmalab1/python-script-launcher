@@ -1,6 +1,6 @@
 import { html, useState } from '../../vendor/standalone-preact.esm.js';
 import { esc } from '../utils.js';
-import { profiles, scriptStatusCache, TRASH_GROUP } from '../state.js';
+import { profiles, schedules, scriptStatusCache, TRASH_GROUP } from '../state.js';
 import { runWorkflow, loadWorkflows, duplicateWorkflow, restoreWorkflow, permanentDeleteWorkflow } from '../api.js';
 import { ConfirmModal } from './ConfirmModal.js';
 
@@ -11,6 +11,7 @@ export function WorkflowCard({ workflow, onEdit, onRun }) {
     const [pendingDelete, setPendingDelete] = useState(null);
     const [pendingPermanentDelete, setPendingPermanentDelete] = useState(null);
     const isTrashed = w.group === TRASH_GROUP;
+    const hasSchedule = schedules.value.some(s => s.enabled && s.target_type === 'workflow' && s.target_id === w.id);
     const profileMap = Object.fromEntries(profiles.value.map(p => [p.id, p]));
     const profFor = (entry) => entry.profile || profileMap[entry.profile_id] || {};
     const cache = scriptStatusCache.value;
@@ -148,6 +149,12 @@ export function WorkflowCard({ workflow, onEdit, onRun }) {
                         <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-100">${esc(w.name)}</h3>
                         <div class="flex flex-wrap items-center gap-1.5 mt-1.5">
                             <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700/50 text-gray-600 dark:text-gray-400">${totalSteps} step${totalSteps !== 1 ? 's' : ''}</span>
+                            ${hasSchedule ? html`
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-violet-500/10 text-violet-600 dark:text-violet-400" title="Runs automatically on a schedule">
+                                    <svg class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    Scheduled
+                                </span>
+                            ` : ''}
                             ${hasMissingScripts ? html`<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 6a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 6zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/></svg>Missing script</span>` : ''}
                             ${w.continue_on_error ? html`<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400">continues on error</span>` : ''}
                         </div>

@@ -8,7 +8,6 @@
 
 - **Export/import profiles and workflows** — save as JSON files for sharing between instances or backing up configurations.
 - **Environment variable support** — define `KEY=value` pairs on profiles that are passed to the subprocess via `env`.
-- **Run scheduling** — cron-like periodic execution for profiles (e.g., "run this script every hour").
 - **Concurrent run limits** — configurable cap on how many scripts can run simultaneously.
 - **Script timeout** — kill long-running scripts after a configurable duration.
 

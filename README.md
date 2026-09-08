@@ -6,6 +6,7 @@ A local, zero-dependency web tool for managing and running Python scripts throug
 
 - **Profiles**: Reusable script presets with a name, script path, and arguments. Run with one click.
 - **Workflows**: Chain profiles as sequential steps or parallel groups, with configurable error handling.
+- **Schedules**: Run profiles or workflows automatically on cron-like schedules — every hour, daily at 09:00, weekdays at 08:30, or any 5-field cron expression.
 - **Run History**: Full audit log of every run with output capture and status tracking.
 - **Server Logs**: Built-in log viewer with live tailing, level highlighting, and text search; the log file rotates automatically.
 - **Custom Arguments**: Define typed input fields that appear on profile cards for quick parameter editing.
@@ -95,6 +96,55 @@ You can use both static arguments and custom fields in the same profile. Static 
 
 When a profile is added to a workflow, its current custom argument values are captured. You can override them per step in the workflow editor without changing the original profile. This lets the same profile run with different parameters in different workflow steps.
 
+## Scheduling Runs
+
+The **Schedules** panel runs profiles or workflows automatically while the launcher is running — for example "run this script every hour".
+
+### Creating a Schedule
+
+Click **New Schedule** (or **Edit** on an existing card) and pick:
+
+1. **What should run** — a profile or a workflow (trashed items are not selectable).
+2. **Label** (optional) — shown on the schedule card; defaults to the target's name.
+3. **Schedule** — either a friendly preset or a custom cron expression, with a live preview of the next few run times.
+4. **Enabled** — disabled schedules do nothing until re-enabled.
+
+### Presets
+
+Pick a preset kind and fill in the values — the compiled cron expression and the next few run times are previewed live as you type.
+
+| Preset | Options | Compiles to | Example |
+|---|---|---|---|
+| **Repeat every...** | any number 1–59 | `*/N * * * *` | every 7 minutes |
+| (unit: hours) | any number 1–23 | `0 */N * * *` | every 3 hours |
+| (unit: days) | any number 1–31, at a time | `M H */N * *` | every 2 days at 06:30 |
+| **Daily at a time** | any HH:MM | `M H * * *` | daily at 09:00 |
+| **Weekly on days at a time** | any day combination | `M H * * D,D,...` | Mondays & Fridays at 08:00 |
+| **Monthly on a day at a time** | day 1–31, any HH:MM | `M H D * *` | the 15th at 08:00 |
+
+Repeat counts are free number inputs clamped to valid cron ranges (a "minute" repeat can't exceed 59, and so on). Monthly schedules skip months that lack the chosen day (e.g. Feb 30); day repeats count from the 1st of the month.
+
+### Custom Cron
+
+Advanced users can enter any 5-field cron expression:
+
+```
+minute hour day-of-month month day-of-week
+```
+
+- Fields accept `*`, lists (`1,5`), ranges (`9-17`), and steps (`*/15`, `8-18/2`, `10/5`).
+- Day-of-week: `0` and `7` are Sunday, `1`–`6` are Monday–Saturday.
+- Classic cron semantics: when both day-of-month and day-of-week are restricted, the schedule fires when **either** matches.
+
+### Behaviour
+
+- Times are **local wall-clock time**, minute granularity. On DST change days a scheduled wall-clock time may be skipped or run twice, like a real cron.
+- **Missed runs are skipped**: if the launcher is not running when a run is due, the next run happens at the next normal occurrence.
+- **No overlap**: a schedule will not start a new run while its previous run is still active; the run starts on the next tick once the previous one finishes (ticks are every `SCHEDULER_TICK_SECONDS`).
+- **Run now** fires a schedule immediately without changing its cadence.
+- Scheduled runs use the profile's stored argument values (as shown on the card) and appear in **Run History** with a "Scheduled" badge. Profile and workflow cards show a clock badge while an enabled schedule exists.
+- Moving a profile or workflow to the trash pauses its schedule (the card shows "Target in trash"); restoring resumes it. **Permanently deleting** a target deletes its schedules.
+
 ## Configuration
 
 All config lives in `launcher/config.py`:
@@ -103,6 +153,7 @@ All config lives in `launcher/config.py`:
 |---|---|---|
 | `PORT` | `8765` | Server listen port |
 | `DATA_DIR` | `data/` | Where JSON data files are stored |
+| `SCHEDULER_TICK_SECONDS` | `5` | How often the scheduler wakes up to check for due schedules |
 | `LOG_MAX_BYTES` | `2000000` | Rotate `data/server.log` when it reaches this size (`0` disables rotation) |
 | `LOG_BACKUP_COUNT` | `3` | How many datetime-stamped copies (e.g. `server.log.2026-09-08_11-19-10`) to keep |
 
@@ -118,12 +169,14 @@ launcher/                # Python backend
   server.py              # HTTP server, routing, gzip
   config.py              # Port and file paths
   runner.py              # Script execution, workflow engine
+  scheduler.py           # Cron engine and background scheduler
   storage.py             # JSON persistence, history
   compress.py            # Gzip compression with caching
   api/                   # API route handlers
     profiles.py          # Profile CRUD, reorder, duplicate
     workflows.py         # Workflow CRUD, reorder, duplicate
     runs.py              # Run execution and polling
+    schedules.py         # Schedule CRUD, toggle, run-now, cron preview
     history.py           # History list, detail, delete
     filesystem.py        # Directory browsing, file dialog
     audit.py             # Audit trail list and detail

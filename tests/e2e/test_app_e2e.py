@@ -54,6 +54,10 @@ def test_sidebar_navigation_between_panels(page, launcher_server):
     expect(page.get_by_role("heading", name="Workflows", exact=True)).to_be_visible()
     assert page.url.endswith("#/workflows")
 
+    page.get_by_role("button", name="Schedules").click()
+    expect(page.get_by_role("heading", name="Schedules", exact=True)).to_be_visible()
+    assert page.url.endswith("#/schedules")
+
     page.get_by_role("button", name="Audit").click()
     expect(page.get_by_role("heading", name="Audit", exact=True)).to_be_visible()
     assert page.url.endswith("#/audit")
@@ -207,3 +211,51 @@ def test_theme_toggle_updates_root_class_and_persists(page, launcher_server):
     expect(page.get_by_role("button", name="Light Mode")).to_be_visible()
     assert page.evaluate("document.documentElement.classList.contains('dark')") is True
     assert page.evaluate("localStorage.getItem('theme')") == "dark"
+
+
+def test_schedules_panel_shows_schedule_and_card_badge(page, launcher_server):
+    created = launcher_server["api"]("POST", "/api/schedules", {
+        "name": "Hourly greeting",
+        "target_type": "profile",
+        "target_id": "profile_e2e_greet",
+        "cron": "0 * * * *",
+        "enabled": True,
+    })
+    try:
+        page.goto(launcher_server["base_url"])
+
+        page.get_by_role("button", name="Schedules").click()
+        panel = page.locator("#panel-schedules")
+        expect(panel.get_by_role("heading", name="Hourly greeting")).to_be_visible()
+        expect(panel.get_by_text("Every hour", exact=True)).to_be_visible()
+        expect(panel.get_by_text("Next:")).to_be_visible()
+
+        # The profile card advertises its schedule back on the Profiles panel.
+        page.get_by_role("button", name="Profiles").click()
+        card = _card(page, "panel-profiles", GREETING)
+        expect(card.get_by_text("Scheduled")).to_be_visible()
+    finally:
+        launcher_server["api"]("DELETE", f"/api/schedules/{created['id']}")
+
+
+def test_schedule_modal_repeat_builder_compiles_and_previews(page, launcher_server):
+    page.goto(launcher_server["base_url"])
+
+    page.get_by_role("button", name="Schedules").click()
+    page.get_by_role("button", name="New Schedule").click()
+    modal = _modal(page)
+
+    # Default preset: repeat every 30 minutes, compiled to cron with a live preview.
+    number_input = modal.locator("input[type='number']").first
+    expect(number_input).to_have_value("30")
+    expect(modal.get_by_text("*/30 * * * *", exact=True)).to_be_visible()
+    expect(modal.get_by_text("Every 30 minutes", exact=True)).to_be_visible()
+
+    number_input.fill("7")
+    expect(modal.get_by_text("*/7 * * * *", exact=True)).to_be_visible()
+    expect(modal.get_by_text("Every 7 minutes", exact=True)).to_be_visible()
+
+    unit_select = modal.locator("select").nth(2)
+    unit_select.select_option("hours")
+    expect(modal.get_by_text("0 */7 * * *", exact=True)).to_be_visible()
+    expect(modal.get_by_text("Every 7 hours", exact=True)).to_be_visible()

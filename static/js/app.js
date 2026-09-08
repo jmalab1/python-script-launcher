@@ -9,7 +9,7 @@ import {
     logData,
 } from './state.js';
 import {
-    loadProfiles, loadWorkflows, checkAllScripts,
+    loadProfiles, loadWorkflows, loadSchedules, checkAllScripts,
     loadProfileHistory, loadWorkflowHistory,
     loadAudit, loadLogs, pollLogs,
 } from './api.js';
@@ -18,6 +18,8 @@ import { ProfileList } from './components/ProfileList.js';
 import { ProfileModal } from './components/ProfileModal.js';
 import { WorkflowList } from './components/WorkflowList.js';
 import { WorkflowModal } from './components/WorkflowModal.js';
+import { SchedulesList } from './components/SchedulesList.js';
+import { ScheduleModal } from './components/ScheduleModal.js';
 import { HistoryTable } from './components/HistoryTable.js';
 import { AuditTable } from './components/AuditTable.js';
 import { LogViewer } from './components/LogViewer.js';
@@ -29,6 +31,7 @@ function App() {
     const [profileTimer, setProfileTimer] = useState(null);
     const [workflowTimer, setWorkflowTimer] = useState(null);
     const [logTimer, setLogTimer] = useState(null);
+    const [scheduleTimer, setScheduleTimer] = useState(null);
 
     const [runOpen, setRunOpen] = useState(false);
     const [runId, setRunId] = useState(null);
@@ -40,6 +43,9 @@ function App() {
 
     const [workflowOpen, setWorkflowOpen] = useState(false);
     const [editingWorkflow, setEditingWorkflow] = useState(null);
+
+    const [scheduleOpen, setScheduleOpen] = useState(false);
+    const [editingSchedule, setEditingSchedule] = useState(null);
 
     const [tagManagerOpen, setTagManagerOpen] = useState(false);
     const [tagManagerType, setTagManagerType] = useState('profiles');
@@ -58,7 +64,7 @@ function App() {
 
     useEffect(() => {
         async function init() {
-            await Promise.all([loadProfiles(), loadWorkflows(), loadProfileHistory()]);
+            await Promise.all([loadProfiles(), loadWorkflows(), loadSchedules(), loadProfileHistory()]);
             await checkAllScripts();
             setInitialized(true);
         }
@@ -71,6 +77,7 @@ function App() {
         if (profileTimer) clearInterval(profileTimer);
         if (workflowTimer) clearInterval(workflowTimer);
         if (logTimer) clearInterval(logTimer);
+        if (scheduleTimer) clearInterval(scheduleTimer);
 
         if (currentPanel.value === 'profiles') {
             loadProfileHistory();
@@ -81,6 +88,11 @@ function App() {
             loadWorkflowHistory();
             const t = setInterval(loadWorkflowHistory, 3000);
             setWorkflowTimer(t);
+        }
+        if (currentPanel.value === 'schedules') {
+            loadSchedules();
+            const t = setInterval(loadSchedules, 5000);
+            setScheduleTimer(t);
         }
         if (currentPanel.value === 'audit') {
             loadAudit();
@@ -95,6 +107,7 @@ function App() {
             if (profileTimer) clearInterval(profileTimer);
             if (workflowTimer) clearInterval(workflowTimer);
             if (logTimer) clearInterval(logTimer);
+            if (scheduleTimer) clearInterval(scheduleTimer);
         };
     }, [currentPanel.value, initialized]);
 
@@ -106,6 +119,11 @@ function App() {
     function openNewWorkflowModal() {
         setEditingWorkflow(null);
         setWorkflowOpen(true);
+    }
+
+    function openNewScheduleModal() {
+        setEditingSchedule(null);
+        setScheduleOpen(true);
     }
 
     function openRunModal(id, title, type) {
@@ -208,6 +226,25 @@ function App() {
                             </div>
                         ` : ''}
 
+                        ${currentPanel.value === 'schedules' ? html`
+                            <div id="panel-schedules" class="panel flex flex-col flex-1 min-h-0">
+                                <div class="flex items-center justify-between mb-6 shrink-0">
+                                    <div class="min-w-0">
+                                        <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Schedules</h1>
+                                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Run profiles and workflows automatically on a cron-like schedule — every hour, daily at noon, weekdays at 08:00, or any cron expression.</p>
+                                    </div>
+                                    <button onClick=${openNewScheduleModal}
+                                        class="bg-gray-900 text-gray-100 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-800 dark:hover:bg-white text-sm font-medium px-3 py-2 rounded-lg inline-flex items-center gap-1.5 transition">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                                        New Schedule
+                                    </button>
+                                </div>
+                                <div class="flex-1 min-h-0 overflow-y-auto">
+                                    <${SchedulesList} onEdit=${(s) => { setEditingSchedule(s); setScheduleOpen(true); }} />
+                                </div>
+                            </div>
+                        ` : ''}
+
                         ${currentPanel.value === 'audit' ? html`
                             <div id="panel-audit" class="panel flex flex-col flex-1 min-h-0">
                                 <div class="flex items-center justify-between mb-6 shrink-0">
@@ -252,6 +289,7 @@ function App() {
 
             <${ProfileModal} isOpen=${profileOpen} onClose=${() => setProfileOpen(false)} profile=${editingProfile} />
             <${WorkflowModal} isOpen=${workflowOpen} onClose=${() => setWorkflowOpen(false)} workflow=${editingWorkflow} />
+            <${ScheduleModal} isOpen=${scheduleOpen} onClose=${() => setScheduleOpen(false)} schedule=${editingSchedule} />
             <${RunModal} isOpen=${runOpen} onClose=${() => setRunOpen(false)} runId=${runId} title=${runTitle} runType=${runType} />
             <${TagManager}
                 isOpen=${tagManagerOpen}
