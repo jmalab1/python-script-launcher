@@ -53,6 +53,38 @@ try:
     profiles.handle_reorder({"order": None})
     assert [p["id"] for p in profiles.handle_list()] == [p3["id"], p1["id"]]
     print("PASS: handle_reorder applies order and survives unknown/empty ids")
+    # 7. duplicate copies a profile with a new id, unique "(copy)" name, right after the original
+    saved_before = json.loads(profiles.PROFILES_FILE.read_text())
+    target = next(p for p in saved_before if p["id"] == p3["id"])
+    target["custom_args"] = [{"name": "--flag", "type": "text", "value": "1"}]
+    profiles.handle_create(target)
+    dup = profiles.handle_duplicate(p3["id"])
+    assert dup["id"].startswith("profile_") and dup["id"] != p3["id"]
+    assert dup["name"] == "Three (copy)"
+    saved = json.loads(profiles.PROFILES_FILE.read_text())
+    ids = [p["id"] for p in saved]
+    assert len(saved) == 3
+    assert ids[ids.index(p3["id"]) + 1] == dup["id"]
+    print("PASS: handle_duplicate copies a profile with a new id and unique name")
+
+    # 8. duplicate is a deep copy: editing the source does not affect the duplicate
+    target["custom_args"][0]["value"] = "changed"
+    profiles.handle_create(target)
+    saved = json.loads(profiles.PROFILES_FILE.read_text())
+    dup_saved = next(p for p in saved if p["id"] == dup["id"])
+    assert dup_saved["custom_args"][0]["value"] == "1", dup_saved
+    print("PASS: handle_duplicate deep copies custom_args")
+
+    # 9. duplicate generates a fresh unique id every time and bumps the name
+    dup2 = profiles.handle_duplicate(p3["id"])
+    dup3 = profiles.handle_duplicate(p3["id"])
+    assert dup2["id"] != dup3["id"] and dup2["id"] != dup["id"]
+    assert dup2["name"] == "Three (copy 2)" and dup3["name"] == "Three (copy 3)"
+    print("PASS: handle_duplicate keeps ids and names unique across repeats")
+
+    # 10. duplicate of a missing id returns None
+    assert profiles.handle_duplicate("ghost_id") is None
+    print("PASS: handle_duplicate returns None for unknown profiles")
 finally:
     shutil.rmtree(tmp, ignore_errors=True)
 

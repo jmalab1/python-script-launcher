@@ -151,6 +151,14 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
                 result = profiles.handle_reorder(data)
                 self._json_response(result)
 
+            elif path.startswith("/api/profiles/") and path.endswith("/duplicate"):
+                profile_id = path[len("/api/profiles/"):-len("/duplicate")]
+                result = profiles.handle_duplicate(profile_id)
+                if result:
+                    self._json_response(result)
+                else:
+                    self._json_response({"error": "Not found"}, 404)
+
             elif path == "/api/workflows":
                 result = workflows.handle_create(data)
                 self._json_response(result)
@@ -158,6 +166,14 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
             elif path == "/api/workflows/reorder":
                 result = workflows.handle_reorder(data)
                 self._json_response(result)
+
+            elif path.startswith("/api/workflows/") and path.endswith("/duplicate"):
+                workflow_id = path[len("/api/workflows/"):-len("/duplicate")]
+                result = workflows.handle_duplicate(workflow_id)
+                if result:
+                    self._json_response(result)
+                else:
+                    self._json_response({"error": "Not found"}, 404)
 
             elif path == "/api/run/profile":
                 result, status, error = runs.handle_run_profile(data, self.send_error)

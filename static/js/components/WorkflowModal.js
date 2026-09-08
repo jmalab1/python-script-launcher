@@ -31,8 +31,14 @@ export function WorkflowModal({ isOpen, onClose, workflow }) {
         }
     }, [isOpen, workflow]);
 
+    function profileSnapshot(pid) {
+        const p = profileMap[pid];
+        return p ? JSON.parse(JSON.stringify(p)) : undefined;
+    }
+
     function addSequentialStep() {
-        setLocalSteps([...localSteps, { type: 'sequential', profile_id: profiles.value[0]?.id || '', args: [], _argsText: '' }]);
+        const pid = profiles.value[0]?.id || '';
+        setLocalSteps([...localSteps, { type: 'sequential', profile_id: pid, profile: profileSnapshot(pid), args: [], _argsText: '' }]);
     }
 
     function addParallelGroup() {
@@ -42,7 +48,8 @@ export function WorkflowModal({ isOpen, onClose, workflow }) {
     function addProfileToParallelGroup(groupIdx) {
         setLocalSteps(localSteps.map((s, i) => {
             if (i !== groupIdx || s.type !== 'parallel') return s;
-            return { ...s, profiles: [...s.profiles, { profile_id: profiles.value[0]?.id || '', args: [], _argsText: '' }] };
+            const pid = profiles.value[0]?.id || '';
+            return { ...s, profiles: [...s.profiles, { profile_id: pid, profile: profileSnapshot(pid), args: [], _argsText: '' }] };
         }));
     }
 
@@ -82,7 +89,7 @@ export function WorkflowModal({ isOpen, onClose, workflow }) {
 
     function countStepArgs(entry) {
         let count = parseArgsText(entry._argsText, entry.args).length;
-        const prof = profileMap[entry.profile_id];
+        const prof = entry.profile || profileMap[entry.profile_id];
         const overrides = entry.arg_values || {};
         for (const ca of ((prof && prof.custom_args) || [])) {
             const flag = ca.name || '';
@@ -98,7 +105,7 @@ export function WorkflowModal({ isOpen, onClose, workflow }) {
     }
 
     function customFieldsFor(entry, onSet) {
-        const prof = profileMap[entry.profile_id];
+        const prof = entry.profile || profileMap[entry.profile_id];
         const cas = (prof && prof.custom_args) || [];
         if (!cas.length) return null;
         return html`
@@ -140,12 +147,12 @@ export function WorkflowModal({ isOpen, onClose, workflow }) {
     function updateGroupProfile(groupIdx, profileIdx, pid) {
         setLocalSteps(localSteps.map((s, i) => {
             if (i !== groupIdx || s.type !== 'parallel') return s;
-            return { ...s, profiles: s.profiles.map((p, pi) => pi === profileIdx ? { ...p, profile_id: pid } : p) };
+            return { ...s, profiles: s.profiles.map((p, pi) => pi === profileIdx ? { ...p, profile_id: pid, profile: profileSnapshot(pid) } : p) };
         }));
     }
 
     function updateSequentialProfile(idx, pid) {
-        setLocalSteps(localSteps.map((s, i) => i === idx ? { ...s, profile_id: pid } : s));
+        setLocalSteps(localSteps.map((s, i) => i === idx ? { ...s, profile_id: pid, profile: profileSnapshot(pid) } : s));
     }
 
     function removeStep(idx) {
@@ -170,8 +177,8 @@ export function WorkflowModal({ isOpen, onClose, workflow }) {
             : !s.profile_id);
         if (missingProfile) { alert('Every step needs a selected profile.'); return; }
         const stepsToSave = localSteps.map(s => s.type === 'parallel'
-            ? { type: 'parallel', profiles: (s.profiles || []).map(p => ({ profile_id: p.profile_id, args: parseArgsText(p._argsText, p.args), arg_values: p.arg_values || {} })) }
-            : { type: 'sequential', profile_id: s.profile_id, args: parseArgsText(s._argsText, s.args), arg_values: s.arg_values || {} });
+            ? { type: 'parallel', profiles: (s.profiles || []).map(p => ({ profile_id: p.profile_id, profile: p.profile, args: parseArgsText(p._argsText, p.args), arg_values: p.arg_values || {} })) }
+            : { type: 'sequential', profile_id: s.profile_id, profile: s.profile, args: parseArgsText(s._argsText, s.args), arg_values: s.arg_values || {} });
         await saveWorkflow({
             id: editingId, name: trimmedName, steps: stepsToSave,
             extra_args: [], continue_on_error: continueOnError,
@@ -246,6 +253,7 @@ export function WorkflowModal({ isOpen, onClose, workflow }) {
                                                                 <select onChange=${e => updateGroupProfile(i, pi, e.target.value)}
                                                                     class="flex-1 min-w-0 bg-white dark:bg-gray-900/30 border border-gray-300 dark:border-gray-700/60 rounded px-2 py-1 text-xs text-gray-800 dark:text-gray-100 focus:border-violet-500 focus:ring-0 focus:ring-offset-0 transition">
                                                                     ${!p.profile_id ? html`<option value="" selected disabled>Select profile...</option>` : ''}
+                                                                    ${p.profile_id && !profileList.some(pl => pl.id === p.profile_id) ? html`<option value=${p.profile_id} selected>${esc(((p.profile && p.profile.name) || p.profile_id) + ' (snapshot)')}</option>` : ''}
                                                                     ${profileList.map(pl => html`<option value=${pl.id} selected=${p.profile_id === pl.id}>${esc(pl.name)} — ${esc(pl.script_path)}</option>`)}
                                                                 </select>
                                                                 <button onClick=${() => toggleArgs(`p${i}-${pi}`)}
@@ -276,6 +284,7 @@ export function WorkflowModal({ isOpen, onClose, workflow }) {
                                                 <select onChange=${e => updateSequentialProfile(i, e.target.value)}
                                                     class="flex-1 min-w-0 bg-white dark:bg-gray-900/30 border border-gray-300 dark:border-gray-700/60 rounded px-2 py-1 text-xs text-gray-800 dark:text-gray-100 focus:border-violet-500 focus:ring-0 focus:ring-offset-0 transition">
                                                     ${!s.profile_id ? html`<option value="" selected disabled>Select profile...</option>` : ''}
+                                                    ${s.profile_id && !profileList.some(pl => pl.id === s.profile_id) ? html`<option value=${s.profile_id} selected>${esc(((s.profile && s.profile.name) || s.profile_id) + ' (snapshot)')}</option>` : ''}
                                                     ${profileList.map(pl => html`<option value=${pl.id} selected=${s.profile_id === pl.id}>${esc(pl.name)} — ${esc(pl.script_path)}</option>`)}
                                                 </select>
                                                 <button onClick=${() => toggleArgs(`s${i}`)}

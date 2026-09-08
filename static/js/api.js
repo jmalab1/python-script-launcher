@@ -44,6 +44,10 @@ export async function deleteProfile(id) {
     return api('DELETE', '/api/profiles/' + id);
 }
 
+export async function duplicateProfile(id) {
+    return api('POST', `/api/profiles/${id}/duplicate`);
+}
+
 export async function saveProfileOrder(ids) {
     return api('POST', '/api/profiles/reorder', { order: ids });
 }
@@ -54,6 +58,10 @@ export async function saveWorkflow(data) {
 
 export async function deleteWorkflow(id) {
     return api('DELETE', '/api/workflows/' + id);
+}
+
+export async function duplicateWorkflow(id) {
+    return api('POST', `/api/workflows/${id}/duplicate`);
 }
 
 export async function saveWorkflowOrder(ids) {

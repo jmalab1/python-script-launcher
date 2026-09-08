@@ -1,13 +1,14 @@
 import { html, useState } from '../../vendor/standalone-preact.esm.js';
 import { esc } from '../utils.js';
 import { profiles, scriptStatusCache } from '../state.js';
-import { runWorkflow, loadWorkflows } from '../api.js';
+import { runWorkflow, loadWorkflows, duplicateWorkflow } from '../api.js';
 
 export function WorkflowCard({ workflow, onEdit, onRun }) {
     const w = workflow;
     const steps = w.steps || [];
     const [expanded, setExpanded] = useState(false);
     const profileMap = Object.fromEntries(profiles.value.map(p => [p.id, p]));
+    const profFor = (entry) => entry.profile || profileMap[entry.profile_id] || {};
     const cache = scriptStatusCache.value;
 
     const totalSteps = steps.reduce((n, s) => n + (s.type === 'parallel' ? (s.profiles || []).length : 1), 0);
@@ -17,11 +18,11 @@ export function WorkflowCard({ workflow, onEdit, onRun }) {
         for (const s of steps) {
             if (s.type === 'parallel') {
                 for (const p of (s.profiles || [])) {
-                    const prof = profileMap[p.profile_id] || {};
+                    const prof = profFor(p);
                     if (cache[prof.script_path] === false) missing.push(prof.name || p.profile_id);
                 }
             } else {
-                const prof = profileMap[s.profile_id] || {};
+                const prof = profFor(s);
                 if (cache[prof.script_path] === false) missing.push(prof.name || s.profile_id);
             }
         }
@@ -43,6 +44,11 @@ export function WorkflowCard({ workflow, onEdit, onRun }) {
         if (!confirm('Delete this workflow?')) return;
         const { deleteWorkflow } = await import('../api.js');
         await deleteWorkflow(w.id);
+        await loadWorkflows();
+    }
+
+    async function handleDuplicate() {
+        await duplicateWorkflow(w.id);
         await loadWorkflows();
     }
 
@@ -84,7 +90,7 @@ export function WorkflowCard({ workflow, onEdit, onRun }) {
                             <span class="text-[10px] text-gray-400">${groupProfiles.length} profile${groupProfiles.length !== 1 ? 's' : ''}</span>
                         </div>
                         ${groupProfiles.map((p, pi) => {
-                            const prof = profileMap[p.profile_id] || {};
+                            const prof = profFor(p);
                             const stepMissing = cache[prof.script_path] === false;
                             const stepArgs = effectiveArgs(p, prof);
                             return html`
@@ -98,7 +104,7 @@ export function WorkflowCard({ workflow, onEdit, onRun }) {
                 </div>`;
         }
 
-        const prof = profileMap[s.profile_id] || {};
+        const prof = profFor(s);
         const stepMissing = cache[prof.script_path] === false;
         const stepArgs = effectiveArgs(s, prof);
         return html`
@@ -136,6 +142,8 @@ export function WorkflowCard({ workflow, onEdit, onRun }) {
                         </button>
                         <button onClick=${() => onEdit && onEdit(w)}
                             class="px-2.5 py-1.5 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-xs font-medium rounded-lg border border-gray-200 dark:border-gray-700/60 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Edit</button>
+                        <button onClick=${handleDuplicate} title="Duplicate workflow"
+                            class="px-2.5 py-1.5 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-xs font-medium rounded-lg border border-gray-200 dark:border-gray-700/60 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Copy</button>
                         <button onClick=${handleDelete}
                             class="px-2.5 py-1.5 bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400 text-xs font-medium rounded-lg border border-red-200 dark:border-red-500/20 hover:bg-red-100 dark:hover:bg-red-500/20 transition">Del</button>
                     </div>

@@ -61,6 +61,13 @@ def _next_step_name(run_id, step_name):
     return n, f"{n}. {step_name}"
 
 
+def _resolve_profile(profile_map, entry):
+    snapshot = entry.get("profile")
+    if snapshot:
+        return snapshot
+    return profile_map.get(entry.get("profile_id"))
+
+
 def execute_workflow(workflow, run_id, started_at):
     profiles = load_json(PROFILES_FILE)
     profile_map = {p["id"]: p for p in profiles}
@@ -81,11 +88,14 @@ def execute_workflow(workflow, run_id, started_at):
                 continue
 
             with run_lock:
-                step_names = [profile_map.get(p["profile_id"], {}).get("name", p["profile_id"]) for p in group_profiles]
+                step_names = []
+                for p in group_profiles:
+                    prof = _resolve_profile(profile_map, p) or {}
+                    step_names.append(prof.get("name") or p.get("profile_id", "?"))
                 active_runs[run_id]["workflow_log"].append(f"[PARALLEL] Running {len(group_profiles)} steps: {', '.join(step_names)}")
             threads = []
             for profile_entry in group_profiles:
-                profile = profile_map.get(profile_entry["profile_id"])
+                profile = _resolve_profile(profile_map, profile_entry)
                 if not profile:
                     with run_lock:
                         active_runs[run_id]["workflow_log"].append(f"[SKIP] Profile not found: {profile_entry['profile_id']}")
@@ -109,10 +119,10 @@ def execute_workflow(workflow, run_id, started_at):
                 if not continue_on_error and active_runs[run_id].get("failed"):
                     break
         else:
-            profile = profile_map.get(step["profile_id"])
+            profile = _resolve_profile(profile_map, step)
             if not profile:
                 with run_lock:
-                    active_runs[run_id]["workflow_log"].append(f"[SKIP] Profile not found: {step['profile_id']}")
+                    active_runs[run_id]["workflow_log"].append(f"[SKIP] Profile not found: {step.get('profile_id')}")
                 if not continue_on_error:
                     with run_lock:
                         active_runs[run_id]["status"] = "failed"

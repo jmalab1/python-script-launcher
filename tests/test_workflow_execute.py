@@ -154,6 +154,38 @@ try:
     assert any("[SKIP]" in line for line in run["workflow_log"])
     assert run.get("steps", {}) == {}
     print("PASS: missing profile in a parallel group aborts the workflow")
+
+    # 10. steps run from their embedded profile snapshot, ignoring live profile edits
+    rid = new_run("wf_snap")
+    runner.execute_workflow({"name": "Snap", "steps": [
+        {"type": "sequential", "profile_id": "p_gone",
+         "profile": {"id": "p_gone", "name": "Snapshot", "script_path": str(echo_script), "args": [],
+                     "custom_args": [{"name": "--flag", "type": "text", "value": "snap"}]}},
+    ]}, rid, time.time())
+    run = runner.active_runs[rid]
+    assert run["status"] == "completed", run["workflow_log"]
+    assert "1. Snapshot" in run["steps"]
+    assert run["steps"]["1. Snapshot"]["output"] == ["--flag snap\n"], run["steps"]["1. Snapshot"]["output"]
+    print("PASS: embedded profile snapshot is used at run time")
+
+    # 11. arg_values still override snapshots; parallel groups use snapshot names
+    rid = new_run("wf_snap2")
+    runner.execute_workflow({"name": "Snap2", "steps": [
+        {"type": "sequential", "profile_id": "p_gone",
+         "profile": {"id": "p_gone", "name": "Snapshot", "script_path": str(echo_script), "args": [],
+                     "custom_args": [{"name": "--flag", "type": "text", "value": "snap"}]},
+         "arg_values": {"--flag": "over"}},
+        {"type": "parallel", "profiles": [
+            {"profile_id": "ghost",
+             "profile": {"id": "ghost", "name": "SnapPar", "script_path": str(pass_script), "args": [], "custom_args": []}},
+        ]},
+    ]}, rid, time.time())
+    run = runner.active_runs[rid]
+    assert run["status"] == "completed", run["workflow_log"]
+    assert run["steps"]["1. Snapshot"]["output"] == ["--flag over\n"], run["steps"]["1. Snapshot"]["output"]
+    assert any("SnapPar" in line for line in run["workflow_log"])
+    assert not any("[SKIP]" in line for line in run["workflow_log"])
+    print("PASS: arg_values override snapshots and parallel groups use snapshot names")
 finally:
     runner.active_runs.clear()
     shutil.rmtree(tmp, ignore_errors=True)

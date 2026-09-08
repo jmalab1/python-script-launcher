@@ -1,7 +1,7 @@
 import { html } from '../../vendor/standalone-preact.esm.js';
 import { esc } from '../utils.js';
 import { scriptStatusCache } from '../state.js';
-import { runProfile, saveProfile as apiSaveProfile, loadProfiles } from '../api.js';
+import { runProfile, saveProfile as apiSaveProfile, loadProfiles, duplicateProfile } from '../api.js';
 
 export function ProfileCard({ profile, onEdit, onRun }) {
     const p = profile;
@@ -25,6 +25,11 @@ export function ProfileCard({ profile, onEdit, onRun }) {
         if (!confirm('Delete this profile?')) return;
         const { deleteProfile } = await import('../api.js');
         await deleteProfile(p.id);
+        await loadProfiles();
+    }
+
+    async function handleDuplicate() {
+        await duplicateProfile(p.id);
         await loadProfiles();
     }
 
@@ -85,6 +90,8 @@ export function ProfileCard({ profile, onEdit, onRun }) {
                     </button>
                     <button onClick=${() => onEdit && onEdit(p)}
                         class="px-2.5 py-1.5 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-xs font-medium rounded-lg border border-gray-200 dark:border-gray-700/60 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Edit</button>
+                    <button onClick=${handleDuplicate} title="Duplicate profile"
+                        class="px-2.5 py-1.5 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-xs font-medium rounded-lg border border-gray-200 dark:border-gray-700/60 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Copy</button>
                     <button onClick=${handleDelete}
                         class="px-2.5 py-1.5 bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400 text-xs font-medium rounded-lg border border-red-200 dark:border-red-500/20 hover:bg-red-100 dark:hover:bg-red-500/20 transition">Del</button>
                 </div>
