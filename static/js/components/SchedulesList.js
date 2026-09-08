@@ -1,6 +1,6 @@
 import { html } from '../../vendor/standalone-preact.esm.js';
 import { useState } from '../../vendor/standalone-preact.esm.js';
-import { esc, formatDateTime, formatRelative, colorizeStatus } from '../utils.js';
+import { formatDateTime, formatRelative, colorizeStatus } from '../utils.js';
 import { schedules } from '../state.js';
 import { toggleSchedule, deleteSchedule, runScheduleNow, loadSchedules } from '../api.js';
 import { ConfirmModal } from './ConfirmModal.js';
@@ -59,7 +59,7 @@ export function SchedulesList({ onEdit }) {
                                     <span class="w-2 h-2 rounded-full shrink-0 ${s.enabled ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'}"
                                         title=${s.enabled ? 'Enabled' : 'Disabled'}></span>
                                     <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate">
-                                        ${esc(s.name || s.target_name || 'Schedule')}
+                                        ${s.name || s.target_name || 'Schedule'}
                                     </h3>
                                     <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium uppercase tracking-wide bg-violet-500/10 text-violet-600 dark:text-violet-400">
                                         ${s.target_type === 'workflow' ? 'Workflow' : 'Profile'}
@@ -73,9 +73,9 @@ export function SchedulesList({ onEdit }) {
                                 <div class="flex flex-wrap items-center gap-1.5 mt-2">
                                     <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-violet-500/10 text-violet-600 dark:text-violet-400">
                                         ${CLOCK_ICON}
-                                        ${esc(s.description || s.cron)}
+                                        ${s.description || s.cron}
                                     </span>
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono bg-gray-100 dark:bg-gray-700/50 text-gray-600 dark:text-gray-400">${esc(s.cron)}</span>
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono bg-gray-100 dark:bg-gray-700/50 text-gray-600 dark:text-gray-400">${s.cron}</span>
                                 </div>
                                 <div class="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 text-xs text-gray-500 dark:text-gray-400">
                                     <span>
@@ -86,7 +86,7 @@ export function SchedulesList({ onEdit }) {
                                     </span>
                                     <span>
                                         <span class="text-gray-400 dark:text-gray-500">Last:</span>
-                                        ${s.last_run_at ? html`<span class=${`font-medium ${sc}`}>${esc(s.last_status || 'running')}</span> <span>${formatDateTime(s.last_run_at)}</span>`
+                                        ${s.last_run_at ? html`<span class=${`font-medium ${sc}`}>${s.last_status || 'running'}</span> <span>${formatDateTime(s.last_run_at)}</span>`
                                             : html`<span class="text-gray-400 dark:text-gray-500">never</span>`}
                                     </span>
                                 </div>
@@ -120,7 +120,7 @@ export function SchedulesList({ onEdit }) {
             onClose=${() => setPendingDelete(null)}
             onConfirm=${handleConfirmDelete}
             title="Delete schedule"
-            message=${html`This will stop automatic runs for <span class="font-medium text-gray-700 dark:text-gray-200">${esc(pendingDelete ? (pendingDelete.name || pendingDelete.cron) : '')}</span>. The profile or workflow itself is not affected.`}
+            message=${html`This will stop automatic runs for <span class="font-medium text-gray-700 dark:text-gray-200">${pendingDelete ? (pendingDelete.name || pendingDelete.cron) : ''}</span>. The profile or workflow itself is not affected.`}
         />
     `;
 }

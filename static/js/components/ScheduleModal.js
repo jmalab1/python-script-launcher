@@ -1,6 +1,5 @@
 import { html } from '../../vendor/standalone-preact.esm.js';
 import { useState, useEffect } from '../../vendor/standalone-preact.esm.js';
-import { esc } from '../utils.js';
 import { profiles, workflows } from '../state.js';
 import { saveSchedule, loadSchedules, previewCron } from '../api.js';
 import { ErrorBanner } from './ErrorBanner.js';
@@ -182,7 +181,7 @@ export function ScheduleModal({ isOpen, onClose, schedule }) {
                             </div>
                             <select value=${targetId} onChange=${e => setTargetId(e.target.value)} class=${`w-full ${inputClass}`}>
                                 <option value="">Select a ${targetType}...</option>
-                                ${targetOptions.map(item => html`<option value=${item.id} selected=${targetId === item.id}>${esc(item.name)}</option>`)}
+                                ${targetOptions.map(item => html`<option value=${item.id} selected=${targetId === item.id}>${item.name}</option>`)}
                             </select>
                         </div>
                         <div>
@@ -286,12 +285,12 @@ export function ScheduleModal({ isOpen, onClose, schedule }) {
                             <div class="mt-3 rounded-lg bg-gray-50 dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 px-3 py-2.5 text-xs">
                                 <div class="flex items-center justify-between gap-2">
                                     <span class="text-gray-500 dark:text-gray-400">Cron</span>
-                                    <span class="font-mono text-gray-800 dark:text-gray-200">${esc(cron || '—')}</span>
+                                    <span class="font-mono text-gray-800 dark:text-gray-200">${cron || '—'}</span>
                                 </div>
                                 ${preview && preview.description ? html`
                                     <div class="flex items-center justify-between gap-2 mt-1">
                                         <span class="text-gray-500 dark:text-gray-400">Meaning</span>
-                                        <span class="text-gray-800 dark:text-gray-200 font-medium">${esc(preview.description)}</span>
+                                        <span class="text-gray-800 dark:text-gray-200 font-medium">${preview.description}</span>
                                     </div>
                                 ` : ''}
                                 ${preview && preview.next.length ? html`
@@ -299,13 +298,13 @@ export function ScheduleModal({ isOpen, onClose, schedule }) {
                                         <div class="text-gray-500 dark:text-gray-400 mb-1">Next runs</div>
                                         ${preview.next.map(n => html`
                                             <div class="flex items-center justify-between gap-2 text-gray-700 dark:text-gray-300 font-mono">
-                                                <span>${esc(n.local)}</span>
+                                                <span>${n.local}</span>
                                             </div>
                                         `)}
                                     </div>
                                 ` : ''}
                                 ${previewError ? html`
-                                    <div class="mt-1 text-red-600 dark:text-red-400">${esc(previewError)}</div>
+                                    <div class="mt-1 text-red-600 dark:text-red-400">${previewError}</div>
                                 ` : ''}
                             </div>
                         </div>

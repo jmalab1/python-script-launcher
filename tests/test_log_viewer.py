@@ -52,11 +52,6 @@ def test_log_viewer_renders_lines_verbatim_and_filters():
     assert "whitespace-pre-wrap" in src, "long lines must wrap"
 
 
-def test_esc_keeps_double_quotes_readable():
-    src = read(JS / "utils.js")
-    assert "&quot;" not in src, "quotes must not be turned into &quot; entities"
-
-
 def test_server_route_serves_the_logs_api():
     src = (ROOT / "launcher" / "server.py").read_text()
     assert 'path == "/api/logs"' in src

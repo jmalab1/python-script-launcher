@@ -37,7 +37,7 @@ def test_profile_card_renders_a_date_picker_for_date_fields():
     assert "if (c.type === 'date') return html`" in src, "card has no date branch"
     assert re.search(r'<input type="date" id=\$\{`arg-\$\{p\.id\}-\$\{i\}`\}', src), \
         "date field is not rendered as a date picker wired to the arg input id"
-    assert "value=${esc(c.value || c.default || '')}" in src, "date input does not show stored value"
+    assert "value=${c.value || c.default || ''}" in src, "date input does not show stored value"
 
 
 def test_workflow_modal_allows_date_overrides_per_step():

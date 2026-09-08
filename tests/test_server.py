@@ -104,6 +104,28 @@ def test_run_profile_handler_no_longer_takes_send_error():
     assert params == ["data"], f"handle_run_profile params: {params}"
 
 
+def test_delete_schedule_route_surfaces_handler_errors(store, monkeypatch):
+    from launcher.api import schedules as schedules_api
+
+    handler = make_handler("/api/schedules/sched_1", method="DELETE")
+    monkeypatch.setattr(schedules_api, "handle_delete",
+                        lambda sid: (None, {"error": "Schedule not found"}))
+    handler.do_DELETE()
+    status, payload = response(handler)
+    assert status == 404 and payload == {"error": "Schedule not found"}, \
+        "a failed schedule delete must not be reported as success"
+
+
+def test_delete_schedule_route_returns_ok_on_success(store, monkeypatch):
+    from launcher.api import schedules as schedules_api
+
+    handler = make_handler("/api/schedules/sched_1", method="DELETE")
+    monkeypatch.setattr(schedules_api, "handle_delete", lambda sid: ({"ok": True}, None))
+    handler.do_DELETE()
+    status, payload = response(handler)
+    assert status == 200 and payload == {"ok": True}
+
+
 # ------------------------------------------------------- main-thread dialog loop
 
 

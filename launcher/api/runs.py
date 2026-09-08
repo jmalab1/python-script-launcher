@@ -1,7 +1,7 @@
 import os
 import time
 import threading
-from ..storage import load_json, save_json, save_history
+from ..storage import load_json, save_history, update_history
 from ..config import COL_PROFILES, COL_WORKFLOWS
 from ..runner import (
     run_script, execute_workflow, active_runs, run_lock, cancel_run,
@@ -85,6 +85,19 @@ def start_profile_run(profile, arg_values=None, extra_args=None, trigger="manual
     schedule_id = schedule.get("id") if schedule else None
     schedule_name = schedule.get("name") if schedule else None
 
+    def record_history(status, returncode, output, timed_out):
+        save_history(
+            run_id, profile_name, "profile", status, returncode, output,
+            started_at, command=command, trigger=trigger,
+            schedule_id=schedule_id, schedule_name=schedule_name,
+            timed_out=timed_out,
+        )
+
+    # Record the run up front (status: running), the same way workflow runs
+    # are recorded, so it is visible in history while it runs and is not
+    # lost entirely if the server dies before the script finishes.
+    record_history("running", None, [], False)
+
     def do_run():
         timeout = parse_timeout(profile.get("timeout"))
         for line in run_script(profile["script_path"], full_args, run_id, timeout=timeout):
@@ -103,12 +116,15 @@ def start_profile_run(profile, arg_values=None, extra_args=None, trigger="manual
             returncode = active_runs[run_id].get("returncode")
             output_copy = list(active_runs[run_id]["output"])
             timed_out = bool(active_runs[run_id].get("timed_out"))
-        save_history(
-            run_id, profile_name, "profile", status, returncode, output_copy,
-            started_at, command=command, trigger=trigger,
-            schedule_id=schedule_id, schedule_name=schedule_name,
+        updated = update_history(
+            run_id, status=status, returncode=returncode, output=output_copy,
             timed_out=timed_out,
         )
+        if not updated:
+            # The up-front entry was deleted while the run was in progress
+            # (e.g. the user cleared history), so write a fresh one rather
+            # than losing the result.
+            record_history(status, returncode, output_copy, timed_out)
 
     threading.Thread(target=do_run, daemon=True).start()
     return {"run_id": run_id}, None

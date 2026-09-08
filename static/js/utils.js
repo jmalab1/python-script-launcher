@@ -1,7 +1,5 @@
-export function esc(s) {
-    return s ? String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
-}
-
+// Note: preact renders string children as text nodes, so values are safe
+// to interpolate directly — HTML-escaping them would show "&amp;" literally.
 export function formatTime(ts) {
     return ts ? new Date(ts * 1000).toLocaleTimeString() : '-';
 }

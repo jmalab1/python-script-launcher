@@ -10,6 +10,14 @@ from launcher.runner import parse_timeout, run_script
 COMPONENTS = Path(__file__).resolve().parent.parent / "static" / "js" / "components"
 
 
+@pytest.fixture(autouse=True)
+def clean_active_runs():
+    """Runs started here would leak into later tests that expect a clean poll."""
+    runner.active_runs.clear()
+    yield
+    runner.active_runs.clear()
+
+
 # ----------------------------------------------------------------- parse_timeout
 
 
@@ -93,15 +101,17 @@ def test_profile_run_times_out_and_is_marked_failed(store, hang_script):
     assert info["timed_out"] is True, "poll must tell the client the run hit its timeout"
     assert any("Timed out after 0.5s" in line for line in info["output"]), info["output"]
 
-    # save_history runs right after the status flips, so poll for the entry.
+    # The history entry is created up front as "running"; wait until the
+    # finished run has flipped it to a terminal status.
     deadline = time.time() + 5
-    entries = []
+    entry = None
     while time.time() < deadline:
         entries = [e for e in store.read("history") if e["run_id"] == body["run_id"]]
-        if entries:
+        if entries and entries[0]["status"] in ("completed", "failed", "cancelled"):
+            entry = entries[0]
             break
         time.sleep(0.05)
-    entry = entries[0]
+    assert entry is not None, "the finished run must be recorded in history"
     assert entry["status"] == "failed"
     assert entry["timed_out"] is True, "history must record the timeout"
 
@@ -138,13 +148,14 @@ def test_workflow_step_times_out_and_fails_the_workflow(store, hang_script):
     assert any("Timed out after 0.5s" in line for line in step["output"]), step["output"]
 
     deadline = time.time() + 5
-    entries = []
+    entry = None
     while time.time() < deadline:
         entries = [e for e in store.read("history") if e["run_id"] == body["run_id"]]
-        if entries:
+        if entries and entries[0].get("timed_out"):
+            entry = entries[0]
             break
         time.sleep(0.05)
-    assert entries[0]["timed_out"] is True, "history must record the workflow timeout"
+    assert entry is not None, "history must record the workflow timeout"
 
 
 # --------------------------------------------------------------- Profile modal

@@ -102,6 +102,48 @@ def test_run_profile_executes_the_script_and_saves_history(store, runs_env):
     assert entry["run_id"] == body["run_id"] and entry["type"] == "profile" and entry["status"] == "completed"
 
 
+def entries_for_run(store, run_id):
+    return [e for e in store.read("history") if e["run_id"] == run_id]
+
+
+def wait_for_history_entry(store, run_id, timeout=5):
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        entries = entries_for_run(store, run_id)
+        if entries:
+            return entries[0]
+        time.sleep(0.02)
+    raise AssertionError(f"no history entry appeared for {run_id}")
+
+
+def test_profile_runs_show_up_in_history_while_still_running(store, runs_env):
+    body, _, _ = runs.handle_run_profile({"profile_id": "p4"})
+    entry = wait_for_history_entry(store, body["run_id"])
+    assert entry["status"] == "running", \
+        "a profile run must be visible in history before it finishes"
+
+    info = wait_done(body["run_id"])
+    assert info["status"] == "completed"
+    entries = entries_for_run(store, body["run_id"])
+    assert len(entries) == 1, "the finish must update the existing entry, not add a second one"
+    assert entries[0]["status"] == "completed"
+    assert entries[0]["output"] == ["start\n", "done\n"]
+
+
+def test_profile_run_survives_history_being_cleared_mid_run(store, runs_env):
+    from launcher.api.history import handle_clear
+
+    body, _, _ = runs.handle_run_profile({"profile_id": "p4"})
+    wait_for_history_entry(store, body["run_id"])
+    handle_clear()
+
+    info = wait_done(body["run_id"])
+    assert info["status"] == "completed"
+    entries = entries_for_run(store, body["run_id"])
+    assert len(entries) == 1 and entries[0]["status"] == "completed", \
+        "clearing history mid-run must not lose the finished run's result"
+
+
 def test_run_profile_applies_static_custom_and_overridden_args(store, runs_env):
     data = {"profile_id": "p2", "args": ["extra"], "arg_values": {"--flag": "v2"}}
     body, status, error = runs.handle_run_profile(data)
@@ -256,6 +298,17 @@ def test_prune_keeps_entries_missing_a_finish_stamp_for_one_ttl_window(clean_act
     runner.active_runs["nostamp"] = {"output": [], "status": "completed"}
     runner.prune_active_runs()
     assert "nostamp" in runner.active_runs
+
+
+def test_prune_drops_expired_cancelled_runs(clean_active_runs):
+    runner = clean_active_runs
+    runner.active_runs["cancelled"] = {
+        "output": [], "status": "cancelled", "cancelled": True,
+        "finished_at": time.time() - 3600,
+    }
+    runner.prune_active_runs()
+    assert "cancelled" not in runner.active_runs, \
+        "a cancelled run is finished and must age out like completed and failed runs"
 
 
 def test_starting_a_run_keeps_active_runs_bounded(store, runs_env, clean_active_runs):

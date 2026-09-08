@@ -1,6 +1,6 @@
 import { html } from '../../vendor/standalone-preact.esm.js';
 import { useState } from '../../vendor/standalone-preact.esm.js';
-import { esc, formatTime } from '../utils.js';
+import { formatTime } from '../utils.js';
 import { Pagination } from './Pagination.js';
 import { auditPage, auditAction, auditEntity, auditName, auditSince, auditUntil } from '../state.js';
 import { fetchAuditDetail } from '../api.js';
@@ -46,10 +46,10 @@ function AuditDetailModal({ entry, onClose }) {
                         <div class="min-w-0">
                             <div class="flex items-center gap-2 flex-wrap">
                                 <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${ACTION_STYLES[entry.action] || ''}">${actionLabel(entry.action)}</span>
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700/40">${esc(entry.entity_type)}</span>
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700/40">${entry.entity_type}</span>
                                 <span class="text-sm text-gray-500 dark:text-gray-400">${formatAuditTime(entry.timestamp)}</span>
                             </div>
-                            <h3 class="mt-2 text-base font-semibold text-gray-800 dark:text-gray-100 truncate">${esc(entry.name || '')}</h3>
+                            <h3 class="mt-2 text-base font-semibold text-gray-800 dark:text-gray-100 truncate">${entry.name || ''}</h3>
                         </div>
                         <button onClick=${onClose}
                             class="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition">
@@ -60,19 +60,19 @@ function AuditDetailModal({ entry, onClose }) {
                         ${entry.details ? html`
                             <div>
                                 <h4 class="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 mb-1">Details</h4>
-                                <pre class="text-xs bg-gray-50 dark:bg-gray-900/60 rounded-lg p-3 overflow-x-auto text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-all">${esc(JSON.stringify(entry.details, null, 2))}</pre>
+                                <pre class="text-xs bg-gray-50 dark:bg-gray-900/60 rounded-lg p-3 overflow-x-auto text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-all">${JSON.stringify(entry.details, null, 2)}</pre>
                             </div>
                         ` : ''}
                         ${entry.before ? html`
                             <div>
                                 <h4 class="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 mb-1">Before</h4>
-                                <pre class="text-xs bg-gray-50 dark:bg-gray-900/60 rounded-lg p-3 overflow-x-auto text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-all">${esc(JSON.stringify(entry.before, null, 2))}</pre>
+                                <pre class="text-xs bg-gray-50 dark:bg-gray-900/60 rounded-lg p-3 overflow-x-auto text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-all">${JSON.stringify(entry.before, null, 2)}</pre>
                             </div>
                         ` : ''}
                         ${entry.after ? html`
                             <div>
                                 <h4 class="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 mb-1">After</h4>
-                                <pre class="text-xs bg-gray-50 dark:bg-gray-900/60 rounded-lg p-3 overflow-x-auto text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-all">${esc(JSON.stringify(entry.after, null, 2))}</pre>
+                                <pre class="text-xs bg-gray-50 dark:bg-gray-900/60 rounded-lg p-3 overflow-x-auto text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-all">${JSON.stringify(entry.after, null, 2)}</pre>
                             </div>
                         ` : ''}
                     </div>
@@ -134,13 +134,13 @@ export function AuditTable({ data, pageSignal, onLoad }) {
                                     onClick=${() => openDetail(e)}>
                                     <td class="py-2 px-3 text-gray-400">${rowNum}</td>
                                     <td class="py-2 px-3">
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700/40 capitalize">${esc(e.entity_type)}</span>
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700/40 capitalize">${e.entity_type}</span>
                                     </td>
-                                    <td class="py-2 px-3 font-medium text-gray-800 dark:text-gray-200">${esc(e.name)}</td>
+                                    <td class="py-2 px-3 font-medium text-gray-800 dark:text-gray-200">${e.name}</td>
                                     <td class="py-2 px-3">
                                         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${as}">${actionLabel(e.action)}</span>
                                     </td>
-                                    <td class="py-2 px-3 text-gray-500 dark:text-gray-400 max-w-[16rem] truncate" title=${esc(entryDetails(e))}>${entryDetails(e)}</td>
+                                    <td class="py-2 px-3 text-gray-500 dark:text-gray-400 max-w-[16rem] truncate" title=${entryDetails(e)}>${entryDetails(e)}</td>
                                     <td class="py-2 px-3 text-right text-gray-500 dark:text-gray-400 whitespace-nowrap">${formatTime(e.timestamp)}</td>
                                 </tr>
                             `;

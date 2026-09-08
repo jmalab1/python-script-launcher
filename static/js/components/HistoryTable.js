@@ -1,6 +1,6 @@
 import { html } from '../../vendor/standalone-preact.esm.js';
 import { useState } from '../../vendor/standalone-preact.esm.js';
-import { esc, formatTime, formatDuration, colorizeStatus } from '../utils.js';
+import { formatTime, formatDuration, colorizeStatus } from '../utils.js';
 import { Pagination } from './Pagination.js';
 import { deleteHistoryEntry, deleteHistoryEntries } from '../api.js';
 import { ConfirmModal } from './ConfirmModal.js';
@@ -106,7 +106,7 @@ export function HistoryTable({ data, pageSignal, filters, onLoad, type, onOpenRu
                             const isChecked = selected.has(entryKey);
                             return html`
                                 <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition cursor-pointer ${isChecked ? 'bg-blue-50 dark:bg-blue-500/10' : ''}"
-                                    title=${esc(e.output_preview || '')}
+                                    title=${e.output_preview || ''}
                                     onClick=${() => onOpenRun(entryKey, e.name, type)}>
                                     <td class="py-2 px-1">
                                         <input type="checkbox" checked=${isChecked}
@@ -116,8 +116,8 @@ export function HistoryTable({ data, pageSignal, filters, onLoad, type, onOpenRu
                                     </td>
                                     <td class="py-2 px-3 text-gray-400 font-mono text-[11px]">${rowId}</td>
                                     <td class="py-2 px-3 font-medium text-gray-800 dark:text-gray-200">
-                                        ${esc(e.name)}
-                                        ${e.trigger === 'scheduled' ? html`<span class="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-violet-500/10 text-violet-600 dark:text-violet-400 align-middle" title="Started by a schedule">${esc('Scheduled')}</span>` : ''}
+                                        ${e.name}
+                                        ${e.trigger === 'scheduled' ? html`<span class="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-violet-500/10 text-violet-600 dark:text-violet-400 align-middle" title="Started by a schedule">Scheduled</span>` : ''}
                                     </td>
                                     <td class="py-2 px-3"><span class="inline-flex items-center gap-1.5 ${sc}">${e.status === 'running' ? html`<span class="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse"></span>` : ''}${e.status}</span></td>
                                     <td class="py-2 px-3 text-gray-500 dark:text-gray-400 whitespace-nowrap">
@@ -143,7 +143,7 @@ export function HistoryTable({ data, pageSignal, filters, onLoad, type, onOpenRu
             <${ConfirmModal} isOpen=${!!pendingDelete} onClose=${() => setPendingDelete(null)}
                 onConfirm=${confirmDelete}
                 title="Delete run"
-                message=${html`This will permanently delete <span class="font-medium text-gray-700 dark:text-gray-200">${esc(pendingDelete ? pendingDelete.name : '')}</span> from the run history. This action cannot be undone.`} />
+                message=${html`This will permanently delete <span class="font-medium text-gray-700 dark:text-gray-200">${pendingDelete ? pendingDelete.name : ''}</span> from the run history. This action cannot be undone.`} />
             <${ConfirmModal} isOpen=${!!pendingBulkDelete} onClose=${() => setPendingBulkDelete(null)}
                 onConfirm=${confirmBulkDelete}
                 title="Delete selected runs"

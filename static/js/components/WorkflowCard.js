@@ -1,5 +1,4 @@
 import { html, useState } from '../../vendor/standalone-preact.esm.js';
-import { esc } from '../utils.js';
 import { profiles, schedules, scriptStatusCache, tags, TRASH_GROUP } from '../state.js';
 import { tagColor } from '../tagColors.js';
 import { runWorkflow, loadWorkflows, duplicateWorkflow, restoreWorkflow, permanentDeleteWorkflow } from '../api.js';
@@ -98,7 +97,7 @@ export function WorkflowCard({ workflow, onEdit, onRun }) {
 
     function argsSnippet(stepArgs) {
         if (!stepArgs.length) return '';
-        return html`<span class="text-violet-600 dark:text-violet-400"> ${esc(stepArgs.join(' '))}</span>`;
+        return html`<span class="text-violet-600 dark:text-violet-400"> ${stepArgs.join(' ')}</span>`;
     }
 
     function renderStep(s, i) {
@@ -123,8 +122,8 @@ export function WorkflowCard({ workflow, onEdit, onRun }) {
                             const stepArgs = effectiveArgs(p, prof);
                             return html`
                                 <div class="flex items-start gap-2 py-0.5 ${pi < groupProfiles.length - 1 ? 'border-b border-green-100 dark:border-green-500/10' : ''}">
-                                    <span class="text-[10px] font-medium shrink-0 ${stepMissing ? 'text-red-700 dark:text-red-400' : 'text-gray-700 dark:text-gray-300'}">${esc(prof.name || 'Unknown')}</span>
-                                    <span class="text-[10px] ${stepMissing ? 'text-red-500 dark:text-red-400' : 'text-gray-400 dark:text-gray-500'} flex-1 min-w-0 font-mono break-all">${esc(prof.script_path || '—')}${argsSnippet(stepArgs)}</span>
+                                    <span class="text-[10px] font-medium shrink-0 ${stepMissing ? 'text-red-700 dark:text-red-400' : 'text-gray-700 dark:text-gray-300'}">${prof.name || 'Unknown'}</span>
+                                    <span class="text-[10px] ${stepMissing ? 'text-red-500 dark:text-red-400' : 'text-gray-400 dark:text-gray-500'} flex-1 min-w-0 font-mono break-all">${prof.script_path || '—'}${argsSnippet(stepArgs)}</span>
                                     ${stepMissing ? html`<span class="text-[9px] text-red-500 shrink-0">missing</span>` : ''}
                                 </div>`;
                         })}
@@ -143,10 +142,10 @@ export function WorkflowCard({ workflow, onEdit, onRun }) {
                 </div>
                 <div class="min-w-0 flex-1">
                     <div class="flex items-center gap-2 flex-wrap">
-                        <span class="text-xs font-medium ${stepMissing ? 'text-red-700 dark:text-red-400' : 'text-gray-800 dark:text-gray-200'}">${esc(prof.name || 'Unknown Profile')}</span>
+                        <span class="text-xs font-medium ${stepMissing ? 'text-red-700 dark:text-red-400' : 'text-gray-800 dark:text-gray-200'}">${prof.name || 'Unknown Profile'}</span>
                         ${stepMissing ? html`<span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-500/20"><svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 6a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 6zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/></svg>missing</span>` : ''}
                     </div>
-                    <div class="text-[11px] ${stepMissing ? 'text-red-500 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'} mt-0.5 font-mono break-all">${esc(prof.script_path || '—')}${argsSnippet(stepArgs)}</div>
+                    <div class="text-[11px] ${stepMissing ? 'text-red-500 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'} mt-0.5 font-mono break-all">${prof.script_path || '—'}${argsSnippet(stepArgs)}</div>
                 </div>
             </div>`;
     }
@@ -156,13 +155,13 @@ export function WorkflowCard({ workflow, onEdit, onRun }) {
             <div class="p-4">
                 <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-3">
                     <div class="min-w-0 flex-1">
-                        <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-100">${esc(w.name)}</h3>
+                        <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-100">${w.name}</h3>
                         <div class="flex flex-wrap items-center gap-1.5 mt-1.5">
                             <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700/50 text-gray-600 dark:text-gray-400">${totalSteps} step${totalSteps !== 1 ? 's' : ''}</span>
                             ${itemTags.map(t => html`
                                 <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium border ${tagColor(t).chip}">
                                     <svg class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z"/><path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6z"/></svg>
-                                    ${esc(t.name)}
+                                    ${t.name}
                                 </span>
                             `)}
                             ${hasSchedule ? html`
@@ -226,14 +225,14 @@ export function WorkflowCard({ workflow, onEdit, onRun }) {
             onClose=${() => setPendingDelete(null)}
             onConfirm=${handleConfirmDelete}
             title="Delete workflow"
-            message=${html`This will move <span class="font-medium text-gray-700 dark:text-gray-200">${esc(w.name)}</span> to the trash.`}
+            message=${html`This will move <span class="font-medium text-gray-700 dark:text-gray-200">${w.name}</span> to the trash.`}
         />
         <${ConfirmModal}
             isOpen=${!!pendingPermanentDelete}
             onClose=${() => setPendingPermanentDelete(null)}
             onConfirm=${handleConfirmPermanentDelete}
             title="Permanently delete workflow"
-            message=${html`This will permanently delete <span class="font-medium text-gray-700 dark:text-gray-200">${esc(w.name)}</span>. This action cannot be undone.`}
+            message=${html`This will permanently delete <span class="font-medium text-gray-700 dark:text-gray-200">${w.name}</span>. This action cannot be undone.`}
         />
         <${ConfirmModal}
             isOpen=${pendingRun}
@@ -242,7 +241,7 @@ export function WorkflowCard({ workflow, onEdit, onRun }) {
             title="Missing scripts"
             confirmLabel="Run anyway"
             busyLabel="Starting..."
-            message=${html`These profiles have missing scripts: <span class="font-medium text-red-600 dark:text-red-400">${esc(missing.join(', '))}</span>. Their steps will fail. Run anyway?`}
+            message=${html`These profiles have missing scripts: <span class="font-medium text-red-600 dark:text-red-400">${missing.join(', ')}</span>. Their steps will fail. Run anyway?`}
         />
     `;
 }

@@ -77,6 +77,24 @@ def test_handle_list_filters_by_date_range_inclusive(store):
     assert res["total"] == 2
 
 
+def test_handle_list_filters_on_the_shown_start_time_not_the_last_update(store):
+    # A run that started on day 1 but only finished (i.e. got its history
+    # entry last updated) on day 5. The table shows its start time, so a
+    # "since day 3" filter must not pull it in via the update time.
+    storage.save_json("history", [
+        {"id": "long", "run_id": "r1", "name": "Long Job", "type": "profile",
+         "status": "completed", "started_at": 1000.0, "timestamp": 5000.0},
+        {"id": "short", "run_id": "r2", "name": "Short Job", "type": "profile",
+         "status": "completed", "started_at": 3000.0, "timestamp": 3001.0},
+    ])
+    res = history.handle_list(1, 10, None, since=2000.0)
+    assert res["total"] == 1 and res["entries"][0]["id"] == "short", \
+        "date filters must match the displayed start time, not the finish time"
+
+    res = history.handle_list(1, 10, None, until=2000.0)
+    assert res["total"] == 1 and res["entries"][0]["id"] == "long"
+
+
 def test_handle_list_combines_filters_with_and(store):
     _seed_history()
     res = history.handle_list(1, 10, "profile", name="backup", status="failed")

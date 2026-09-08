@@ -1,5 +1,4 @@
 import { html } from '../../vendor/standalone-preact.esm.js';
-import { esc } from '../utils.js';
 
 export function Pagination({ data, pageSignal, onLoad }) {
     if (!data || data.pages <= 1) return null;

@@ -1,6 +1,5 @@
 import { html } from '../../vendor/standalone-preact.esm.js';
 import { useState, useEffect } from '../../vendor/standalone-preact.esm.js';
-import { esc } from '../utils.js';
 import { profiles, tags } from '../state.js';
 import { tagColor } from '../tagColors.js';
 import { saveWorkflow, loadWorkflows } from '../api.js';
@@ -146,13 +145,13 @@ export function WorkflowModal({ isOpen, onClose, workflow }) {
                                 <input type="checkbox" checked=${eff === 'true'}
                                     onChange=${e => onSet(ca.name, e.target.checked ? 'true' : 'false')}
                                     class="w-3.5 h-3.5 rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900/30 text-violet-500 focus:ring-violet-500/50 focus:ring-offset-0" />
-                                ${esc(ca.label || ca.name)}
+                                ${ca.label || ca.name}
                             </label>`;
                     }
                     if (ca.type === 'date') {
                         return html`
                             <div class="flex items-center gap-1.5">
-                                <label class="text-[11px] text-gray-500 dark:text-gray-400 whitespace-nowrap">${esc(ca.label || ca.name)}</label>
+                                <label class="text-[11px] text-gray-500 dark:text-gray-400 whitespace-nowrap">${ca.label || ca.name}</label>
                                 <input type="date" value=${eff}
                                     onChange=${e => onSet(ca.name, e.target.value)}
                                     class="w-36 bg-white dark:bg-gray-900/30 border border-gray-300 dark:border-gray-700/60 rounded px-2 py-1 text-xs text-gray-800 dark:text-gray-100 focus:border-violet-500 focus:ring-0 focus:ring-offset-0 transition" />
@@ -162,20 +161,20 @@ export function WorkflowModal({ isOpen, onClose, workflow }) {
                         const opts = String(ca.options || '').split(',').map(s => s.trim()).filter(Boolean);
                         return html`
                             <div class="flex items-center gap-1.5">
-                                <label class="text-[11px] text-gray-500 dark:text-gray-400 whitespace-nowrap">${esc(ca.label || ca.name)}</label>
+                                <label class="text-[11px] text-gray-500 dark:text-gray-400 whitespace-nowrap">${ca.label || ca.name}</label>
                                 <select onChange=${e => onSet(ca.name, e.target.value)}
                                     class="max-w-[14rem] bg-white dark:bg-gray-900/30 border border-gray-300 dark:border-gray-700/60 rounded px-2 py-1 text-xs text-gray-800 dark:text-gray-100 focus:border-violet-500 focus:ring-0 focus:ring-offset-0 transition">
                                     <option value="" selected=${eff === ''}>-- select --</option>
-                                    ${opts.map(opt => html`<option value=${opt} selected=${eff === opt}>${esc(opt)}</option>`)}
+                                    ${opts.map(opt => html`<option value=${opt} selected=${eff === opt}>${opt}</option>`)}
                                 </select>
                             </div>`;
                     }
                     return html`
                         <div class="flex items-center gap-1.5">
-                            <label class="text-[11px] text-gray-500 dark:text-gray-400 whitespace-nowrap">${esc(ca.label || ca.name)}</label>
+                            <label class="text-[11px] text-gray-500 dark:text-gray-400 whitespace-nowrap">${ca.label || ca.name}</label>
                             <input type="text" value=${eff}
                                 onInput=${e => onSet(ca.name, e.target.value)}
-                                placeholder=${esc(ca.name)}
+                                placeholder=${ca.name}
                                 class="w-28 bg-white dark:bg-gray-900/30 border border-gray-300 dark:border-gray-700/60 rounded px-2 py-1 text-xs text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-violet-500 focus:ring-0 focus:ring-offset-0 transition" />
                         </div>`;
                 })}
@@ -249,8 +248,8 @@ export function WorkflowModal({ isOpen, onClose, workflow }) {
                     <select onChange=${e => updateGroupProfile(i, pi, e.target.value)}
                         class="flex-1 min-w-0 bg-white dark:bg-gray-900/30 border border-gray-300 dark:border-gray-700/60 rounded px-2 py-1 text-xs text-gray-800 dark:text-gray-100 focus:border-violet-500 focus:ring-0 focus:ring-offset-0 transition">
                         ${!p.profile_id ? html`<option value="" selected disabled>Select profile...</option>` : ''}
-                        ${p.profile_id && !profileList.some(pl => pl.id === p.profile_id) ? html`<option value=${p.profile_id} selected>${esc(((p.profile && p.profile.name) || p.profile_id) + ' (snapshot)')}</option>` : ''}
-                        ${profileList.map(pl => html`<option value=${pl.id} selected=${p.profile_id === pl.id}>${esc(pl.name)} — ${esc(pl.script_path)}</option>`)}
+                        ${p.profile_id && !profileList.some(pl => pl.id === p.profile_id) ? html`<option value=${p.profile_id} selected>${((p.profile && p.profile.name) || p.profile_id) + ' (snapshot)'}</option>` : ''}
+                        ${profileList.map(pl => html`<option value=${pl.id} selected=${p.profile_id === pl.id}>${pl.name} — ${pl.script_path}</option>`)}
                     </select>
                     <button onClick=${() => toggleArgs(`p${p._id}`)}
                         title="Extra arguments for this profile"
@@ -307,8 +306,8 @@ export function WorkflowModal({ isOpen, onClose, workflow }) {
                     <select onChange=${e => updateSequentialProfile(i, e.target.value)}
                         class="flex-1 min-w-0 bg-white dark:bg-gray-900/30 border border-gray-300 dark:border-gray-700/60 rounded px-2 py-1 text-xs text-gray-800 dark:text-gray-100 focus:border-violet-500 focus:ring-0 focus:ring-offset-0 transition">
                         ${!s.profile_id ? html`<option value="" selected disabled>Select profile...</option>` : ''}
-                        ${s.profile_id && !profileList.some(pl => pl.id === s.profile_id) ? html`<option value=${s.profile_id} selected>${esc(((s.profile && s.profile.name) || s.profile_id) + ' (snapshot)')}</option>` : ''}
-                        ${profileList.map(pl => html`<option value=${pl.id} selected=${s.profile_id === pl.id}>${esc(pl.name)} — ${esc(pl.script_path)}</option>`)}
+                        ${s.profile_id && !profileList.some(pl => pl.id === s.profile_id) ? html`<option value=${s.profile_id} selected>${((s.profile && s.profile.name) || s.profile_id) + ' (snapshot)'}</option>` : ''}
+                        ${profileList.map(pl => html`<option value=${pl.id} selected=${s.profile_id === pl.id}>${pl.name} — ${pl.script_path}</option>`)}
                     </select>
                     <button onClick=${() => toggleArgs(`s${s._id}`)}
                         title="Extra arguments for this step"
@@ -365,7 +364,7 @@ export function WorkflowModal({ isOpen, onClose, workflow }) {
                                                 class="px-2.5 py-1.5 text-xs font-medium rounded-lg border transition ${tagIds.includes(t.id)
                                                     ? color.chip + ' ring-2 ' + color.ring
                                                     : 'bg-white dark:bg-gray-900/30 border-gray-300 dark:border-gray-700/60 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'}">
-                                                ${esc(t.name)}
+                                                ${t.name}
                                             </button>
                                         `;
                                     })}

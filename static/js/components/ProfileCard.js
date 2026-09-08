@@ -1,5 +1,4 @@
 import { html, useState } from '../../vendor/standalone-preact.esm.js';
-import { esc } from '../utils.js';
 import { scriptStatusCache, schedules, tags, TRASH_GROUP } from '../state.js';
 import { tagColor } from '../tagColors.js';
 import { runProfile, saveProfile as apiSaveProfile, loadProfiles, duplicateProfile, restoreProfile, permanentDeleteProfile } from '../api.js';
@@ -66,20 +65,20 @@ export function ProfileCard({ profile, onEdit, onRun }) {
     const scriptBadge = scriptMissing
         ? html`<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-500/20" title="Script not found">
             <svg class="w-3 h-3 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 6a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 6zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/></svg>
-            ${esc(p.script_path)}
+            ${p.script_path}
         </span>`
-        : html`<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700/50 text-gray-600 dark:text-gray-400">${esc(p.script_path)}</span>`;
+        : html`<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700/50 text-gray-600 dark:text-gray-400">${p.script_path}</span>`;
 
     return html`
         <div class="bg-white dark:bg-gray-800 shadow-xs rounded-xl p-4 border ${scriptMissing ? 'border-red-200 dark:border-red-500/30' : 'border-gray-200 dark:border-gray-700/60'} hover:border-gray-300 dark:hover:border-gray-600 transition group">
             <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                 <div class="min-w-0 flex-1">
-                    <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-100">${esc(p.name)}</h3>
+                    <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-100">${p.name}</h3>
                     <div class="flex flex-wrap items-center gap-1.5 mt-2">
                         ${itemTags.map(t => html`
                             <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium border ${tagColor(t).chip}">
                                 <svg class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z"/><path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6z"/></svg>
-                                ${esc(t.name)}
+                                ${t.name}
                             </span>
                         `)}
                         ${scriptBadge}
@@ -89,7 +88,7 @@ export function ProfileCard({ profile, onEdit, onRun }) {
                                 Scheduled
                             </span>
                         ` : ''}
-                        ${sa.map(a => html`<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-violet-500/10 text-violet-600 dark:text-violet-400">${esc(a)}</span>`)}
+                        ${sa.map(a => html`<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-violet-500/10 text-violet-600 dark:text-violet-400">${a}</span>`)}
                     </div>
                     ${ca.length ? html`
                         <div class="flex flex-wrap items-center gap-3 mt-3">
@@ -100,13 +99,13 @@ export function ProfileCard({ profile, onEdit, onRun }) {
                                             checked=${c.value === 'true'}
                                             onChange=${(e) => handleArgChange(e.target)}
                                             class="w-3.5 h-3.5 rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900/30 text-violet-500 focus:ring-violet-500/50 focus:ring-offset-0" />
-                                        ${esc(c.label || c.name)}
+                                        ${c.label || c.name}
                                     </label>`;
                                 if (c.type === 'date') return html`
                                     <div class="flex items-center gap-1.5">
-                                        <label class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">${esc(c.label || c.name)}</label>
+                                        <label class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">${c.label || c.name}</label>
                                         <input type="date" id=${`arg-${p.id}-${i}`} data-profile=${p.id} data-idx=${i}
-                                            value=${esc(c.value || c.default || '')}
+                                            value=${c.value || c.default || ''}
                                             onChange=${(e) => handleArgChange(e.target)}
                                             class="w-36 bg-white dark:bg-gray-900/30 border border-gray-300 dark:border-gray-700/60 rounded px-2 py-1 text-xs text-gray-800 dark:text-gray-100 focus:border-violet-500 focus:ring-0 focus:ring-offset-0 transition" />
                                     </div>`;
@@ -115,22 +114,22 @@ export function ProfileCard({ profile, onEdit, onRun }) {
                                     const opts = String(c.options || '').split(',').map(s => s.trim()).filter(Boolean);
                                     return html`
                                         <div class="flex items-center gap-1.5">
-                                            <label class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">${esc(c.label || c.name)}</label>
+                                            <label class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">${c.label || c.name}</label>
                                             <select id=${`arg-${p.id}-${i}`} data-profile=${p.id} data-idx=${i}
                                                 onChange=${(e) => handleArgChange(e.target)}
                                                 class="max-w-[14rem] bg-white dark:bg-gray-900/30 border border-gray-300 dark:border-gray-700/60 rounded px-2 py-1 text-xs text-gray-800 dark:text-gray-100 focus:border-violet-500 focus:ring-0 focus:ring-offset-0 transition">
                                                 <option value="" selected=${cur === ''}>-- select --</option>
-                                                ${opts.map(opt => html`<option value=${opt} selected=${cur === opt}>${esc(opt)}</option>`)}
+                                                ${opts.map(opt => html`<option value=${opt} selected=${cur === opt}>${opt}</option>`)}
                                             </select>
                                         </div>`;
                                 }
                                 return html`
                                     <div class="flex items-center gap-1.5">
-                                        <label class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">${esc(c.label || c.name)}</label>
+                                        <label class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">${c.label || c.name}</label>
                                         <input type="text" id=${`arg-${p.id}-${i}`} data-profile=${p.id} data-idx=${i}
-                                            value=${esc(c.value || c.default || '')}
+                                            value=${c.value || c.default || ''}
                                             onChange=${(e) => handleArgChange(e.target)}
-                                            placeholder=${esc(c.name)}
+                                            placeholder=${c.name}
                                             class="w-32 bg-white dark:bg-gray-900/30 border border-gray-300 dark:border-gray-700/60 rounded px-2 py-1 text-xs text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-violet-500 focus:ring-0 focus:ring-offset-0 transition" />
                                     </div>`;
                             })}
@@ -172,14 +171,14 @@ export function ProfileCard({ profile, onEdit, onRun }) {
             onClose=${() => setPendingDelete(null)}
             onConfirm=${handleConfirmDelete}
             title="Delete profile"
-            message=${html`This will move <span class="font-medium text-gray-700 dark:text-gray-200">${esc(p.name)}</span> to the trash.`}
+            message=${html`This will move <span class="font-medium text-gray-700 dark:text-gray-200">${p.name}</span> to the trash.`}
         />
         <${ConfirmModal}
             isOpen=${!!pendingPermanentDelete}
             onClose=${() => setPendingPermanentDelete(null)}
             onConfirm=${handleConfirmPermanentDelete}
             title="Permanently delete profile"
-            message=${html`This will permanently delete <span class="font-medium text-gray-700 dark:text-gray-200">${esc(p.name)}</span>. This action cannot be undone.`}
+            message=${html`This will permanently delete <span class="font-medium text-gray-700 dark:text-gray-200">${p.name}</span>. This action cannot be undone.`}
         />
     `;
 }

@@ -10,7 +10,7 @@ Tiller is a local, zero-dependency web tool for managing and running Python scri
 - **Workflows**: Chain profiles as sequential steps or parallel groups, with configurable error handling.
 - **Tags**: Global labels shared by profiles and workflows, each with a pickable color used for chips and filter pills. Apply any number of tags, filter the lists by tag, and manage all tags from one place — deleting a tag simply removes it from the items that use it.
 - **Schedules**: Run profiles or workflows automatically on cron-like schedules — every hour, daily at 09:00, weekdays at 08:30, or any 5-field cron expression.
-- **Run History**: Full audit log of every run with output capture and status tracking. Search and filter by name, status, and date range.
+- **Run History**: Full audit log of every run with output capture and status tracking. A run appears here as **Running** as soon as it starts — profile and workflow runs alike — and is updated in place when it finishes. Search and filter by name, status, and date range.
 - **Audit**: Complete trail of every profile, workflow, and schedule change. Filter by action, entity type, name, and date range.
 - **Server Logs**: Built-in log viewer with live tailing, level highlighting, and text search; the log file rotates automatically.
 - **Custom Arguments**: Define typed input fields that appear on profile cards for quick parameter editing.
@@ -169,7 +169,7 @@ Both **Run History** panels (Profile and Workflow) and the **Audit** panel have 
 - **Name search**: case-insensitive substring match, applied as you type.
 - **Status** (Run History only): Running, Completed, Failed, or Cancelled.
 - **Action / Entity** (Audit only): filter on what happened and to what (including `Run now` firings and `Schedules`).
-- **Date range**: From/To day pickers; both ends of the range are inclusive.
+- **Date range**: From/To day pickers; both ends of the range are inclusive. Run History matches on the run's start time — the same time the **Time** column shows — so a long-running run is grouped under the day it started. Audit matches on when the change happened.
 
 Filters combine (AND), reset the list to page 1, and clear with the **Clear** button. The list request carries them as query parameters: `name`, `status` (history), `action`/`entity` (audit), `since` and `until` (epoch seconds).
 

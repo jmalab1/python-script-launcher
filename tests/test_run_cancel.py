@@ -56,14 +56,18 @@ def wait_for_output(run_id, needle, timeout=10):
 
 
 def wait_for_history(store, run_id, timeout=5):
-    """The history entry is written right after the run finishes."""
+    """Wait for the run's history entry to reach a terminal status.
+
+    Entries are written up front as "running", so existence alone does not
+    mean the result has been recorded yet.
+    """
     deadline = time.time() + timeout
     while time.time() < deadline:
         entries = [e for e in store.read("history") if e["run_id"] == run_id]
-        if entries:
+        if entries and entries[0]["status"] in ("completed", "failed", "cancelled"):
             return entries[0]
         time.sleep(0.05)
-    raise AssertionError(f"no history entry appeared for {run_id}")
+    raise AssertionError(f"no finished history entry appeared for {run_id}")
 
 
 # ----------------------------------------------------------------- cancel_run

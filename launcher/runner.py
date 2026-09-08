@@ -387,11 +387,16 @@ def prune_active_runs():
         _prune_active_runs_locked()
 
 
+# A cancelled run has finished just like a completed or failed one, so it
+# must age out the same way or cancelled runs would pile up forever.
+FINISHED_STATUSES = ("completed", "failed", "cancelled")
+
+
 def _prune_active_runs_locked():
     now = time.time()
     finished = []
     for run_id, entry in active_runs.items():
-        if entry.get("status") in ("completed", "failed"):
+        if entry.get("status") in FINISHED_STATUSES:
             # Entries without a finish stamp (injected tests, older data)
             # get the full grace period instead of being dropped immediately.
             finished.append((run_id, entry.get("finished_at") or now))

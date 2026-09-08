@@ -24,6 +24,16 @@ def summarize_entry(entry):
     return summary
 
 
+def _entry_time(entry):
+    """The time a history entry is shown for: when the run started.
+
+    The history table displays started_at, so date filters match on it too.
+    Legacy entries predating that field fall back to their timestamp.
+    """
+    started = entry.get("started_at")
+    return started if isinstance(started, (int, float)) else entry.get("timestamp", 0)
+
+
 def handle_list(page, per_page, type_filter, name=None, status=None, since=None, until=None):
     all_history = load_history()
     if type_filter:
@@ -35,9 +45,9 @@ def handle_list(page, per_page, type_filter, name=None, status=None, since=None,
     if status:
         all_history = [e for e in all_history if e.get("status") == status]
     if since is not None:
-        all_history = [e for e in all_history if e.get("timestamp", 0) >= since]
+        all_history = [e for e in all_history if _entry_time(e) >= since]
     if until is not None:
-        all_history = [e for e in all_history if e.get("timestamp", 0) <= until]
+        all_history = [e for e in all_history if _entry_time(e) <= until]
     all_history.sort(key=lambda x: x.get("timestamp", 0), reverse=True)
     total = len(all_history)
     start = (page - 1) * per_page

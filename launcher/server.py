@@ -436,7 +436,10 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
             elif path.startswith("/api/schedules/"):
                 schedule_id = path.split("/")[-1]
                 result, error = schedules.handle_delete(schedule_id)
-                self._json_response(result)
+                if error:
+                    self._json_response(error, 404)
+                else:
+                    self._json_response(result)
 
             elif path == "/api/history":
                 result = history.handle_clear()

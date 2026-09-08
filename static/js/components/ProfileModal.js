@@ -1,6 +1,5 @@
 import { html } from '../../vendor/standalone-preact.esm.js';
 import { useState, useEffect } from '../../vendor/standalone-preact.esm.js';
-import { esc } from '../utils.js';
 import { tags } from '../state.js';
 import { tagColor } from '../tagColors.js';
 import { saveProfile, loadProfiles, checkAllScripts, openNativeFileDialog } from '../api.js';
@@ -133,7 +132,7 @@ export function ProfileModal({ isOpen, onClose, profile }) {
                                                 class="px-2.5 py-1.5 text-xs font-medium rounded-lg border transition ${tagIds.includes(t.id)
                                                     ? color.chip + ' ring-2 ' + color.ring
                                                     : 'bg-white dark:bg-gray-900/30 border-gray-300 dark:border-gray-700/60 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'}">
-                                                ${esc(t.name)}
+                                                ${t.name}
                                             </button>
                                         `;
                                     })}

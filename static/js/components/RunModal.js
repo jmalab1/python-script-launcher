@@ -1,6 +1,6 @@
 import { html } from '../../vendor/standalone-preact.esm.js';
 import { useState, useEffect, useRef } from '../../vendor/standalone-preact.esm.js';
-import { esc, colorizeLine } from '../utils.js';
+import { colorizeLine } from '../utils.js';
 import { pollRun, fetchHistoryRun, cancelRun } from '../api.js';
 import { ConfirmModal } from './ConfirmModal.js';
 import { ErrorBanner } from './ErrorBanner.js';
@@ -61,7 +61,7 @@ export function RunModal({ isOpen, onClose, runId, title, runType }) {
         return lines.map(l => {
             const s = typeof l === 'string' ? l : String(l);
             const cls = colorizeLine(s);
-            return cls ? html`<div class=${cls}>${esc(s)}</div>` : esc(s);
+            return cls ? html`<div class=${cls}>${s}</div>` : s;
         });
     }
 
@@ -258,7 +258,7 @@ export function RunModal({ isOpen, onClose, runId, title, runType }) {
                                     <span>Timed out</span>
                                 </span>
                             ` : ''}
-                            ${currentStep ? html`<span class="text-xs text-gray-500 dark:text-gray-400">Running: ${esc(currentStep)}</span>` : ''}
+                            ${currentStep ? html`<span class="text-xs text-gray-500 dark:text-gray-400">Running: ${currentStep}</span>` : ''}
                         </div>
                         <${ErrorBanner} message=${error} />
                     </div>
@@ -272,7 +272,7 @@ export function RunModal({ isOpen, onClose, runId, title, runType }) {
                                     return html`
                                         <button onClick=${() => switchTab(t.name)}
                                             class="px-3 py-2 text-xs font-medium border-b-2 transition flex items-center gap-1.5 ${activeTab === t.name ? 'border-violet-500 text-violet-600 dark:text-violet-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}">
-                                            <span class="w-1.5 h-1.5 rounded-full ${dot}"></span>${esc(t.name)}
+                                            <span class="w-1.5 h-1.5 rounded-full ${dot}"></span>${t.name}
                                         </button>`;
                                 })}
                             </div>
@@ -280,7 +280,7 @@ export function RunModal({ isOpen, onClose, runId, title, runType }) {
                     ` : ''}
                     <div class="flex-1 overflow-hidden p-4">
                         <div class="h-full flex flex-col gap-2">
-                            ${command ? html`<div class="shrink-0 bg-gray-900 rounded-lg px-3 py-2 font-mono text-xs text-gray-300 border border-gray-800 break-all"><span class="text-gray-500">Command: </span>${esc(Array.isArray(command) ? command.join(' ') : String(command))}</div>` : ''}
+                            ${command ? html`<div class="shrink-0 bg-gray-900 rounded-lg px-3 py-2 font-mono text-xs text-gray-300 border border-gray-800 break-all"><span class="text-gray-500">Command: </span>${Array.isArray(command) ? command.join(' ') : String(command)}</div>` : ''}
                             <div ref=${outputRef} class="flex-1 min-h-0 bg-gray-950 rounded-xl p-4 font-mono text-xs leading-relaxed overflow-y-auto text-gray-300 whitespace-pre-wrap break-all">
                                 ${renderLines(output)}
                             </div>
