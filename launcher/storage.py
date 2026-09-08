@@ -1,6 +1,10 @@
 import json
+import threading
 import time
+import uuid
 from .config import DATA_DIR, PROFILES_FILE, WORKFLOWS_FILE, HISTORY_FILE
+
+_history_lock = threading.RLock()
 
 
 def load_json(path):
@@ -16,8 +20,22 @@ def save_json(path, data):
         json.dump(data, f, indent=2)
 
 
+def load_history():
+    with _history_lock:
+        history = load_json(HISTORY_FILE)
+        changed = False
+        for entry in history:
+            if not entry.get("id"):
+                entry["id"] = uuid.uuid4().hex
+                changed = True
+        if changed:
+            save_json(HISTORY_FILE, history)
+        return history
+
+
 def save_history(run_id, name, run_type, status, returncode, output, started_at, workflow_log=None, steps=None):
     entry = {
+        "id": uuid.uuid4().hex,
         "run_id": run_id,
         "name": name,
         "type": run_type,
@@ -32,6 +50,7 @@ def save_history(run_id, name, run_type, status, returncode, output, started_at,
         entry["workflow_log"] = workflow_log
     if steps is not None:
         entry["steps"] = steps
-    history = load_json(HISTORY_FILE)
-    history.append(entry)
-    save_json(HISTORY_FILE, history)
+    with _history_lock:
+        history = load_history()
+        history.append(entry)
+        save_json(HISTORY_FILE, history)

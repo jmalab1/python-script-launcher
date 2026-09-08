@@ -35,17 +35,18 @@ export function HistoryTable({ data, pageSignal, onLoad, type, onOpenRun }) {
                         const preview = (e.output_preview || '').replace(/\n/g, ' ').substring(0, 60);
                         const sc = colorizeStatus(e.status);
                         const rowNum = data.total - (data.page - 1) * data.per_page - idx;
+                        const entryKey = e.id || e.run_id;
                         return html`
                             <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition cursor-pointer"
                                 title=${esc(e.output_preview || '')}
-                                onClick=${() => onOpenRun(e.run_id, e.name, type)}>
+                                onClick=${() => onOpenRun(entryKey, e.name, type)}>
                                 <td class="py-2 px-3 text-gray-400">${rowNum}</td>
                                 <td class="py-2 px-3 font-medium text-gray-800 dark:text-gray-200">${esc(e.name)}</td>
                                 <td class="py-2 px-3"><span class=${sc}>${e.status}</span></td>
                                 <td class="py-2 px-3 text-gray-500 dark:text-gray-400 font-mono truncate max-w-[200px]">${esc(preview)}</td>
                                 <td class="py-2 px-3 text-right text-gray-500 dark:text-gray-400 whitespace-nowrap">${formatTime(e.started_at)}</td>
                                 <td class="py-2 px-1">
-                                    <button onClick=${(ev) => { ev.stopPropagation(); handleDelete(e.run_id); }}
+                                    <button onClick=${(ev) => { ev.stopPropagation(); handleDelete(entryKey); }}
                                         class="p-1 rounded text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition"
                                         title="Delete">
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>

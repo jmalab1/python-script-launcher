@@ -69,7 +69,7 @@ def handle_run_profile(data, send_error):
 
     with run_lock:
         run_counter += 1
-        run_id = f"prof_{run_counter}"
+        run_id = f"prof_{int(started_at * 1000)}_{run_counter}"
         active_runs[run_id] = {
             "output": [],
             "status": "running",
@@ -108,7 +108,7 @@ def handle_run_workflow(data):
 
     with run_lock:
         run_counter += 1
-        run_id = f"wf_{run_counter}"
+        run_id = f"wf_{int(started_at * 1000)}_{run_counter}"
         active_runs[run_id] = {
             "output": [],
             "workflow_log": [],
