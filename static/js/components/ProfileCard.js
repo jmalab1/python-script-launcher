@@ -50,7 +50,7 @@ export function ProfileCard({ profile, onEdit, onRun }) {
 
     return html`
         <div class="bg-white dark:bg-gray-800 shadow-xs rounded-xl p-4 border ${scriptMissing ? 'border-red-200 dark:border-red-500/30' : 'border-gray-200 dark:border-gray-700/60'} hover:border-gray-300 dark:hover:border-gray-600 transition group">
-            <div class="flex items-start justify-between gap-3">
+            <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                 <div class="min-w-0 flex-1">
                     <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-100">${esc(p.name)}</h3>
                     <div class="flex flex-wrap items-center gap-1.5 mt-2">
@@ -103,7 +103,7 @@ export function ProfileCard({ profile, onEdit, onRun }) {
                         </div>
                     ` : ''}
                 </div>
-                <div class="flex items-center gap-1 shrink-0">
+                <div class="flex items-center gap-1 shrink-0 flex-wrap">
                     <button onClick=${handleRun} disabled=${scriptMissing}
                         title=${scriptMissing ? 'Script not found' : ''}
                         class="inline-flex items-center gap-1 px-2.5 py-1.5 ${scriptMissing

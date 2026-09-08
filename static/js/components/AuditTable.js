@@ -124,52 +124,54 @@ export function AuditTable({ data, pageSignal, onLoad }) {
             <div class="flex items-center justify-between gap-3 mb-3">
                 <${AuditFilters} onLoad=${onLoad} />
             </div>
-            <table class="w-full text-xs">
-                <thead>
-                    <tr class="border-b border-gray-100 dark:border-gray-700/60">
-                        <th class="text-left py-2 px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">#</th>
-                        <th class="text-left py-2 px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Entity</th>
-                        <th class="text-left py-2 px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Name</th>
-                        <th class="text-left py-2 px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Action</th>
-                        <th class="text-left py-2 px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Details</th>
-                        <th class="text-right py-2 px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Time</th>
-                        <th class="w-8"></th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100 dark:divide-gray-700/60">
-                    ${data.entries.map((e, idx) => {
-                        const rowNum = data.total - (data.page - 1) * data.per_page - idx;
-                        const as = ACTION_STYLES[e.action] || '';
-                        const isDeleted = e.action === 'deleted';
-                        return html`
-                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition cursor-pointer"
-                                onClick=${() => openDetail(e)}>
-                                <td class="py-2 px-3 text-gray-400">${rowNum}</td>
-                                <td class="py-2 px-3">
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700/40 capitalize">${esc(e.entity_type)}</span>
-                                </td>
-                                <td class="py-2 px-3 font-medium text-gray-800 dark:text-gray-200">${esc(e.name)}</td>
-                                <td class="py-2 px-3">
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${as}">${actionLabel(e.action)}</span>
-                                </td>
-                                <td class="py-2 px-3 text-gray-500 dark:text-gray-400 max-w-[16rem] truncate" title=${esc(entryDetails(e))}>${entryDetails(e)}</td>
-                                <td class="py-2 px-3 text-right text-gray-500 dark:text-gray-400 whitespace-nowrap">${formatTime(e.timestamp)}</td>
-                                <td class="py-2 px-1">
-                                    <div class="flex items-center gap-0.5">
-                                        ${isDeleted ? html`
-                                            <button onClick=${(ev) => { ev.stopPropagation(); confirmRestore(e); }}
-                                                class="p-1 rounded text-gray-400 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-500/10 transition"
-                                                title="Restore deleted ${esc(e.entity_type)}">
-                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.204a8.25 8.25 0 0113.803-3.7l3.181 3.182"/></svg>
-                                            </button>
-                                        ` : ''}
-                                    </div>
-                                </td>
-                            </tr>
-                        `;
-                    })}
-                </tbody>
-            </table>
+            <div class="overflow-x-auto -mx-3 px-3">
+                <table class="w-full text-xs min-w-[640px]">
+                    <thead>
+                        <tr class="border-b border-gray-100 dark:border-gray-700/60">
+                            <th class="text-left py-2 px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">#</th>
+                            <th class="text-left py-2 px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Entity</th>
+                            <th class="text-left py-2 px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Name</th>
+                            <th class="text-left py-2 px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Action</th>
+                            <th class="text-left py-2 px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Details</th>
+                            <th class="text-right py-2 px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Time</th>
+                            <th class="w-8"></th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100 dark:divide-gray-700/60">
+                        ${data.entries.map((e, idx) => {
+                            const rowNum = data.total - (data.page - 1) * data.per_page - idx;
+                            const as = ACTION_STYLES[e.action] || '';
+                            const isDeleted = e.action === 'deleted';
+                            return html`
+                                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition cursor-pointer"
+                                    onClick=${() => openDetail(e)}>
+                                    <td class="py-2 px-3 text-gray-400">${rowNum}</td>
+                                    <td class="py-2 px-3">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700/40 capitalize">${esc(e.entity_type)}</span>
+                                    </td>
+                                    <td class="py-2 px-3 font-medium text-gray-800 dark:text-gray-200">${esc(e.name)}</td>
+                                    <td class="py-2 px-3">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${as}">${actionLabel(e.action)}</span>
+                                    </td>
+                                    <td class="py-2 px-3 text-gray-500 dark:text-gray-400 max-w-[16rem] truncate" title=${esc(entryDetails(e))}>${entryDetails(e)}</td>
+                                    <td class="py-2 px-3 text-right text-gray-500 dark:text-gray-400 whitespace-nowrap">${formatTime(e.timestamp)}</td>
+                                    <td class="py-2 px-1">
+                                        <div class="flex items-center gap-0.5">
+                                            ${isDeleted ? html`
+                                                <button onClick=${(ev) => { ev.stopPropagation(); confirmRestore(e); }}
+                                                    class="p-1 rounded text-gray-400 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-500/10 transition"
+                                                    title="Restore deleted ${esc(e.entity_type)}">
+                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.204a8.25 8.25 0 0113.803-3.7l3.181 3.182"/></svg>
+                                                </button>
+                                            ` : ''}
+                                        </div>
+                                    </td>
+                                </tr>
+                            `;
+                        })}
+                    </tbody>
+                </table>
+            </div>
             <${Pagination} data=${data} pageSignal=${pageSignal} onLoad=${onLoad} />
             <${AuditDetailModal} entry=${detail} onClose=${() => setDetail(null)} onRestore=${async (e) => { setDetail(null); await confirmRestore(e); }} />
         </div>
@@ -178,7 +180,7 @@ export function AuditTable({ data, pageSignal, onLoad }) {
 
 export function AuditFilters({ onLoad }) {
     return html`
-        <div class="flex items-center gap-2">
+        <div class="flex flex-col sm:flex-row sm:items-center gap-2">
             <select value=${auditAction.value}
                 onChange=${(ev) => { auditAction.value = ev.target.value; auditPage.value = 1; onLoad(); }}
                 class="text-xs bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700/60 rounded-lg px-2 py-1.5 text-gray-700 dark:text-gray-300">

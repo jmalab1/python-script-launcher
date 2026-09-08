@@ -34,4 +34,4 @@ When adding or editing code, always include a unit test (or update existing ones
 
 ## Server restart
 
-- After changes to backend files (`launcher/`), restart the server so the changes take effect. Kill the existing process and run `python3 launcher.py` from the project root.
+- After changes to backend files (`launcher/`), restart the server so the changes take effect. Run `make restart` from the project root.

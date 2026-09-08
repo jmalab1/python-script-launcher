@@ -16,6 +16,7 @@ def handle_poll_all():
                 "returncode": v.get("returncode"),
                 "steps": v.get("steps", {}),
                 "current_step": v.get("current_step"),
+                "command": v.get("command"),
             }
             for k, v in active_runs.items()
         }
@@ -33,6 +34,7 @@ def handle_poll(run_id):
             "returncode": run_data.get("returncode"),
             "steps": run_data.get("steps", {}),
             "current_step": run_data.get("current_step"),
+            "command": run_data.get("command"),
         }
     return None
 
@@ -63,6 +65,7 @@ def handle_run_profile(data, send_error):
             "status": "running",
             "returncode": None,
             "failed": False,
+            "command": command,
         }
 
     profile_name = profile.get("name", "Unnamed")

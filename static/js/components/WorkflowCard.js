@@ -126,7 +126,7 @@ export function WorkflowCard({ workflow, onEdit, onRun }) {
     return html`
         <div class="bg-white dark:bg-gray-800 shadow-xs rounded-xl border ${hasMissingScripts ? 'border-amber-200 dark:border-amber-500/30' : 'border-gray-200 dark:border-gray-700/60'} hover:border-gray-300 dark:hover:border-gray-600 transition group">
             <div class="p-4">
-                <div class="flex items-start justify-between gap-3 mb-3">
+                <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-3">
                     <div class="min-w-0 flex-1">
                         <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-100">${esc(w.name)}</h3>
                         <div class="flex flex-wrap items-center gap-1.5 mt-1.5">
@@ -135,7 +135,7 @@ export function WorkflowCard({ workflow, onEdit, onRun }) {
                             ${w.continue_on_error ? html`<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400">continues on error</span>` : ''}
                         </div>
                     </div>
-                    <div class="flex items-center gap-1 shrink-0">
+                    <div class="flex items-center gap-1 shrink-0 flex-wrap">
                         <button onClick=${handleRun}
                             class="inline-flex items-center gap-1 px-2.5 py-1.5 bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400 text-xs font-medium rounded-lg border border-green-200 dark:border-green-500/20 hover:bg-green-100 dark:hover:bg-green-500/20 transition">
                             <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg> Run

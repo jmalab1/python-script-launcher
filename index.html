@@ -61,6 +61,11 @@ tailwind.config = {
     background-color: rgba(124,58,237,.2);
 }
 .mob-nav { transition: all 150ms ease; }
+
+aside { width: 12rem; }
+@media (max-width: 767px) {
+    aside { width: min(12rem, 65vw); }
+}
 </style>
 </head>
 <body class="overflow-hidden">

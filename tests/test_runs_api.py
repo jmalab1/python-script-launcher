@@ -70,6 +70,7 @@ def test_poll_endpoints_expose_output_log_status_and_steps(store):
         assert polled == {
             "output": ["a\n"], "workflow_log": ["log"], "status": "completed",
             "returncode": 0, "steps": {"S": {}}, "current_step": "S",
+            "command": None,
         }
         assert runs.handle_poll_all()["r1"] == polled
     finally:
@@ -109,6 +110,14 @@ def test_profile_history_records_the_command_that_ran(store, runs_env):
     assert entry["command"] == [
         sys.executable, str(runs_env["echo"]), "static", "--flag", "v2", "--cb", "extra",
     ], entry["command"]
+
+
+def test_profile_run_poll_includes_the_command(store, runs_env):
+    body, _, _ = runs.handle_run_profile({"profile_id": "p2", "args": ["extra"], "arg_values": {"--flag": "v2"}}, None)
+    info = wait_done(body["run_id"])
+    assert info["command"] == [
+        sys.executable, str(runs_env["echo"]), "static", "--flag", "v2", "--cb", "extra",
+    ], info["command"]
 
 
 def test_run_profile_formats_date_custom_args(store, runs_env):
