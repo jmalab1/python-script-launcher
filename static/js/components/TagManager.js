@@ -1,6 +1,7 @@
 import { html } from '../../vendor/standalone-preact.esm.js';
 import { useState, useEffect } from '../../vendor/standalone-preact.esm.js';
-import { addTag, renameTag, deleteTag, reorderTags } from '../state.js';
+import { addTag, renameTag, setTagColor, deleteTag, reorderTags } from '../state.js';
+import { TAG_COLORS, tagColor } from '../tagColors.js';
 import { ConfirmModal } from './ConfirmModal.js';
 import { ErrorBanner } from './ErrorBanner.js';
 
@@ -8,6 +9,7 @@ export function TagManager({ isOpen, onClose, tags, tagsSignal, profiles, workfl
     const [newName, setNewName] = useState('');
     const [editingId, setEditingId] = useState(null);
     const [editName, setEditName] = useState('');
+    const [colorFor, setColorFor] = useState(null);
     const [dragIndex, setDragIndex] = useState(null);
     const [overIndex, setOverIndex] = useState(null);
     const [pendingDelete, setPendingDelete] = useState(null);
@@ -143,9 +145,10 @@ export function TagManager({ isOpen, onClose, tags, tagsSignal, profiles, workfl
                             <div class="space-y-1.5">
                                 ${tags.map((f, i) => {
                                     const count = items.filter(item => hasTag(item, f.id)).length;
+                                    const color = tagColor(f);
                                     return html`
                                         <div key=${f.id}
-                                            class="flex items-center gap-2 p-2 rounded-lg border transition ${dragIndex === i ? 'opacity-40' : ''} ${overIndex === i && dragIndex !== null && dragIndex !== i ? 'border-violet-400/70 ring-1 ring-violet-400/50' : 'border-gray-200 dark:border-gray-700/60'}"
+                                            class="flex flex-wrap items-center gap-2 p-2 rounded-lg border transition ${dragIndex === i ? 'opacity-40' : ''} ${overIndex === i && dragIndex !== null && dragIndex !== i ? 'border-violet-400/70 ring-1 ring-violet-400/50' : 'border-gray-200 dark:border-gray-700/60'}"
                                             draggable=${dragIndex !== null}
                                             onDragStart=${(e) => handleDragStart(e, i)}
                                             onDragOver=${(e) => handleDragOver(e, i)}
@@ -161,7 +164,10 @@ export function TagManager({ isOpen, onClose, tags, tagsSignal, profiles, workfl
                                                     <circle cx="2.5" cy="13.5" r="1.4"/><circle cx="7.5" cy="13.5" r="1.4"/>
                                                 </svg>
                                             </div>
-                                            <svg class="w-4 h-4 text-amber-500 dark:text-amber-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z"/><path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6z"/></svg>
+                                            <button onClick=${() => setColorFor(colorFor === f.id ? null : f.id)}
+                                                class="shrink-0 w-4 h-4 rounded-full border border-black/10 dark:border-white/20 transition hover:scale-110"
+                                                style=${'background:' + color.hex}
+                                                title="Change color"></button>
                                             ${editingId === f.id ? html`
                                                 <input type="text" value=${editName} onInput=${e => setEditName(e.target.value)}
                                                     onKeyDown=${(e) => handleKeyDown(e, f.id)}
@@ -182,6 +188,16 @@ export function TagManager({ isOpen, onClose, tags, tagsSignal, profiles, workfl
                                                 class="p-1 text-gray-400 hover:text-red-500 transition" title="Delete tag">
                                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg>
                                             </button>
+                                            ${colorFor === f.id ? html`
+                                                <div class="w-full flex items-center flex-wrap gap-1.5 pl-6 pt-1">
+                                                    ${TAG_COLORS.map(c => html`
+                                                        <button onClick=${() => { setTagColor(tagsSignal, f.id, c.id); setColorFor(null); }}
+                                                            class="w-5 h-5 rounded-full border border-black/10 dark:border-white/20 transition hover:scale-110 ${color.id === c.id ? 'ring-2 ring-offset-2 dark:ring-offset-gray-800 ' + c.ring : ''}"
+                                                            style=${'background:' + c.hex}
+                                                            title=${c.id}></button>
+                                                    `)}
+                                                </div>
+                                            ` : ''}
                                         </div>
                                     `;
                                 })}

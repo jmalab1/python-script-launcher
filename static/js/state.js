@@ -1,4 +1,5 @@
 import { signal } from '../vendor/standalone-preact.esm.js';
+import { TAG_COLORS, DEFAULT_TAG_COLOR } from './tagColors.js';
 
 // App data (shared across components)
 export const profiles = signal([]);
@@ -65,7 +66,8 @@ function loadTags() {
     for (const tag of [read(TAGS_KEY), ...LEGACY_TAG_KEYS.map(read)].flat()) {
         if (!tag || !tag.id || seen.has(tag.id)) continue;
         seen.add(tag.id);
-        merged.push(tag);
+        // Tags from before colors existed get the default palette entry.
+        merged.push({ ...tag, color: tag.color || DEFAULT_TAG_COLOR });
     }
     return merged;
 }
@@ -76,12 +78,20 @@ tags.subscribe(v => localStorage.setItem(TAGS_KEY, JSON.stringify(v)));
 
 export function addTag(tagsSignal, name) {
     const id = 'tag_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
-    tagsSignal.value = [...tagsSignal.value, { id, name: name.trim() }];
+    // Start new tags on the first palette color that isn't taken yet, so a
+    // handful of tags don't all look the same.
+    const used = new Set(tagsSignal.value.map(t => t.color));
+    const free = TAG_COLORS.find(c => !used.has(c.id)) || TAG_COLORS[0];
+    tagsSignal.value = [...tagsSignal.value, { id, name: name.trim(), color: free.id }];
     return id;
 }
 
 export function renameTag(tagsSignal, id, newName) {
     tagsSignal.value = tagsSignal.value.map(t => t.id === id ? { ...t, name: newName.trim() } : t);
+}
+
+export function setTagColor(tagsSignal, id, colorId) {
+    tagsSignal.value = tagsSignal.value.map(t => t.id === id ? { ...t, color: colorId } : t);
 }
 
 export function deleteTag(tagsSignal, id) {

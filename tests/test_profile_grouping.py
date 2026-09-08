@@ -202,14 +202,61 @@ def test_workflow_modal_saves_tags_array():
 
 def test_profile_card_shows_tag_chips():
     src = (COMPONENTS / "ProfileCard.js").read_text()
-    assert "tagNames" in src, "ProfileCard does not resolve tag names"
+    assert "itemTags" in src, "ProfileCard does not resolve its tags"
     assert "tags.value.find" in src, "ProfileCard does not look up the global tags signal"
+    assert "tagColor(" in src, "ProfileCard does not tint chips with the tag's color"
 
 
 def test_workflow_card_shows_tag_chips():
     src = (COMPONENTS / "WorkflowCard.js").read_text()
-    assert "tagNames" in src, "WorkflowCard does not resolve tag names"
+    assert "itemTags" in src, "WorkflowCard does not resolve its tags"
     assert "tags.value.find" in src, "WorkflowCard does not look up the global tags signal"
+    assert "tagColor(" in src, "WorkflowCard does not tint chips with the tag's color"
+
+
+# --- Tag colors ---
+
+def test_tag_colors_module_defines_a_palette_with_default_fallback():
+    src = (STATIC_JS / "tagColors.js").read_text()
+    assert "export const TAG_COLORS" in src, "palette missing"
+    assert "export const DEFAULT_TAG_COLOR" in src, "default color missing"
+    assert "export function tagColor(" in src, "tagColor lookup missing"
+    assert re.search(r"\|\|\s*TAG_COLORS\[0\]", src), \
+        "an unknown/missing color must fall back to the default entry"
+
+
+def test_tag_colors_entries_carry_chip_and_ring_classes():
+    src = (STATIC_JS / "tagColors.js").read_text()
+    assert "chip:" in src and "ring:" in src, "palette entries need chip and ring classes"
+    assert "dark:bg-${id}-500/10" in src and "dark:text-${id}-400" in src, \
+        "chip classes must cover dark mode"
+
+
+def test_state_assigns_a_default_color_and_can_change_it():
+    src = (STATIC_JS / "state.js").read_text()
+    assert "color: tag.color || DEFAULT_TAG_COLOR" in src, \
+        "tags saved before colors existed must load with a default color"
+    assert "export function setTagColor(" in src, "setTagColor helper missing"
+    assert "TAG_COLORS.find(c => !used.has(c.id))" in src, \
+        "new tags should start on the first unused palette color"
+
+
+def test_tag_manager_offers_a_color_picker_per_tag():
+    src = (COMPONENTS / "TagManager.js").read_text()
+    assert "setTagColor" in src, "TagManager does not apply color changes"
+    assert "TAG_COLORS" in src, "TagManager does not render the palette"
+    assert "colorFor" in src, "TagManager has no per-tag color-picker state"
+
+
+def test_tag_filter_pills_use_the_tag_color():
+    src = (COMPONENTS / "TagFilter.js").read_text()
+    assert "tagColor(f)" in src, "pills are not tinted with the tag's color"
+
+
+def test_modals_show_selected_tags_in_the_tag_color():
+    for name in ("ProfileModal.js", "WorkflowModal.js"):
+        src = (COMPONENTS / name).read_text()
+        assert "tagColor(t)" in src, f"{name} does not tint tag toggles with the tag's color"
 
 
 # --- TagManager: global tags, safe delete ---

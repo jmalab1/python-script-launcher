@@ -2,6 +2,7 @@ import { html } from '../../vendor/standalone-preact.esm.js';
 import { useState, useEffect } from '../../vendor/standalone-preact.esm.js';
 import { esc } from '../utils.js';
 import { profiles, tags } from '../state.js';
+import { tagColor } from '../tagColors.js';
 import { saveWorkflow, loadWorkflows } from '../api.js';
 import { SortableList } from './SortableList.js';
 import { ErrorBanner } from './ErrorBanner.js';
@@ -357,14 +358,17 @@ export function WorkflowModal({ isOpen, onClose, workflow }) {
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tags <span class="text-gray-400 font-normal">(any number)</span></label>
                             ${tags.value.length ? html`
                                 <div class="flex flex-wrap gap-1.5">
-                                    ${tags.value.map(t => html`
-                                        <button type="button" onClick=${() => toggleTagId(t.id)}
-                                            class="px-2.5 py-1.5 text-xs font-medium rounded-lg border transition ${tagIds.includes(t.id)
-                                                ? 'bg-amber-50 dark:bg-amber-500/10 border-amber-300 dark:border-amber-500/40 text-amber-700 dark:text-amber-400'
-                                                : 'bg-white dark:bg-gray-900/30 border-gray-300 dark:border-gray-700/60 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'}">
-                                            ${esc(t.name)}
-                                        </button>
-                                    `)}
+                                    ${tags.value.map(t => {
+                                        const color = tagColor(t);
+                                        return html`
+                                            <button type="button" onClick=${() => toggleTagId(t.id)}
+                                                class="px-2.5 py-1.5 text-xs font-medium rounded-lg border transition ${tagIds.includes(t.id)
+                                                    ? color.chip + ' ring-2 ' + color.ring
+                                                    : 'bg-white dark:bg-gray-900/30 border-gray-300 dark:border-gray-700/60 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'}">
+                                                ${esc(t.name)}
+                                            </button>
+                                        `;
+                                    })}
                                 </div>
                             ` : html`
                                 <p class="text-sm text-gray-500 dark:text-gray-400">No tags yet — create some with the Tags button above the list.</p>
