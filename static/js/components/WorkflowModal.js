@@ -80,6 +80,23 @@ export function WorkflowModal({ isOpen, onClose, workflow }) {
         }));
     }
 
+    function countStepArgs(entry) {
+        let count = parseArgsText(entry._argsText, entry.args).length;
+        const prof = profileMap[entry.profile_id];
+        const overrides = entry.arg_values || {};
+        for (const ca of ((prof && prof.custom_args) || [])) {
+            const flag = ca.name || '';
+            if (!flag) continue;
+            const val = overrides[flag] !== undefined ? overrides[flag] : (ca.value !== undefined ? ca.value : (ca.default || ''));
+            if (ca.type === 'checkbox') {
+                if (val === 'true') count++;
+            } else if (val) {
+                count++;
+            }
+        }
+        return count;
+    }
+
     function customFieldsFor(entry, onSet) {
         const prof = profileMap[entry.profile_id];
         const cas = (prof && prof.custom_args) || [];
@@ -229,12 +246,12 @@ export function WorkflowModal({ isOpen, onClose, workflow }) {
                                                                 <select onChange=${e => updateGroupProfile(i, pi, e.target.value)}
                                                                     class="flex-1 min-w-0 bg-white dark:bg-gray-900/30 border border-gray-300 dark:border-gray-700/60 rounded px-2 py-1 text-xs text-gray-800 dark:text-gray-100 focus:border-violet-500 focus:ring-0 focus:ring-offset-0 transition">
                                                                     ${!p.profile_id ? html`<option value="" selected disabled>Select profile...</option>` : ''}
-                                                                    ${profileList.map(pl => html`<option value=${pl.id} selected=${p.profile_id === pl.id}>${esc(pl.name)}</option>`)}
+                                                                    ${profileList.map(pl => html`<option value=${pl.id} selected=${p.profile_id === pl.id}>${esc(pl.name)} — ${esc(pl.script_path)}</option>`)}
                                                                 </select>
                                                                 <button onClick=${() => toggleArgs(`p${i}-${pi}`)}
                                                                     title="Extra arguments for this profile"
-                                                                    class="shrink-0 inline-flex items-center gap-1 px-1.5 py-1 text-[11px] font-medium rounded border transition ${(p._argsText || '').trim() ? 'border-violet-200 dark:border-violet-500/30 text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-500/10' : 'border-gray-200 dark:border-gray-700/60 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700/50'} ${openArgs === `p${i}-${pi}` ? 'bg-gray-100 dark:bg-gray-700/50' : ''}">
-                                                                    Args${(p._argsText || '').trim() ? html`<span class="inline-flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full text-[10px] font-bold bg-violet-500 text-white">${parseArgsText(p._argsText).length}</span>` : ''}
+                                                                    class="shrink-0 inline-flex items-center gap-1 px-1.5 py-1 text-[11px] font-medium rounded border transition ${countStepArgs(p) ? 'border-violet-200 dark:border-violet-500/30 text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-500/10' : 'border-gray-200 dark:border-gray-700/60 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700/50'} ${openArgs === `p${i}-${pi}` ? 'bg-gray-100 dark:bg-gray-700/50' : ''}">
+                                                                    Args${countStepArgs(p) ? html`<span class="inline-flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full text-[10px] font-bold bg-violet-500 text-white">${countStepArgs(p)}</span>` : ''}
                                                                 </button>
                                                                 ${xBtn(() => removeProfileFromParallelGroup(i, pi))}
                                                             </div>
@@ -263,8 +280,8 @@ export function WorkflowModal({ isOpen, onClose, workflow }) {
                                                 </select>
                                                 <button onClick=${() => toggleArgs(`s${i}`)}
                                                     title="Extra arguments for this step"
-                                                    class="shrink-0 inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium rounded border transition ${(s._argsText || '').trim() ? 'border-violet-200 dark:border-violet-500/30 text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-500/10' : 'border-gray-200 dark:border-gray-700/60 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700/50'} ${openArgs === `s${i}` ? 'bg-gray-100 dark:bg-gray-700/50' : ''}">
-                                                    Args${(s._argsText || '').trim() ? html`<span class="inline-flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full text-[10px] font-bold bg-violet-500 text-white">${parseArgsText(s._argsText).length}</span>` : ''}
+                                                    class="shrink-0 inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium rounded border transition ${countStepArgs(s) ? 'border-violet-200 dark:border-violet-500/30 text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-500/10' : 'border-gray-200 dark:border-gray-700/60 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700/50'} ${openArgs === `s${i}` ? 'bg-gray-100 dark:bg-gray-700/50' : ''}">
+                                                    Args${countStepArgs(s) ? html`<span class="inline-flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full text-[10px] font-bold bg-violet-500 text-white">${countStepArgs(s)}</span>` : ''}
                                                 </button>
                                                 <div class="flex items-center gap-0.5 shrink-0">
                                                     ${i > 0 ? upBtn(i) : ''}

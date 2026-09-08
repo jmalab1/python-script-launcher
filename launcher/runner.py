@@ -21,7 +21,7 @@ _CHILD_ENV = {
 }
 
 
-def run_script(script_path, args, run_id):
+def run_script(script_path, args, run_id, result=None):
     cmd = [sys.executable, script_path] + args
     try:
         proc = subprocess.Popen(
@@ -45,10 +45,21 @@ def run_script(script_path, args, run_id):
         proc.wait()
         with run_lock:
             active_runs[run_id]["returncode"] = proc.returncode
+            if result is not None:
+                result["returncode"] = proc.returncode
     except Exception as e:
         with run_lock:
             active_runs[run_id]["output"].append(f"ERROR: {e}\n")
             active_runs[run_id]["returncode"] = -1
+            if result is not None:
+                result["returncode"] = -1
+
+
+def _step_display_name(run_id, step_name):
+    counts = active_runs[run_id].setdefault("step_counts", {})
+    n = counts.get(step_name, 0) + 1
+    counts[step_name] = n
+    return step_name if n == 1 else f"{step_name} ({n})"
 
 
 def execute_workflow(workflow, run_id, started_at):
@@ -123,10 +134,13 @@ def _run_step(profile, extra_args, run_id, continue_on_error, arg_overrides=None
     script_path = profile.get("script_path", "")
     step_name = profile.get("name", "Unnamed")
 
+    with run_lock:
+        display_name = _step_display_name(run_id, step_name)
+
     if not os.path.isfile(script_path):
         with run_lock:
             steps = active_runs[run_id].setdefault("steps", {})
-            steps[step_name] = {"output": [], "status": "failed", "returncode": -1}
+            steps[display_name] = {"output": [], "status": "failed", "returncode": -1}
             active_runs[run_id]["workflow_log"].append(f"[SKIP] Script not found: {script_path}")
             active_runs[run_id]["failed"] = True
         return
@@ -151,23 +165,24 @@ def _run_step(profile, extra_args, run_id, continue_on_error, arg_overrides=None
 
     with run_lock:
         steps = active_runs[run_id].setdefault("steps", {})
-        steps[step_name] = {"output": [], "status": "running", "returncode": None}
-        active_runs[run_id]["workflow_log"].append(f"[RUN] {step_name}")
-        active_runs[run_id]["current_step"] = step_name
+        steps[display_name] = {"output": [], "status": "running", "returncode": None}
+        active_runs[run_id]["workflow_log"].append(f"[RUN] {display_name}")
+        active_runs[run_id]["current_step"] = display_name
 
-    for line in run_script(script_path, args, run_id):
+    step_result = {"returncode": None}
+    for line in run_script(script_path, args, run_id, result=step_result):
         with run_lock:
-            steps[step_name]["output"].append(line)
+            steps[display_name]["output"].append(line)
 
     with run_lock:
-        rc = active_runs[run_id].get("returncode", 0)
-        steps[step_name]["returncode"] = rc
+        rc = step_result["returncode"] or 0
+        steps[display_name]["returncode"] = rc
         if rc != 0:
-            steps[step_name]["status"] = "failed"
+            steps[display_name]["status"] = "failed"
             active_runs[run_id]["failed"] = True
-            active_runs[run_id]["workflow_log"].append(f"[FAIL] {step_name} exited with code {rc}")
+            active_runs[run_id]["workflow_log"].append(f"[FAIL] {display_name} exited with code {rc}")
             if not continue_on_error:
                 active_runs[run_id]["workflow_log"].append("[ABORT] Workflow stopped due to error.")
         else:
-            steps[step_name]["status"] = "completed"
-            active_runs[run_id]["workflow_log"].append(f"[DONE] {step_name} completed successfully")
+            steps[display_name]["status"] = "completed"
+            active_runs[run_id]["workflow_log"].append(f"[DONE] {display_name} completed successfully")
