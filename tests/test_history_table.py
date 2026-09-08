@@ -21,3 +21,29 @@ def test_spinner_is_skipped_for_terminal_statuses_and_text_is_kept():
     src = history_table_src()
     assert src.count("animate-spin") == 1, "spinner must only be emitted for running rows"
     assert "${e.status}</span>" in src, "status text must still be rendered"
+
+
+def test_history_table_has_select_all_checkbox_in_header():
+    src = history_table_src()
+    assert re.search(r'type="checkbox".*onChange=\$\{toggleSelectAll\}', src), \
+        "header must contain a select-all checkbox"
+
+
+def test_history_table_has_per_row_checkbox():
+    src = history_table_src()
+    assert "toggleSelect(entryKey)" in src, \
+        "each row must have a checkbox calling toggleSelect"
+
+
+def test_history_table_shows_bulk_delete_button_when_items_selected():
+    src = history_table_src()
+    assert "Delete Selected" in src, \
+        "bulk delete button with label 'Delete Selected' must exist"
+    assert "setPendingBulkDelete" in src, \
+        "bulk delete must set pendingBulkDelete state"
+
+
+def test_history_table_imports_delete_history_entries():
+    src = history_table_src()
+    assert "deleteHistoryEntries" in src, \
+        "HistoryTable must import deleteHistoryEntries for bulk delete"

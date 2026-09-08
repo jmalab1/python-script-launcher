@@ -66,6 +66,15 @@ def handle_delete(entry_key):
     return {"ok": True}
 
 
+def handle_bulk_delete(ids):
+    all_history = load_history()
+    id_set = set(ids)
+    remaining = [e for e in all_history if e.get("id") not in id_set]
+    removed = len(all_history) - len(remaining)
+    save_json(HISTORY_FILE, remaining)
+    return {"ok": True, "removed": removed}
+
+
 def handle_clear():
     save_json(HISTORY_FILE, [])
     return {"ok": True}

@@ -18,3 +18,7 @@ When adding or editing code, always include a unit test (or update existing ones
   - Use the `new_run` fixture for tests that create `runner.active_runs` entries.
 - Frontend (JS) behavior is covered by source-inspection tests (e.g. `test_confirm_modal.py`) that assert on the files in `static/js/components/` — follow that pattern for UI changes.
 - After any change, run the full suite and confirm it passes before finishing.
+
+## Server restart
+
+- After changes to backend files (`launcher/`), restart the server so the changes take effect. Kill the existing process and run `python3 launcher.py` from the project root.

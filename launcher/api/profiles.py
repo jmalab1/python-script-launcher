@@ -1,7 +1,7 @@
 import copy
 import time
 import uuid
-from ..storage import load_json, save_json
+from ..storage import load_json, save_json, record_audit, changed_fields
 from ..config import PROFILES_FILE
 
 
@@ -14,16 +14,36 @@ def handle_create(data):
     profile = data
     if not profile.get("id"):
         profile["id"] = f"profile_{int(time.time() * 1000)}"
+    existing = next((p for p in profiles if p.get("id") == profile["id"]), None)
+    before = copy.deepcopy(existing) if existing else None
     profiles = [p for p in profiles if p.get("id") != profile["id"]]
     profiles.append(profile)
     save_json(PROFILES_FILE, profiles)
+    record_audit(
+        "created" if before is None else "updated",
+        "profile",
+        profile["id"],
+        profile.get("name"),
+        before=before,
+        after=copy.deepcopy(profile),
+        details={"changed": changed_fields(before, profile)} if before else None,
+    )
     return profile
 
 
 def handle_delete(profile_id):
     profiles = load_json(PROFILES_FILE)
+    target = next((p for p in profiles if p.get("id") == profile_id), None)
     profiles = [p for p in profiles if p.get("id") != profile_id]
     save_json(PROFILES_FILE, profiles)
+    if target:
+        record_audit(
+            "deleted",
+            "profile",
+            profile_id,
+            target.get("name"),
+            before=copy.deepcopy(target),
+        )
     return {"ok": True}
 
 
@@ -48,6 +68,14 @@ def handle_duplicate(profile_id):
     duplicate["name"] = name
     profiles.insert(index + 1, duplicate)
     save_json(PROFILES_FILE, profiles)
+    record_audit(
+        "created",
+        "profile",
+        duplicate["id"],
+        duplicate.get("name"),
+        after=copy.deepcopy(duplicate),
+        details={"duplicate_of": source.get("name")},
+    )
     return duplicate
 
 
@@ -58,5 +86,15 @@ def handle_reorder(data):
     ordered = [by_id[i] for i in order if i in by_id]
     ordered_set = {p.get("id") for p in ordered}
     ordered += [p for p in profiles if p.get("id") not in ordered_set]
+    previous = [p.get("id") for p in profiles]
+    current = [p.get("id") for p in ordered]
     save_json(PROFILES_FILE, ordered)
+    if current != previous:
+        record_audit(
+            "reordered",
+            "profiles",
+            None,
+            "Profile order",
+            details={"order": current},
+        )
     return {"ok": True}

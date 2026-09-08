@@ -1,7 +1,7 @@
 import copy
 import time
 import uuid
-from ..storage import load_json, save_json
+from ..storage import load_json, save_json, record_audit, changed_fields
 from ..config import WORKFLOWS_FILE, PROFILES_FILE
 
 
@@ -33,17 +33,37 @@ def handle_create(data):
     workflow = data
     if not workflow.get("id"):
         workflow["id"] = f"workflow_{int(time.time() * 1000)}"
+    existing = next((w for w in workflows if w.get("id") == workflow["id"]), None)
+    before = copy.deepcopy(existing) if existing else None
     _embed_profile_snapshots(workflow)
     workflows = [w for w in workflows if w.get("id") != workflow["id"]]
     workflows.append(workflow)
     save_json(WORKFLOWS_FILE, workflows)
+    record_audit(
+        "created" if before is None else "updated",
+        "workflow",
+        workflow["id"],
+        workflow.get("name"),
+        before=before,
+        after=copy.deepcopy(workflow),
+        details={"changed": changed_fields(before, workflow)} if before else None,
+    )
     return workflow
 
 
 def handle_delete(workflow_id):
     workflows = load_json(WORKFLOWS_FILE)
+    target = next((w for w in workflows if w.get("id") == workflow_id), None)
     workflows = [w for w in workflows if w.get("id") != workflow_id]
     save_json(WORKFLOWS_FILE, workflows)
+    if target:
+        record_audit(
+            "deleted",
+            "workflow",
+            workflow_id,
+            target.get("name"),
+            before=copy.deepcopy(target),
+        )
     return {"ok": True}
 
 
@@ -66,6 +86,14 @@ def handle_duplicate(workflow_id):
     duplicate["name"] = name
     workflows.insert(index + 1, duplicate)
     save_json(WORKFLOWS_FILE, workflows)
+    record_audit(
+        "created",
+        "workflow",
+        duplicate["id"],
+        duplicate.get("name"),
+        after=copy.deepcopy(duplicate),
+        details={"duplicate_of": source.get("name")},
+    )
     return duplicate
 
 
@@ -76,5 +104,15 @@ def handle_reorder(data):
     ordered = [by_id[i] for i in order if i in by_id]
     ordered_set = {w.get("id") for w in ordered}
     ordered += [w for w in workflows if w.get("id") not in ordered_set]
+    previous = [w.get("id") for w in workflows]
+    current = [w.get("id") for w in ordered]
     save_json(WORKFLOWS_FILE, ordered)
+    if current != previous:
+        record_audit(
+            "reordered",
+            "workflows",
+            None,
+            "Workflow order",
+            details={"order": current},
+        )
     return {"ok": True}

@@ -110,3 +110,38 @@ def test_update_history_only_touches_the_fields_it_is_given(store):
 def test_update_history_returns_false_for_unknown_run_ids(store, legacy_history):
     assert storage.update_history("wf_404", status="completed") is False
     assert len(storage.load_json(store["history"])) == 4
+
+
+def test_bulk_delete_removes_matching_entries(store, legacy_history):
+    entries = storage.load_history()
+    target = [e["id"] for e in entries if e["name"] in ("Unstable", "New")]
+    assert len(target) == 2
+    result = history.handle_bulk_delete(target)
+    assert result["ok"]
+    assert result["removed"] == 2
+    left = storage.load_json(store["history"])
+    assert len(left) == 2
+    assert all(e["name"] not in ("Unstable", "New") for e in left)
+
+
+def test_bulk_delete_removes_nothing_for_unknown_ids(store, legacy_history):
+    result = history.handle_bulk_delete(["nonexistent_id_1", "nonexistent_id_2"])
+    assert result["ok"]
+    assert result["removed"] == 0
+    assert len(storage.load_json(store["history"])) == 4
+
+
+def test_bulk_delete_with_empty_ids(store, legacy_history):
+    result = history.handle_bulk_delete([])
+    assert result["ok"]
+    assert result["removed"] == 0
+    assert len(storage.load_json(store["history"])) == 4
+
+
+def test_bulk_delete_of_all_entries(store, legacy_history):
+    entries = storage.load_history()
+    all_ids = [e["id"] for e in entries]
+    result = history.handle_bulk_delete(all_ids)
+    assert result["ok"]
+    assert result["removed"] == 4
+    assert storage.load_json(store["history"]) == []

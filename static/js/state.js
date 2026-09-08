@@ -6,7 +6,7 @@ export const workflows = signal([]);
 export const scriptStatusCache = signal({});
 
 // UI state
-export const PANELS = ['profiles', 'workflows'];
+export const PANELS = ['profiles', 'workflows', 'audit'];
 
 function initialPanel() {
     const hash = location.hash.replace(/^#\/?/, '');
@@ -24,3 +24,9 @@ export const profileHistoryPage = signal(1);
 export const workflowHistoryPage = signal(1);
 export const profileHistoryData = signal(null);
 export const workflowHistoryData = signal(null);
+
+// Audit log
+export const auditPage = signal(1);
+export const auditData = signal(null);
+export const auditAction = signal('');
+export const auditEntity = signal('');

@@ -1,2 +1,2 @@
 - workflows steps once created should be a snapshot of a profile at creation time. edits to a profile or vice versa should not affect one another.
-- 
+- history run ids change when deleting, ideally should remain the same

@@ -2,6 +2,7 @@ import {
     profiles, workflows, scriptStatusCache,
     profileHistoryPage, workflowHistoryPage,
     profileHistoryData, workflowHistoryData,
+    auditPage, auditData, auditAction, auditEntity,
 } from './state.js';
 
 async function api(method, path, body) {
@@ -101,6 +102,38 @@ export async function deleteHistoryEntry(runId) {
     await loadWorkflowHistory();
 }
 
+export async function deleteHistoryEntries(ids) {
+    await api('POST', '/api/history/bulk', { ids });
+    await loadProfileHistory();
+    await loadWorkflowHistory();
+}
+
 export async function openNativeFileDialog() {
     return api('GET', '/api/filedialog');
+}
+
+export async function loadAudit() {
+    const params = new URLSearchParams({ page: auditPage.value, per_page: 20 });
+    if (auditAction.value) params.set('action', auditAction.value);
+    if (auditEntity.value) params.set('entity', auditEntity.value);
+    auditData.value = await api('GET', '/api/audit?' + params.toString());
+}
+
+export async function fetchAuditDetail(entryId) {
+    return api('GET', '/api/audit/' + entryId);
+}
+
+export async function deleteAuditEntry(entryId) {
+    await api('DELETE', '/api/audit/' + entryId);
+    await loadAudit();
+}
+
+export async function clearAudit() {
+    await api('DELETE', '/api/audit');
+    await loadAudit();
+}
+
+export async function restoreAuditEntry(entryId) {
+    await api('POST', `/api/audit/${entryId}/restore`);
+    await Promise.all([loadProfiles(), loadWorkflows(), loadAudit()]);
 }

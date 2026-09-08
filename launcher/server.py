@@ -11,7 +11,7 @@ import webbrowser
 from pathlib import Path
 
 from .config import PORT, DATA_DIR, INDEX_FILE, STATIC_DIR
-from .api import profiles, workflows, runs, history, filesystem
+from .api import profiles, workflows, runs, history, filesystem, audit
 from . import compress
 
 logging.basicConfig(
@@ -75,6 +75,21 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
                 run_id = path.split("/")[-1]
                 type_filter = query.get("type", [None])[0]
                 entry = history.handle_detail(run_id, type_filter)
+                if entry:
+                    self._json_response(entry)
+                else:
+                    self._json_response({"error": "Not found"}, 404)
+
+            elif path == "/api/audit":
+                page = int(query.get("page", ["1"])[0])
+                per_page = int(query.get("per_page", ["20"])[0])
+                action_filter = query.get("action", [None])[0]
+                entity_filter = query.get("entity", [None])[0]
+                self._json_response(audit.handle_list(page, per_page, action_filter, entity_filter))
+
+            elif path.startswith("/api/audit/"):
+                entry_id = path.split("/")[-1]
+                entry = audit.handle_detail(entry_id)
                 if entry:
                     self._json_response(entry)
                 else:
@@ -175,6 +190,19 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
                 else:
                     self._json_response({"error": "Not found"}, 404)
 
+            elif path == "/api/history/bulk":
+                ids = data.get("ids", [])
+                result = history.handle_bulk_delete(ids)
+                self._json_response(result)
+
+            elif path.startswith("/api/audit/") and path.endswith("/restore"):
+                entry_id = path[len("/api/audit/"):-len("/restore")]
+                restored = audit.handle_restore(entry_id)
+                if restored:
+                    self._json_response(restored)
+                else:
+                    self._json_response({"error": "Not found"}, 404)
+
             elif path == "/api/run/profile":
                 result, status, error = runs.handle_run_profile(data, self.send_error)
                 if error:
@@ -215,6 +243,15 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
             elif path.startswith("/api/workflows/"):
                 workflow_id = path.split("/")[-1]
                 result = workflows.handle_delete(workflow_id)
+                self._json_response(result)
+
+            elif path == "/api/audit":
+                result = audit.handle_clear()
+                self._json_response(result)
+
+            elif path.startswith("/api/audit/"):
+                entry_id = path.split("/")[-1]
+                result = audit.handle_delete(entry_id)
                 self._json_response(result)
 
             elif path == "/api/history":

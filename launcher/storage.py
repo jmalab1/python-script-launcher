@@ -2,9 +2,11 @@ import json
 import threading
 import time
 import uuid
-from .config import DATA_DIR, PROFILES_FILE, WORKFLOWS_FILE, HISTORY_FILE
+from .config import DATA_DIR, PROFILES_FILE, WORKFLOWS_FILE, HISTORY_FILE, AUDIT_FILE
 
 _history_lock = threading.RLock()
+_audit_lock = threading.RLock()
+AUDIT_MAX = 1000
 
 
 def load_json(path):
@@ -80,3 +82,49 @@ def update_history(run_id, status=None, returncode=None, output=None, workflow_l
         target["timestamp"] = time.time()
         save_json(HISTORY_FILE, history)
         return True
+
+
+def load_audit():
+    with _audit_lock:
+        entries = load_json(AUDIT_FILE)
+        changed = False
+        for entry in entries:
+            if not entry.get("id"):
+                entry["id"] = uuid.uuid4().hex
+                changed = True
+        if changed:
+            save_json(AUDIT_FILE, entries)
+        return entries
+
+
+def changed_fields(before, after):
+    """Return the sorted top-level field names that differ, or None if no before state."""
+    if before is None:
+        return None
+    keys = set(before) | set(after)
+    return sorted(k for k in keys if before.get(k) != after.get(k))
+
+
+def record_audit(action, entity_type, entity_id, name, before=None, after=None, details=None):
+    """Append an audit entry describing a profile/workflow change."""
+    entry = {
+        "id": uuid.uuid4().hex,
+        "timestamp": time.time(),
+        "action": action,
+        "entity_type": entity_type,
+        "entity_id": entity_id,
+        "name": name,
+    }
+    if before is not None:
+        entry["before"] = before
+    if after is not None:
+        entry["after"] = after
+    if details is not None:
+        entry["details"] = details
+    with _audit_lock:
+        entries = load_audit()
+        entries.append(entry)
+        if len(entries) > AUDIT_MAX:
+            entries = entries[-AUDIT_MAX:]
+        save_json(AUDIT_FILE, entries)
+    return entry

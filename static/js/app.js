@@ -4,10 +4,12 @@ import {
     profiles, workflows, currentPanel, theme, sidebarOpen, PANELS,
     profileHistoryData, workflowHistoryData,
     profileHistoryPage, workflowHistoryPage,
+    auditData, auditPage,
 } from './state.js';
 import {
     loadProfiles, loadWorkflows, checkAllScripts,
     loadProfileHistory, loadWorkflowHistory,
+    loadAudit,
 } from './api.js';
 import { Sidebar, MobileHeader } from './components/Sidebar.js';
 import { ProfileList } from './components/ProfileList.js';
@@ -15,6 +17,7 @@ import { ProfileModal } from './components/ProfileModal.js';
 import { WorkflowList } from './components/WorkflowList.js';
 import { WorkflowModal } from './components/WorkflowModal.js';
 import { HistoryTable } from './components/HistoryTable.js';
+import { AuditTable } from './components/AuditTable.js';
 import { RunModal } from './components/RunModal.js';
 
 function App() {
@@ -69,6 +72,9 @@ function App() {
             loadWorkflowHistory();
             const t = setInterval(loadWorkflowHistory, 3000);
             setWorkflowTimer(t);
+        }
+        if (currentPanel.value === 'audit') {
+            loadAudit();
         }
 
         return () => {
@@ -168,6 +174,25 @@ function App() {
                                                 <${HistoryTable} data=${workflowHistoryData.value} pageSignal=${workflowHistoryPage} onLoad=${loadWorkflowHistory} type="workflow" onOpenRun=${openRunModal} />
                                             </div>
                                         </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ` : ''}
+
+                        ${currentPanel.value === 'audit' ? html`
+                            <div id="panel-audit" class="panel">
+                                <div class="flex items-center justify-between mb-6">
+                                    <div class="min-w-0">
+                                        <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Audit</h1>
+                                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Who did what, when — every profile and workflow addition, edit, deletion, and reorder, with before/after snapshots.</p>
+                                    </div>
+                                </div>
+                                <div class="bg-white dark:bg-gray-800 shadow-xs rounded-xl border border-gray-200 dark:border-gray-700/60">
+                                    <header class="px-5 py-4 border-b border-gray-100 dark:border-gray-700/60">
+                                        <h2 class="font-semibold text-gray-800 dark:text-gray-100">Change Log</h2>
+                                    </header>
+                                    <div class="p-3">
+                                        <${AuditTable} data=${auditData.value} pageSignal=${auditPage} onLoad=${loadAudit} />
                                     </div>
                                 </div>
                             </div>
