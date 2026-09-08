@@ -10,6 +10,7 @@ export function ProfileModal({ isOpen, onClose, profile }) {
     const [args, setArgs] = useState('');
     const [customArgs, setCustomArgs] = useState([]);
     const [group, setGroup] = useState('');
+    const [timeout, setTimeout] = useState('');
     const [editingId, setEditingId] = useState(null);
 
     useEffect(() => {
@@ -21,6 +22,7 @@ export function ProfileModal({ isOpen, onClose, profile }) {
                 setArgs((profile.args || []).join('\n'));
                 setCustomArgs(JSON.parse(JSON.stringify(profile.custom_args || [])));
                 setGroup(profile.group || '');
+                setTimeout(profile.timeout === undefined || profile.timeout === null ? '' : String(profile.timeout));
             } else {
                 setEditingId(null);
                 setName('');
@@ -28,6 +30,7 @@ export function ProfileModal({ isOpen, onClose, profile }) {
                 setArgs('');
                 setCustomArgs([]);
                 setGroup('');
+                setTimeout('');
             }
         }
     }, [isOpen, profile]);
@@ -49,6 +52,14 @@ export function ProfileModal({ isOpen, onClose, profile }) {
         const trimmedScript = scriptPath.trim();
         if (!trimmedName || !trimmedScript) { alert('Name and script path are required.'); return; }
         const argsList = args.trim() ? args.trim().split('\n').map(s => s.trim()).filter(Boolean) : [];
+        let parsedTimeout = null;
+        if (timeout.trim() !== '') {
+            parsedTimeout = Number(timeout);
+            if (!Number.isFinite(parsedTimeout) || parsedTimeout <= 0) {
+                alert('Timeout must be a positive number of seconds.');
+                return;
+            }
+        }
         const builtCustomArgs = customArgs.map(ca => {
             const built = {
                 name: ca.name.trim(), label: (ca.label || ca.name).trim(),
@@ -59,6 +70,7 @@ export function ProfileModal({ isOpen, onClose, profile }) {
             return built;
         }).filter(ca => ca.name);
         const profileData = { id: editingId, name: trimmedName, script_path: trimmedScript, args: argsList, custom_args: builtCustomArgs };
+        if (parsedTimeout !== null) profileData.timeout = parsedTimeout;
         if (group) profileData.group = group;
         else if (editingId) profileData.group = '';
         await saveProfile(profileData);
@@ -120,6 +132,14 @@ export function ProfileModal({ isOpen, onClose, profile }) {
                             <textarea rows="3" value=${args} onInput=${e => setArgs(e.target.value)}
                                 placeholder=${"--input data.csv\n--verbose"}
                                 class="w-full bg-white dark:bg-gray-900/30 border border-gray-300 dark:border-gray-700/60 rounded-lg px-3 py-2 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 font-mono focus:border-violet-500 focus:ring-0 focus:ring-offset-0 transition resize-y"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Timeout (seconds)</label>
+                            <input type="number" min="0" step="any" value=${timeout} onInput=${e => setTimeout(e.target.value)}
+                                placeholder="No limit"
+                                title="Kill the script if it still runs after this many seconds. Leave blank to let it run indefinitely."
+                                class="w-40 bg-white dark:bg-gray-900/30 border border-gray-300 dark:border-gray-700/60 rounded-lg px-3 py-2 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-violet-500 focus:ring-0 focus:ring-offset-0 transition" />
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Kill the script if it still runs after this long — e.g. <span class="font-mono">60</span> or <span class="font-mono">2.5</span>. Leave blank for no limit.</p>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Custom Argument Fields</label>

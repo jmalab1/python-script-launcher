@@ -36,8 +36,29 @@ def build_command(script_path, args):
     return [sys.executable, script_path] + list(args)
 
 
-def run_script(script_path, args, run_id, result=None):
+def parse_timeout(value):
+    """Turn a profile's timeout setting into seconds, or None to disable.
+
+    Accepts numbers or numeric strings (e.g. 30 or "30"). Anything that
+    is missing, unparseable, or not positive means "no time limit".
+    """
+    try:
+        seconds = float(value)
+    except (TypeError, ValueError):
+        return None
+    return seconds if seconds > 0 else None
+
+
+def run_script(script_path, args, run_id, result=None, timeout=None):
+    """Run a script, yielding its output line by line.
+
+    With a positive `timeout` (seconds), a watchdog thread kills the
+    script if it is still running after that long. The killed run is
+    reported as failed with a "Timed out" line in its output.
+    """
     cmd = build_command(script_path, args)
+    done = threading.Event()
+    seconds = parse_timeout(timeout)
     try:
         proc = subprocess.Popen(
             cmd,
@@ -52,22 +73,56 @@ def run_script(script_path, args, run_id, result=None):
         with run_lock:
             active_runs[run_id]["process"] = proc
 
+        def kill_after_timeout():
+            # done.wait returns True when the script finishes first,
+            # False when the timeout elapses and we must kill it.
+            if done.wait(seconds):
+                return
+            with run_lock:
+                entry = active_runs.get(run_id)
+                if entry is not None and entry.get("process") is proc:
+                    # Per-script marker; run_script turns it into the
+                    # run-entry "timed_out" flag once it reports the kill.
+                    entry["_step_timed_out"] = True
+            try:
+                if proc.poll() is None:
+                    proc.kill()
+            except OSError:
+                pass
+
+        if seconds:
+            threading.Thread(target=kill_after_timeout, daemon=True).start()
+
         for line in iter(proc.stdout.readline, ""):
             with run_lock:
                 active_runs[run_id]["output"].append(line)
             yield line
 
+        done.set()
         proc.wait()
         with run_lock:
             active_runs[run_id]["returncode"] = proc.returncode
+            # Keep the run-level flag (used by poll and history) in sync:
+            # it stays True for the rest of the run once any script hit
+            # its timeout.
+            timed_out = active_runs[run_id].pop("_step_timed_out", False)
+            if timed_out:
+                active_runs[run_id]["timed_out"] = True
             if result is not None:
                 result["returncode"] = proc.returncode
+        if timed_out:
+            message = f"ERROR: Timed out after {seconds:g}s and was killed.\n"
+            with run_lock:
+                active_runs[run_id]["output"].append(message)
+            yield message
     except Exception as e:
         with run_lock:
             active_runs[run_id]["output"].append(f"ERROR: {e}\n")
             active_runs[run_id]["returncode"] = -1
             if result is not None:
                 result["returncode"] = -1
+    finally:
+        done.set()
 
 
 def _next_step_name(run_id, step_name):
@@ -196,9 +251,11 @@ def execute_workflow(workflow, run_id, started_at, trigger="manual", schedule=No
         active_runs[run_id]["workflow_log"].append(f"Workflow {status}")
         final_log = list(active_runs[run_id]["workflow_log"])
         final_steps = active_runs[run_id].get("steps", {})
+        timed_out = bool(active_runs[run_id].get("timed_out"))
     update_history(
         run_id, status=status, output=final_log,
         workflow_log=final_log, steps=final_steps,
+        timed_out=timed_out,
     )
 
 
@@ -236,7 +293,8 @@ def _run_step(profile, extra_args, run_id, continue_on_error, arg_overrides=None
         active_runs[run_id]["current_step"] = display_name
 
     step_result = {"returncode": None}
-    for line in run_script(script_path, args, run_id, result=step_result):
+    timeout = parse_timeout(profile.get("timeout"))
+    for line in run_script(script_path, args, run_id, result=step_result, timeout=timeout):
         with run_lock:
             steps[display_name]["output"].append(line)
 

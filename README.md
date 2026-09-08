@@ -13,6 +13,8 @@ Tiller is a local, zero-dependency web tool for managing and running Python scri
 - **Audit**: Complete trail of every profile, workflow, and schedule change. Filter by action, entity type, name, and date range.
 - **Server Logs**: Built-in log viewer with live tailing, level highlighting, and text search; the log file rotates automatically.
 - **Custom Arguments**: Define typed input fields that appear on profile cards for quick parameter editing.
+- **Script Timeout**: Per-profile time limit that kills runaway scripts and marks the run failed.
+- **Output Export**: Download a run's output as a text file from the run modal.
 - **Modern UI**: Dark/light theme, drag-to-reorder, responsive layout, terminal-style output viewer.
 
 ## Quick Start
@@ -98,6 +100,12 @@ You can use both static arguments and custom fields in the same profile. Static 
 ### Arguments in Workflows
 
 When a profile is added to a workflow, its current custom argument values are captured. You can override them per step in the workflow editor without changing the original profile. This lets the same profile run with different parameters in different workflow steps.
+
+## Script Timeouts
+
+Each profile can set a **Timeout (seconds)** in the profile editor — a plain number like `60` or a decimal like `2.5`. Whether the profile is run directly, as a workflow step, or on a schedule, Tiller kills the script if it is still running after that long. The timed-out run is marked **failed**, and a `Timed out after Ns and was killed` line appears in its output. Leave the field blank to let scripts run indefinitely (the default).
+
+The run modal's **Export** button downloads the currently displayed output — workflow log or the selected step's output — as a timestamped `.txt` file.
 
 ## Scheduling Runs
 

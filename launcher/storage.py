@@ -255,7 +255,7 @@ def load_history():
         return history
 
 
-def save_history(run_id, name, run_type, status, returncode, output, started_at, workflow_log=None, steps=None, command=None, trigger=None, schedule_id=None, schedule_name=None):
+def save_history(run_id, name, run_type, status, returncode, output, started_at, workflow_log=None, steps=None, command=None, trigger=None, schedule_id=None, schedule_name=None, timed_out=None):
     entry = {
         "id": uuid.uuid4().hex,
         "run_id": run_id,
@@ -280,13 +280,15 @@ def save_history(run_id, name, run_type, status, returncode, output, started_at,
         entry["steps"] = steps
     if command is not None:
         entry["command"] = command
+    if timed_out:
+        entry["timed_out"] = True
     with _history_lock:
         history = load_history()
         history.append(entry)
         save_json(COL_HISTORY, history)
 
 
-def update_history(run_id, status=None, returncode=None, output=None, workflow_log=None, steps=None):
+def update_history(run_id, status=None, returncode=None, output=None, workflow_log=None, steps=None, timed_out=None):
     """Update the newest history entry for run_id in place. Returns True if found."""
     with _history_lock:
         history = load_history()
@@ -307,6 +309,8 @@ def update_history(run_id, status=None, returncode=None, output=None, workflow_l
             target["workflow_log"] = workflow_log
         if steps is not None:
             target["steps"] = steps
+        if timed_out:
+            target["timed_out"] = True
         target["timestamp"] = time.time()
         save_json(COL_HISTORY, history)
         return True

@@ -9,6 +9,7 @@ export function RunModal({ isOpen, onClose, runId, title, runType }) {
     const [tabs, setTabs] = useState([]);
     const [activeTab, setActiveTab] = useState('workflow');
     const [currentStep, setCurrentStep] = useState('');
+    const [timedOut, setTimedOut] = useState(false);
     const [command, setCommand] = useState(null);
     const timerRef = useRef(null);
     const outputRef = useRef(null);
@@ -60,6 +61,30 @@ export function RunModal({ isOpen, onClose, runId, title, runType }) {
         });
     }
 
+    function slug(value) {
+        // Keep filenames simple: lowercase, dashes, no odd characters.
+        return (value || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'run';
+    }
+
+    function exportOutput() {
+        const lines = output || [];
+        if (!lines.length) { alert('No output to export.'); return; }
+        // Lines already carry their own trailing newlines, so join them bare;
+        // the output_preview path splits on '\n', hence the final newline check.
+        const text = lines.map(l => l == null ? '' : String(l)).join('');
+        const blob = new Blob([text.endsWith('\n') ? text : text + '\n'], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const stamp = new Date().toISOString().slice(0, 19).replace(/[T:]/g, '-');
+        const tabSuffix = activeTab !== 'workflow' ? '-' + slug(activeTab) : '';
+        a.href = url;
+        a.download = `${slug(title)}${tabSuffix}-${stamp}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+    }
+
     function updateTabs(stepData) {
         const stepNames = Object.keys(stepData);
         if (stepNames.length > 0) {
@@ -87,6 +112,7 @@ export function RunModal({ isOpen, onClose, runId, title, runType }) {
         lastDataRef.current = hist;
         setStatus(hist.status || 'completed');
         updateTabs(hist.steps || {});
+        setTimedOut(!!hist.timed_out);
         setOutput(linesFor(hist));
         setCommand(commandFor(hist));
         if ((hist.status === 'running' || hist.status === 'starting') && !autoPolledRef.current) {
@@ -112,6 +138,7 @@ export function RunModal({ isOpen, onClose, runId, title, runType }) {
             }
             setStatus(data.status || 'running');
             setCurrentStep(data.current_step || '');
+            setTimedOut(!!data.timed_out);
             updateTabs(data.steps || {});
             lastDataRef.current = data;
             setOutput(linesFor(data));
@@ -135,6 +162,7 @@ export function RunModal({ isOpen, onClose, runId, title, runType }) {
         setActiveTab('workflow');
         activeTabRef.current = 'workflow';
         setCurrentStep('');
+        setTimedOut(false);
         setCommand(null);
 
         if (runType) {
@@ -185,6 +213,12 @@ export function RunModal({ isOpen, onClose, runId, title, runType }) {
                                 <span class="w-1.5 h-1.5 rounded-full ${dotColors[status] || dotColors.starting} ${status === 'running' ? 'animate-pulse' : ''}"></span>
                                 <span>${statusLabels[status] || 'Starting...'}</span>
                             </span>
+                            ${timedOut ? html`
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400 border-red-200 dark:border-red-500/20" title="A script in this run exceeded its configured timeout and was killed">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-red-400"></span>
+                                    <span>Timed out</span>
+                                </span>
+                            ` : ''}
                             ${currentStep ? html`<span class="text-xs text-gray-500 dark:text-gray-400">Running: ${esc(currentStep)}</span>` : ''}
                         </div>
                     </div>
@@ -212,7 +246,11 @@ export function RunModal({ isOpen, onClose, runId, title, runType }) {
                             </div>
                         </div>
                     </div>
-                    <div class="shrink-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700/60 px-6 py-3 rounded-b-2xl flex justify-end">
+                    <div class="shrink-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700/60 px-6 py-3 rounded-b-2xl flex justify-between">
+                        <button onClick=${exportOutput} class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg transition flex items-center gap-1.5">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2M12 3v13m0 0 4-4m-4 4-4-4"/></svg>
+                            Export
+                        </button>
                         <button onClick=${onClose} class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg transition">Close</button>
                     </div>
                 </div>

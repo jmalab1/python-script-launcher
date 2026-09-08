@@ -70,9 +70,18 @@ def test_poll_endpoints_expose_output_log_status_and_steps(store):
         assert polled == {
             "output": ["a\n"], "workflow_log": ["log"], "status": "completed",
             "returncode": 0, "steps": {"S": {}}, "current_step": "S",
-            "command": None,
+            "command": None, "timed_out": False,
         }
         assert runs.handle_poll_all()["r1"] == polled
+    finally:
+        runs.active_runs.clear()
+
+
+def test_poll_exposes_a_timed_out_flag(store):
+    runs.active_runs["r1"] = {"output": [], "status": "failed", "returncode": -9, "timed_out": True}
+    try:
+        assert runs.handle_poll("r1")["timed_out"] is True
+        assert runs.handle_poll_all()["r1"]["timed_out"] is True
     finally:
         runs.active_runs.clear()
 

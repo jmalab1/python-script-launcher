@@ -87,3 +87,49 @@ def test_run_modal_updates_the_command_on_load_poll_and_tab_switch():
         src,
     ), "switching tabs must swap the command to the selected step"
     assert "setCommand(null);" in src, "the command must reset when the modal reopens"
+
+
+# ------------------------------------------------------------------ output export
+
+
+def test_run_modal_exports_the_displayed_output_as_a_text_file():
+    src = run_modal_src()
+    assert "function exportOutput()" in src, "the export helper is missing"
+    assert "new Blob(" in src and "text/plain" in src, \
+        "the output must be exported as a plain-text blob"
+    assert "a.download =" in src, "the download must go through an anchor element"
+    assert "URL.revokeObjectURL(url);" in src, "the object URL must be released"
+    assert "onClick=${exportOutput}" in src, "the footer must have a wired Export button"
+    assert re.search(
+        r"onClick=\$\{exportOutput\}[\s\S]*?>\s*Export\s*<",
+        src,
+    ), "the export button must be labeled Export"
+
+
+def test_run_modal_export_refuses_an_empty_output_and_names_the_file():
+    src = run_modal_src()
+    assert "No output to export." in src, \
+        "exporting an empty run must tell the user instead of downloading nothing"
+    assert "a.download = `${slug(title)}${tabSuffix}-${stamp}.txt`;" in src, \
+        "the filename must combine the run title, active tab, and a timestamp"
+    assert "const tabSuffix = activeTab !== 'workflow'" in src, \
+        "step tabs must be reflected in the exported filename"
+
+
+# --------------------------------------------------------------- timed-out badge
+
+
+def test_run_modal_shows_a_badged_notice_when_the_run_timed_out():
+    src = run_modal_src()
+    assert "const [timedOut, setTimedOut] = useState(false);" in src, \
+        "the modal must track whether the run hit its timeout"
+    assert "setTimedOut(!!hist.timed_out);" in src, \
+        "a history-loaded run must show the timeout notice"
+    assert "setTimedOut(!!data.timed_out);" in src, \
+        "a polled live run must show the timeout notice"
+    assert "setTimedOut(false);" in src, \
+        "the notice must reset when the modal reopens"
+    assert re.search(
+        r"\$\{timedOut \? html`[\s\S]*?<span>Timed out</span>",
+        src,
+    ), "a 'Timed out' badge must render next to the status badge"

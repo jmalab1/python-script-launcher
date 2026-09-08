@@ -5,7 +5,7 @@ from ..storage import load_json, save_json, save_history
 from ..config import COL_PROFILES, COL_WORKFLOWS
 from ..runner import (
     run_script, execute_workflow, active_runs, run_lock,
-    build_custom_args, build_command, prune_active_runs,
+    build_custom_args, build_command, prune_active_runs, parse_timeout,
 )
 
 # Run ids are unique per process: millisecond start time plus a
@@ -17,34 +17,32 @@ run_counter = 0
 def handle_poll_all():
     prune_active_runs()
     with run_lock:
-        runs = {
-            k: {
-                "output": v["output"],
-                "workflow_log": v.get("workflow_log", []),
-                "status": v.get("status", "running"),
-                "returncode": v.get("returncode"),
-                "steps": v.get("steps", {}),
-                "current_step": v.get("current_step"),
-                "command": v.get("command"),
+            runs = {
+                k: _polled_entry(v)
+                for k, v in active_runs.items()
             }
-            for k, v in active_runs.items()
-        }
     return runs
+
+
+def _polled_entry(entry):
+    """One run's poll view: the fields the run modal renders."""
+    return {
+        "output": entry["output"],
+        "workflow_log": entry.get("workflow_log", []),
+        "status": entry.get("status", "running"),
+        "returncode": entry.get("returncode"),
+        "steps": entry.get("steps", {}),
+        "current_step": entry.get("current_step"),
+        "command": entry.get("command"),
+        "timed_out": bool(entry.get("timed_out")),
+    }
 
 
 def handle_poll(run_id):
     with run_lock:
         run_data = active_runs.get(run_id)
     if run_data:
-        return {
-            "output": run_data["output"],
-            "workflow_log": run_data.get("workflow_log", []),
-            "status": run_data.get("status", "running"),
-            "returncode": run_data.get("returncode"),
-            "steps": run_data.get("steps", {}),
-            "current_step": run_data.get("current_step"),
-            "command": run_data.get("command"),
-        }
+        return _polled_entry(run_data)
     return None
 
 
@@ -87,7 +85,8 @@ def start_profile_run(profile, arg_values=None, extra_args=None, trigger="manual
     schedule_name = schedule.get("name") if schedule else None
 
     def do_run():
-        for line in run_script(profile["script_path"], full_args, run_id):
+        timeout = parse_timeout(profile.get("timeout"))
+        for line in run_script(profile["script_path"], full_args, run_id, timeout=timeout):
             pass
         with run_lock:
             status = "failed" if active_runs[run_id].get("returncode", 0) != 0 else "completed"
@@ -95,10 +94,12 @@ def start_profile_run(profile, arg_values=None, extra_args=None, trigger="manual
             active_runs[run_id]["finished_at"] = time.time()
             returncode = active_runs[run_id].get("returncode")
             output_copy = list(active_runs[run_id]["output"])
+            timed_out = bool(active_runs[run_id].get("timed_out"))
         save_history(
             run_id, profile_name, "profile", status, returncode, output_copy,
             started_at, command=command, trigger=trigger,
             schedule_id=schedule_id, schedule_name=schedule_name,
+            timed_out=timed_out,
         )
 
     threading.Thread(target=do_run, daemon=True).start()
