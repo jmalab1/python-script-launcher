@@ -46,6 +46,27 @@ export function WorkflowCard({ workflow, onEdit, onRun }) {
         await loadWorkflows();
     }
 
+    function effectiveArgs(entry, prof) {
+        const overrides = (entry && entry.arg_values) || {};
+        const built = [];
+        for (const ca of (prof.custom_args || [])) {
+            const flag = ca.name || '';
+            if (!flag) continue;
+            const val = overrides[flag] !== undefined ? overrides[flag] : (ca.value !== undefined ? ca.value : (ca.default || ''));
+            if (ca.type === 'checkbox') {
+                if (val === 'true') built.push(flag);
+            } else if (val) {
+                built.push(flag, String(val));
+            }
+        }
+        return [...built, ...((entry && entry.args) || [])];
+    }
+
+    function argsSnippet(stepArgs) {
+        if (!stepArgs.length) return '';
+        return html`<span class="text-violet-600 dark:text-violet-400"> ${esc(stepArgs.join(' '))}</span>`;
+    }
+
     function renderStep(s, i) {
         const isLast = i === steps.length - 1;
 
@@ -65,11 +86,12 @@ export function WorkflowCard({ workflow, onEdit, onRun }) {
                         ${groupProfiles.map((p, pi) => {
                             const prof = profileMap[p.profile_id] || {};
                             const stepMissing = cache[prof.script_path] === false;
+                            const stepArgs = effectiveArgs(p, prof);
                             return html`
-                                <div class="flex items-center gap-2 py-0.5 ${pi < groupProfiles.length - 1 ? 'border-b border-green-100 dark:border-green-500/10' : ''}">
-                                    <span class="text-[10px] font-medium ${stepMissing ? 'text-red-700 dark:text-red-400' : 'text-gray-700 dark:text-gray-300'}">${esc(prof.name || 'Unknown')}</span>
-                                    <span class="text-[10px] ${stepMissing ? 'text-red-500 dark:text-red-400' : 'text-gray-400 dark:text-gray-500'} truncate font-mono">${esc(prof.script_path || '—')}</span>
-                                    ${stepMissing ? html`<span class="text-[9px] text-red-500">missing</span>` : ''}
+                                <div class="flex items-start gap-2 py-0.5 ${pi < groupProfiles.length - 1 ? 'border-b border-green-100 dark:border-green-500/10' : ''}">
+                                    <span class="text-[10px] font-medium shrink-0 ${stepMissing ? 'text-red-700 dark:text-red-400' : 'text-gray-700 dark:text-gray-300'}">${esc(prof.name || 'Unknown')}</span>
+                                    <span class="text-[10px] ${stepMissing ? 'text-red-500 dark:text-red-400' : 'text-gray-400 dark:text-gray-500'} flex-1 min-w-0 font-mono break-all">${esc(prof.script_path || '—')}${argsSnippet(stepArgs)}</span>
+                                    ${stepMissing ? html`<span class="text-[9px] text-red-500 shrink-0">missing</span>` : ''}
                                 </div>`;
                         })}
                     </div>
@@ -78,6 +100,7 @@ export function WorkflowCard({ workflow, onEdit, onRun }) {
 
         const prof = profileMap[s.profile_id] || {};
         const stepMissing = cache[prof.script_path] === false;
+        const stepArgs = effectiveArgs(s, prof);
         return html`
             <div class="flex items-start gap-3 ${!isLast ? 'pb-3' : ''}">
                 <div class="flex flex-col items-center shrink-0 pt-0.5">
@@ -89,8 +112,7 @@ export function WorkflowCard({ workflow, onEdit, onRun }) {
                         <span class="text-xs font-medium ${stepMissing ? 'text-red-700 dark:text-red-400' : 'text-gray-800 dark:text-gray-200'}">${esc(prof.name || 'Unknown Profile')}</span>
                         ${stepMissing ? html`<span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-500/20"><svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 6a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 6zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/></svg>missing</span>` : ''}
                     </div>
-                    <div class="text-[11px] ${stepMissing ? 'text-red-500 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'} mt-0.5 truncate font-mono">${esc(prof.script_path || '—')}</div>
-                    ${prof.args && prof.args.length ? html`<div class="flex flex-wrap gap-1 mt-1">${prof.args.map(a => html`<span class="text-[10px] px-1.5 py-0.5 rounded bg-violet-50 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400">${esc(a)}</span>`)}</div>` : ''}
+                    <div class="text-[11px] ${stepMissing ? 'text-red-500 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'} mt-0.5 font-mono break-all">${esc(prof.script_path || '—')}${argsSnippet(stepArgs)}</div>
                 </div>
             </div>`;
     }

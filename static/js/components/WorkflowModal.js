@@ -278,6 +278,7 @@ export function WorkflowModal({ isOpen, onClose, workflow }) {
                                                     <textarea rows="2" value=${s._argsText || ''} onInput=${e => updateStepArgsText(i, e.target.value)}
                                                         placeholder="Extra arguments for this step, one per line"
                                                         class="w-full bg-white dark:bg-gray-900/30 border border-gray-300 dark:border-gray-700/60 rounded-lg px-2.5 py-2 text-xs text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 font-mono focus:border-violet-500 focus:ring-0 focus:ring-offset-0 transition resize-y"></textarea>
+                                                    <p class="text-[10px] text-gray-400 dark:text-gray-500">Only these args and the fields above are passed — the profile's own arguments are not applied in workflow runs.</p>
                                                 </div>
                                             ` : ''}
                                         </div>`;

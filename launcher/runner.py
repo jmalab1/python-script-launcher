@@ -147,7 +147,7 @@ def _run_step(profile, extra_args, run_id, continue_on_error, arg_overrides=None
                 built_args.append(flag)
                 built_args.append(str(val))
 
-    args = profile.get("args", []) + built_args + extra_args
+    args = built_args + list(extra_args)
 
     with run_lock:
         steps = active_runs[run_id].setdefault("steps", {})

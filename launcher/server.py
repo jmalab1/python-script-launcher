@@ -12,7 +12,6 @@ from pathlib import Path
 
 from .config import PORT, DATA_DIR, INDEX_FILE, STATIC_DIR
 from .api import profiles, workflows, runs, history, filesystem
-from . import minify
 from . import compress
 
 logging.basicConfig(
@@ -125,11 +124,7 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
         content_type, _ = mimetypes.guess_type(str(file_path))
         if content_type is None:
             content_type = "application/octet-stream"
-        content = None
-        if file_path.suffix == ".js":
-            content = minify.minified_js_bytes(file_path)
-        if content is None:
-            content = file_path.read_bytes()
+        content = file_path.read_bytes()
         self.send_response(200)
         self.send_header("Content-Type", content_type)
         self.send_header("Cache-Control", "no-cache")
