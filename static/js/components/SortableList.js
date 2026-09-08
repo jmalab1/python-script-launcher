@@ -1,10 +1,12 @@
 import { html } from '../../vendor/standalone-preact.esm.js';
 import { useState } from '../../vendor/standalone-preact.esm.js';
 
-export function SortableList({ items, onReorder, renderItem }) {
+export function SortableList({ items, onReorder, renderItem, getKey, gripClass, gapClass }) {
     const [dragIndex, setDragIndex] = useState(null);
     const [armedIndex, setArmedIndex] = useState(null);
     const [overIndex, setOverIndex] = useState(null);
+
+    const keyOf = getKey || (item => item.id);
 
     function reset() {
         setDragIndex(null);
@@ -13,20 +15,25 @@ export function SortableList({ items, onReorder, renderItem }) {
     }
 
     function handleDragStart(e, i) {
+        e.stopPropagation();
         e.dataTransfer.effectAllowed = 'move';
         try { e.dataTransfer.setData('text/plain', ''); } catch (err) {}
         setDragIndex(i);
     }
 
     function handleDragOver(e, i) {
+        if (dragIndex === null) return;
         e.preventDefault();
+        e.stopPropagation();
         e.dataTransfer.dropEffect = 'move';
-        if (dragIndex !== null && i !== overIndex) setOverIndex(i);
+        if (i !== overIndex) setOverIndex(i);
     }
 
     function handleDrop(e, i) {
+        if (dragIndex === null) return;
         e.preventDefault();
-        if (dragIndex === null || dragIndex === i) { reset(); return; }
+        e.stopPropagation();
+        if (dragIndex === i) { reset(); return; }
         const next = items.slice();
         const [moved] = next.splice(dragIndex, 1);
         next.splice(i, 0, moved);
@@ -35,10 +42,10 @@ export function SortableList({ items, onReorder, renderItem }) {
     }
 
     return html`
-        <div class="space-y-3">
+        <div class="${gapClass || 'space-y-3'}">
             ${items.map((item, i) => html`
                 <div
-                    key=${item.id}
+                    key=${keyOf(item)}
                     class="flex items-start gap-1.5 ${dragIndex === i ? 'opacity-40' : ''}"
                     draggable=${armedIndex === i}
                     onDragStart=${(e) => handleDragStart(e, i)}
@@ -48,7 +55,7 @@ export function SortableList({ items, onReorder, renderItem }) {
                     onMouseUp=${() => setArmedIndex(null)}
                 >
                     <div
-                        class="shrink-0 mt-4 p-1 rounded cursor-grab active:cursor-grabbing text-gray-300 dark:text-gray-600 hover:text-gray-500 dark:hover:text-gray-400 transition select-none"
+                        class="shrink-0 ${gripClass || 'mt-4'} p-1 rounded cursor-grab active:cursor-grabbing text-gray-300 dark:text-gray-600 hover:text-gray-500 dark:hover:text-gray-400 transition select-none"
                         title="Drag to reorder"
                         onMouseDown=${() => setArmedIndex(i)}
                     >
@@ -59,7 +66,7 @@ export function SortableList({ items, onReorder, renderItem }) {
                         </svg>
                     </div>
                     <div class="flex-1 min-w-0 rounded-xl transition ${overIndex === i && dragIndex !== null && dragIndex !== i ? 'ring-2 ring-violet-400/70' : ''}">
-                        ${renderItem(item)}
+                        ${renderItem(item, i)}
                     </div>
                 </div>
             `)}
