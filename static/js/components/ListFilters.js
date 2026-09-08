@@ -79,6 +79,7 @@ export function HistoryFilters({ filters, pageSignal, onLoad }) {
                 <option value="running">Running</option>
                 <option value="completed">Completed</option>
                 <option value="failed">Failed</option>
+                <option value="cancelled">Cancelled</option>
             </select>
             <${DateInputs} since=${f.since} until=${f.until}
                 onSince=${(since) => update({ since })}

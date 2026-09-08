@@ -71,7 +71,16 @@ def run_script(script_path, args, run_id, result=None, timeout=None):
             **_POPEN_KWARGS,
         )
         with run_lock:
-            active_runs[run_id]["process"] = proc
+            # A list, not a single slot: parallel workflow steps share the
+            # run id, so cancelling must be able to reach every live script.
+            active_runs[run_id].setdefault("processes", []).append(proc)
+            # A cancel that arrived before this process was registered
+            # would otherwise be missed, so honour it here too.
+            if active_runs[run_id].get("cancelled") and proc.poll() is None:
+                try:
+                    proc.kill()
+                except OSError:
+                    pass
 
         def kill_after_timeout():
             # done.wait returns True when the script finishes first,
@@ -80,7 +89,7 @@ def run_script(script_path, args, run_id, result=None, timeout=None):
                 return
             with run_lock:
                 entry = active_runs.get(run_id)
-                if entry is not None and entry.get("process") is proc:
+                if entry is not None and proc in entry.get("processes", []):
                     # Per-script marker; run_script turns it into the
                     # run-entry "timed_out" flag once it reports the kill.
                     entry["_step_timed_out"] = True
@@ -123,6 +132,41 @@ def run_script(script_path, args, run_id, result=None, timeout=None):
                 result["returncode"] = -1
     finally:
         done.set()
+
+
+CANCEL_MESSAGE = "Cancelled by user.\n"
+
+
+def _is_cancelled(run_id):
+    """True if a cancel was requested for this run."""
+    with run_lock:
+        entry = active_runs.get(run_id)
+        return bool(entry and entry.get("cancelled"))
+
+
+def cancel_run(run_id):
+    """Kill a running run's script processes and mark the run cancelled.
+
+    Returns True when the run was still in progress; False when the run
+    is unknown (already pruned) or already finished, so there is nothing
+    to cancel. The finished run is recorded as "cancelled" — not
+    "failed" — by the same finish path that records normal completions.
+    """
+    with run_lock:
+        entry = active_runs.get(run_id)
+        if entry is None or entry.get("status") in ("completed", "failed", "cancelled"):
+            return False
+        entry["cancelled"] = True
+        for proc in entry.get("processes", []):
+            try:
+                if proc.poll() is None:
+                    proc.kill()
+            except OSError:
+                pass
+        entry["output"].append(CANCEL_MESSAGE)
+        if isinstance(entry.get("workflow_log"), list):
+            entry["workflow_log"].append("[CANCEL] Run cancelled by user")
+    return True
 
 
 def _next_step_name(run_id, step_name):
@@ -190,6 +234,8 @@ def execute_workflow(workflow, run_id, started_at, trigger="manual", schedule=No
     )
 
     for step in steps:
+        if _is_cancelled(run_id):
+            break
         step_type = step.get("type", "sequential")
 
         if step_type == "parallel":
@@ -226,6 +272,8 @@ def execute_workflow(workflow, run_id, started_at, trigger="manual", schedule=No
                 t.join()
 
             with run_lock:
+                if active_runs[run_id].get("cancelled"):
+                    break
                 if not continue_on_error and active_runs[run_id].get("failed"):
                     break
         else:
@@ -241,11 +289,20 @@ def execute_workflow(workflow, run_id, started_at, trigger="manual", schedule=No
 
             _run_step(profile, step.get("args", []), run_id, continue_on_error, step.get("arg_values", {}))
             with run_lock:
+                if active_runs[run_id].get("cancelled"):
+                    break
                 if not continue_on_error and active_runs[run_id].get("failed"):
                     break
 
     with run_lock:
-        status = "failed" if active_runs[run_id].get("failed") else "completed"
+        # A cancelled run is stopped on purpose, so it must not be
+        # reported as failed even though its last step exited non-zero.
+        if active_runs[run_id].get("cancelled"):
+            status = "cancelled"
+        elif active_runs[run_id].get("failed"):
+            status = "failed"
+        else:
+            status = "completed"
         active_runs[run_id]["status"] = status
         active_runs[run_id]["finished_at"] = time.time()
         active_runs[run_id]["workflow_log"].append(f"Workflow {status}")
@@ -303,15 +360,20 @@ def _run_step(profile, extra_args, run_id, continue_on_error, arg_overrides=None
         if rc is None:
             rc = 0
         steps[display_name]["returncode"] = rc
-        if rc != 0:
+        if rc == 0:
+            steps[display_name]["status"] = "completed"
+            active_runs[run_id]["workflow_log"].append(f"[DONE] Step {n} ({step_name}) completed successfully")
+        elif active_runs[run_id].get("cancelled"):
+            # The process was killed by a cancel request, not by its own
+            # failure, so the step is recorded as cancelled.
+            steps[display_name]["status"] = "cancelled"
+            active_runs[run_id]["workflow_log"].append(f"[CANCEL] Step {n} ({step_name}) was stopped")
+        else:
             steps[display_name]["status"] = "failed"
             active_runs[run_id]["failed"] = True
             active_runs[run_id]["workflow_log"].append(f"[FAIL] Step {n} ({step_name}) exited with code {rc}")
             if not continue_on_error:
                 active_runs[run_id]["workflow_log"].append("[ABORT] Workflow stopped due to error.")
-        else:
-            steps[display_name]["status"] = "completed"
-            active_runs[run_id]["workflow_log"].append(f"[DONE] Step {n} ({step_name}) completed successfully")
 
 
 def prune_active_runs():

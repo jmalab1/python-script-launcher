@@ -130,6 +130,10 @@ export async function pollRun(runId) {
     return api('GET', '/api/runs/' + runId);
 }
 
+export async function cancelRun(runId) {
+    return api('POST', '/api/runs/' + runId + '/cancel');
+}
+
 export async function fetchHistoryRun(runId, runType) {
     const url = runType ? `/api/history/${runId}?type=${runType}` : `/api/history/${runId}`;
     return api('GET', url);

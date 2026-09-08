@@ -387,6 +387,14 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
                 else:
                     self._json_response(result)
 
+            elif path.startswith("/api/runs/") and path.endswith("/cancel"):
+                run_id = path[len("/api/runs/"):-len("/cancel")]
+                result, status, error = runs.handle_cancel_run(run_id)
+                if error:
+                    self._json_response(error, status)
+                else:
+                    self._json_response(result)
+
             else:
                 self.send_error(404)
 

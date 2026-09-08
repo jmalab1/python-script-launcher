@@ -1,7 +1,7 @@
 import { html } from '../../vendor/standalone-preact.esm.js';
 import { useState } from '../../vendor/standalone-preact.esm.js';
 
-export function ConfirmModal({ isOpen, onClose, onConfirm, title, message, confirmLabel = 'Delete' }) {
+export function ConfirmModal({ isOpen, onClose, onConfirm, title, message, confirmLabel = 'Delete', busyLabel = 'Deleting...' }) {
     const [busy, setBusy] = useState(false);
     if (!isOpen) return null;
 
@@ -35,7 +35,7 @@ export function ConfirmModal({ isOpen, onClose, onConfirm, title, message, confi
                             class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg transition disabled:opacity-50">Cancel</button>
                         <button onClick=${handleConfirm} disabled=${busy}
                             class="px-4 py-2 text-sm font-medium bg-red-600 hover:bg-red-700 text-white rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed">
-                            ${busy ? 'Deleting...' : confirmLabel}
+                            ${busy ? busyLabel : confirmLabel}
                         </button>
                     </div>
                 </div>

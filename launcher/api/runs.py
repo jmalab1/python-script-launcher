@@ -4,7 +4,7 @@ import threading
 from ..storage import load_json, save_json, save_history
 from ..config import COL_PROFILES, COL_WORKFLOWS
 from ..runner import (
-    run_script, execute_workflow, active_runs, run_lock,
+    run_script, execute_workflow, active_runs, run_lock, cancel_run,
     build_custom_args, build_command, prune_active_runs, parse_timeout,
 )
 
@@ -35,6 +35,7 @@ def _polled_entry(entry):
         "current_step": entry.get("current_step"),
         "command": entry.get("command"),
         "timed_out": bool(entry.get("timed_out")),
+        "cancelled": bool(entry.get("cancelled")),
     }
 
 
@@ -89,7 +90,14 @@ def start_profile_run(profile, arg_values=None, extra_args=None, trigger="manual
         for line in run_script(profile["script_path"], full_args, run_id, timeout=timeout):
             pass
         with run_lock:
-            status = "failed" if active_runs[run_id].get("returncode", 0) != 0 else "completed"
+            # A cancelled run was stopped on purpose, so it is not failed
+            # even though its killed script exits non-zero.
+            if active_runs[run_id].get("cancelled"):
+                status = "cancelled"
+            elif active_runs[run_id].get("returncode", 0) != 0:
+                status = "failed"
+            else:
+                status = "completed"
             active_runs[run_id]["status"] = status
             active_runs[run_id]["finished_at"] = time.time()
             returncode = active_runs[run_id].get("returncode")
@@ -166,3 +174,10 @@ def handle_run_workflow(data):
     if error:
         return None, 400, error
     return result, 200, None
+
+
+def handle_cancel_run(run_id):
+    """Stop a running run. Returns (result, status, error) like run handlers."""
+    if not cancel_run(run_id):
+        return None, 404, {"error": "Run not found or already finished"}
+    return {"ok": True}, 200, None

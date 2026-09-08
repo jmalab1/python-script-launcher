@@ -1,7 +1,8 @@
 import { html } from '../../vendor/standalone-preact.esm.js';
 import { useState, useEffect, useRef } from '../../vendor/standalone-preact.esm.js';
 import { esc, colorizeLine } from '../utils.js';
-import { pollRun, fetchHistoryRun } from '../api.js';
+import { pollRun, fetchHistoryRun, cancelRun } from '../api.js';
+import { ConfirmModal } from './ConfirmModal.js';
 
 export function RunModal({ isOpen, onClose, runId, title, runType }) {
     const [output, setOutput] = useState([]);
@@ -11,6 +12,7 @@ export function RunModal({ isOpen, onClose, runId, title, runType }) {
     const [currentStep, setCurrentStep] = useState('');
     const [timedOut, setTimedOut] = useState(false);
     const [command, setCommand] = useState(null);
+    const [pendingCancel, setPendingCancel] = useState(false);
     const timerRef = useRef(null);
     const outputRef = useRef(null);
     const activeTabRef = useRef('workflow');
@@ -107,6 +109,15 @@ export function RunModal({ isOpen, onClose, runId, title, runType }) {
         URL.revokeObjectURL(url);
     }
 
+    async function confirmCancel() {
+        if (!runId) return;
+        try {
+            await cancelRun(runId);
+        } catch (err) {
+            alert('Could not stop the run.');
+        }
+    }
+
     function updateTabs(stepData) {
         const stepNames = Object.keys(stepData);
         if (stepNames.length > 0) {
@@ -167,7 +178,7 @@ export function RunModal({ isOpen, onClose, runId, title, runType }) {
             setCommand(commandFor(data));
             if (outputRef.current) outputRef.current.scrollTop = outputRef.current.scrollHeight;
 
-            if (data.status === 'completed' || data.status === 'failed') {
+            if (data.status === 'completed' || data.status === 'failed' || data.status === 'cancelled') {
                 clearInterval(timerRef.current);
                 timerRef.current = null;
             }
@@ -186,6 +197,7 @@ export function RunModal({ isOpen, onClose, runId, title, runType }) {
         setCurrentStep('');
         setTimedOut(false);
         setCommand(null);
+        setPendingCancel(false);
 
         if (runType) {
             loadFromHistory(runId, runType);
@@ -212,11 +224,13 @@ export function RunModal({ isOpen, onClose, runId, title, runType }) {
         completed: 'bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400 border-green-200 dark:border-green-500/20',
         failed: 'bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400 border-red-200 dark:border-red-500/20',
         starting: 'bg-purple-50 dark:bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-500/20',
+        cancelled: 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-500/20',
     };
     const dotColors = {
         running: 'bg-sky-400', completed: 'bg-green-400', failed: 'bg-red-400', starting: 'bg-purple-400',
+        cancelled: 'bg-amber-400',
     };
-    const statusLabels = { completed: 'Completed', failed: 'Failed', running: 'Running...' };
+    const statusLabels = { completed: 'Completed', failed: 'Failed', running: 'Running...', cancelled: 'Cancelled' };
 
     return html`
         <div class="fixed inset-0 z-50">
@@ -250,7 +264,7 @@ export function RunModal({ isOpen, onClose, runId, title, runType }) {
                                 <button onClick=${() => switchTab('workflow')}
                                     class="px-3 py-2 text-xs font-medium border-b-2 transition ${activeTab === 'workflow' ? 'border-violet-500 text-violet-600 dark:text-violet-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}">Workflow</button>
                                 ${tabs.map(t => {
-                                    const dot = t.status === 'completed' ? 'bg-green-400' : t.status === 'failed' ? 'bg-red-400' : t.status === 'running' ? 'bg-sky-400 animate-pulse' : 'bg-gray-400';
+                                    const dot = t.status === 'completed' ? 'bg-green-400' : t.status === 'failed' ? 'bg-red-400' : t.status === 'cancelled' ? 'bg-amber-400' : t.status === 'running' ? 'bg-sky-400 animate-pulse' : 'bg-gray-400';
                                     return html`
                                         <button onClick=${() => switchTab(t.name)}
                                             class="px-3 py-2 text-xs font-medium border-b-2 transition flex items-center gap-1.5 ${activeTab === t.name ? 'border-violet-500 text-violet-600 dark:text-violet-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}">
@@ -273,10 +287,25 @@ export function RunModal({ isOpen, onClose, runId, title, runType }) {
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2M12 3v13m0 0 4-4m-4 4-4-4"/></svg>
                             Export
                         </button>
-                        <button onClick=${onClose} class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg transition">Close</button>
+                        <div class="flex gap-2">
+                            ${(status === 'running' || status === 'starting') ? html`
+                                <button onClick=${() => setPendingCancel(true)}
+                                    class="px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition flex items-center gap-1.5">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M10 9.5v5a.5.5 0 0 0 .75.43l4.2-2.5a.5.5 0 0 0 0-.86l-4.2-2.5a.5.5 0 0 0-.75.43Z" fill="currentColor" stroke="none"/></svg>
+                                    Stop
+                                </button>
+                            ` : ''}
+                            <button onClick=${onClose} class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg transition">Close</button>
+                        </div>
                     </div>
                 </div>
             </div>
+            <${ConfirmModal} isOpen=${pendingCancel} onClose=${() => setPendingCancel(false)}
+                onConfirm=${confirmCancel}
+                title="Stop this run"
+                confirmLabel="Stop"
+                busyLabel="Stopping..."
+                message=${html`This will kill the running script. Output produced so far is kept in the run history.`} />
         </div>
     `;
 }

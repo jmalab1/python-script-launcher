@@ -70,7 +70,7 @@ def test_poll_endpoints_expose_output_log_status_and_steps(store):
         assert polled == {
             "output": ["a\n"], "workflow_log": ["log"], "status": "completed",
             "returncode": 0, "steps": {"S": {}}, "current_step": "S",
-            "command": None, "timed_out": False,
+            "command": None, "timed_out": False, "cancelled": False,
         }
         assert runs.handle_poll_all()["r1"] == polled
     finally:

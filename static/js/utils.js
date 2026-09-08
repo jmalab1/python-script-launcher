@@ -34,6 +34,7 @@ export function formatDuration(seconds) {
 export function colorizeStatus(status) {
     return status === 'completed' ? 'text-green-600 dark:text-green-400'
         : status === 'failed' ? 'text-red-600 dark:text-red-400'
+        : status === 'cancelled' ? 'text-amber-600 dark:text-amber-400'
         : 'text-sky-600 dark:text-sky-400';
 }
 
@@ -42,6 +43,8 @@ export function colorizeLine(line) {
         return 'text-red-400';
     if (line.startsWith('[DONE') || line.startsWith('[SKIP'))
         return 'text-green-400';
+    if (line.startsWith('[CANCEL'))
+        return 'text-amber-400';
     if (line.startsWith('[RUN') || line.startsWith('='))
         return 'text-sky-400';
     return '';

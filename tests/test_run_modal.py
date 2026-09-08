@@ -10,7 +10,7 @@ def run_modal_src():
 
 def test_run_modal_loads_live_runs_by_polling_and_history_runs_by_fetching():
     src = run_modal_src()
-    assert "import { pollRun, fetchHistoryRun } from '../api.js';" in src, \
+    assert "import { pollRun, fetchHistoryRun, cancelRun } from '../api.js';" in src, \
         "RunModal does not import its data loaders"
     assert "pollActiveRun(runId);" in src, "live runs are not polled"
     assert "loadFromHistory(runId, runType);" in src, "history runs are not loaded"
@@ -43,10 +43,10 @@ def test_run_modal_resets_its_poll_guard_each_time_it_opens():
 def test_run_modal_stops_polling_when_the_run_finishes_or_the_modal_closes():
     src = run_modal_src()
     assert re.search(
-        r"if \(data\.status === 'completed' \|\| data\.status === 'failed'\) \{\s*"
+        r"if \(data\.status === 'completed' \|\| data\.status === 'failed' \|\| data\.status === 'cancelled'\) \{\s*"
         r"clearInterval\(timerRef\.current\);",
         src,
-    ), "polling must stop once the run reaches a terminal status"
+    ), "polling must stop once the run reaches a terminal status, including cancelled"
     assert re.search(
         r"return \(\) => \{\s*"
         r"if \(timerRef\.current\) \{ clearInterval\(timerRef\.current\); timerRef\.current = null; \}\s*"

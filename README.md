@@ -14,6 +14,7 @@ Tiller is a local, zero-dependency web tool for managing and running Python scri
 - **Server Logs**: Built-in log viewer with live tailing, level highlighting, and text search; the log file rotates automatically.
 - **Custom Arguments**: Define typed input fields that appear on profile cards for quick parameter editing.
 - **Script Timeout**: Per-profile time limit that kills runaway scripts and marks the run failed.
+- **Stop Runs**: Kill a running script or workflow from the run modal; the run is recorded as cancelled with its output so far kept.
 - **Output Export**: Download a run's output as a text file from the run modal.
 - **Modern UI**: Dark/light theme, drag-to-reorder, responsive layout, terminal-style output viewer.
 
@@ -107,6 +108,10 @@ Each profile can set a **Timeout (seconds)** in the profile editor — a plain n
 
 The run modal's **Export** button downloads the run as a timestamped `.txt` file. For a workflow, the file combines the workflow progress log with every step's output, each under its own headed section; for a profile run it is the script's output (with the command that ran).
 
+## Stopping a Run
+
+While a profile or workflow is still running, the run modal shows a **Stop** button next to **Close**. Confirming it kills the running script right away — for a workflow, the current step is killed and the remaining steps are skipped. The run is recorded as **cancelled** (not failed) in Run History, with a `Cancelled by user.` line at the end of its output; output produced before the stop is kept and can still be exported. Cancelled is also an option in the history status filter.
+
 ## Scheduling Runs
 
 The **Schedules** panel runs profiles or workflows automatically while Tiller is running — for example "run this script every hour".
@@ -161,7 +166,7 @@ minute hour day-of-month month day-of-week
 Both **Run History** panels (Profile and Workflow) and the **Audit** panel have a filter bar above the table:
 
 - **Name search**: case-insensitive substring match, applied as you type.
-- **Status** (Run History only): Running, Completed, or Failed.
+- **Status** (Run History only): Running, Completed, Failed, or Cancelled.
 - **Action / Entity** (Audit only): filter on what happened and to what (including `Run now` firings and `Schedules`).
 - **Date range**: From/To day pickers; both ends of the range are inclusive.
 
