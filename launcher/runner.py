@@ -55,11 +55,10 @@ def run_script(script_path, args, run_id, result=None):
                 result["returncode"] = -1
 
 
-def _step_display_name(run_id, step_name):
-    counts = active_runs[run_id].setdefault("step_counts", {})
-    n = counts.get(step_name, 0) + 1
-    counts[step_name] = n
-    return step_name if n == 1 else f"{step_name} ({n})"
+def _next_step_name(run_id, step_name):
+    n = active_runs[run_id].get("step_count", 0) + 1
+    active_runs[run_id]["step_count"] = n
+    return n, f"{n}. {step_name}"
 
 
 def execute_workflow(workflow, run_id, started_at):
@@ -90,6 +89,8 @@ def execute_workflow(workflow, run_id, started_at):
                 if not profile:
                     with run_lock:
                         active_runs[run_id]["workflow_log"].append(f"[SKIP] Profile not found: {profile_entry['profile_id']}")
+                        if not continue_on_error:
+                            active_runs[run_id]["failed"] = True
                     if not continue_on_error:
                         break
                     continue
@@ -135,13 +136,13 @@ def _run_step(profile, extra_args, run_id, continue_on_error, arg_overrides=None
     step_name = profile.get("name", "Unnamed")
 
     with run_lock:
-        display_name = _step_display_name(run_id, step_name)
+        n, display_name = _next_step_name(run_id, step_name)
 
     if not os.path.isfile(script_path):
         with run_lock:
             steps = active_runs[run_id].setdefault("steps", {})
-            steps[display_name] = {"output": [], "status": "failed", "returncode": -1}
-            active_runs[run_id]["workflow_log"].append(f"[SKIP] Script not found: {script_path}")
+            steps[display_name] = {"output": [], "status": "failed", "returncode": -1, "step": n}
+            active_runs[run_id]["workflow_log"].append(f"[SKIP] Step {n} ({step_name}): script not found: {script_path}")
             active_runs[run_id]["failed"] = True
         return
 
@@ -165,8 +166,8 @@ def _run_step(profile, extra_args, run_id, continue_on_error, arg_overrides=None
 
     with run_lock:
         steps = active_runs[run_id].setdefault("steps", {})
-        steps[display_name] = {"output": [], "status": "running", "returncode": None}
-        active_runs[run_id]["workflow_log"].append(f"[RUN] {display_name}")
+        steps[display_name] = {"output": [], "status": "running", "returncode": None, "step": n}
+        active_runs[run_id]["workflow_log"].append(f"[RUN] Step {n}: {step_name}")
         active_runs[run_id]["current_step"] = display_name
 
     step_result = {"returncode": None}
@@ -180,9 +181,9 @@ def _run_step(profile, extra_args, run_id, continue_on_error, arg_overrides=None
         if rc != 0:
             steps[display_name]["status"] = "failed"
             active_runs[run_id]["failed"] = True
-            active_runs[run_id]["workflow_log"].append(f"[FAIL] {display_name} exited with code {rc}")
+            active_runs[run_id]["workflow_log"].append(f"[FAIL] Step {n} ({step_name}) exited with code {rc}")
             if not continue_on_error:
                 active_runs[run_id]["workflow_log"].append("[ABORT] Workflow stopped due to error.")
         else:
             steps[display_name]["status"] = "completed"
-            active_runs[run_id]["workflow_log"].append(f"[DONE] {display_name} completed successfully")
+            active_runs[run_id]["workflow_log"].append(f"[DONE] Step {n} ({step_name}) completed successfully")

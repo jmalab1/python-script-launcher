@@ -28,15 +28,16 @@ def new_run(run_id):
 
 profile = {"name": "Test", "script_path": str(pass_script), "args": [], "custom_args": []}
 
-# 1. sequential duplicate steps: both executions must survive in history
+# 1. sequential duplicate steps: both executions must survive in history, numbered
 rid = new_run("wf_seq_1")
 runner._run_step(profile, [], rid, False, {})
 runner._run_step(profile, [], rid, False, {})
 steps = runner.active_runs[rid]["steps"]
-assert list(steps.keys()) == ["Test", "Test (2)"], list(steps.keys())
+assert list(steps.keys()) == ["1. Test", "2. Test"], list(steps.keys())
 assert all(s["status"] == "completed" for s in steps.values()), steps
 assert all(s["output"] for s in steps.values()), steps
-print("PASS: sequential duplicate steps keep separate outputs")
+assert [s["step"] for s in steps.values()] == [1, 2], steps
+print("PASS: sequential duplicate steps keep separate outputs and step numbers")
 
 # 2. parallel duplicate steps: same profile twice in one parallel group
 rid = new_run("wf_par_1")
@@ -47,10 +48,10 @@ t2.start()
 t1.join()
 t2.join()
 steps = runner.active_runs[rid]["steps"]
-assert sorted(steps.keys()) == ["Test", "Test (2)"], list(steps.keys())
+assert sorted(steps.keys()) == ["1. Test", "2. Test"], list(steps.keys())
 assert all(s["status"] == "completed" for s in steps.values()), steps
 assert all(s["returncode"] == 0 for s in steps.values()), steps
-print("PASS: parallel duplicate steps get unique tabs and correct rc")
+print("PASS: parallel duplicate steps get unique numbered tabs and correct rc")
 
 # 3. per-step returncode: parallel pass+fail must not share rc
 rid = new_run("wf_rc_1")
@@ -62,8 +63,8 @@ t2.start()
 t1.join()
 t2.join()
 steps = runner.active_runs[rid]["steps"]
-assert steps["Test"]["returncode"] == 0 and steps["Test"]["status"] == "completed", steps["Test"]
-assert steps["Failing"]["returncode"] == 3 and steps["Failing"]["status"] == "failed", steps["Failing"]
+assert steps["1. Test"]["returncode"] == 0 and steps["1. Test"]["status"] == "completed", steps["1. Test"]
+assert steps["2. Failing"]["returncode"] == 3 and steps["2. Failing"]["status"] == "failed", steps["2. Failing"]
 print("PASS: parallel steps report their own returncode")
 
 for rid in ("wf_seq_1", "wf_par_1", "wf_rc_1"):
