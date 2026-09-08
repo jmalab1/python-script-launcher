@@ -75,6 +75,31 @@ def test_handle_list_strips_snapshots(store):
     assert entry["id"] and entry["name"] == "One"
 
 
+def test_handle_list_filters_by_name_and_dates(store):
+    # record_audit stamps its own timestamps, so seed raw entries to control them.
+    store.seed("audit", [
+        {"id": "a1", "timestamp": 1000.0, "action": "created",
+         "entity_type": "profile", "entity_id": "p1", "name": "Database Backup"},
+        {"id": "a2", "timestamp": 2000.0, "action": "updated",
+         "entity_type": "workflow", "entity_id": "w1", "name": "Deploy site"},
+        {"id": "a3", "timestamp": 3000.0, "action": "run_now",
+         "entity_type": "schedule", "entity_id": "s1", "name": "Nightly sync"},
+    ])
+
+    res = audit.handle_list(1, 10, name="BACKUP")
+    assert res["total"] == 1
+    assert res["entries"][0]["id"] == "a1"
+
+    res = audit.handle_list(1, 10, since=1000.0, until=2000.0)
+    assert res["total"] == 2
+    assert {e["id"] for e in res["entries"]} == {"a1", "a2"}
+
+    # Filters combine: only the schedule entry is both recent and a run_now.
+    res = audit.handle_list(1, 10, action_filter="run_now", entity_filter="schedule", since=2000.0)
+    assert res["total"] == 1
+    assert res["entries"][0]["id"] == "a3"
+
+
 def test_handle_detail_returns_full_entry(store):
     created = storage.record_audit("created", "profile", "p1", "One", after={"id": "p1"})
     full = audit.handle_detail(created["id"])

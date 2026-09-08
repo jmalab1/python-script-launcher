@@ -176,8 +176,19 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
                 except ValueError:
                     self._json_response({"error": "page and per_page must be integers"}, 400)
                     return
+                try:
+                    since = float(query["since"][0]) if "since" in query else None
+                    until = float(query["until"][0]) if "until" in query else None
+                except ValueError:
+                    self._json_response({"error": "since and until must be numbers"}, 400)
+                    return
                 type_filter = query.get("type", [None])[0]
-                self._json_response(history.handle_list(page, per_page, type_filter))
+                name_filter = query.get("name", [None])[0]
+                status_filter = query.get("status", [None])[0]
+                self._json_response(history.handle_list(
+                    page, per_page, type_filter,
+                    name=name_filter, status=status_filter, since=since, until=until,
+                ))
 
             elif path.startswith("/api/history/"):
                 run_id = path.split("/")[-1]
@@ -195,9 +206,19 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
                 except ValueError:
                     self._json_response({"error": "page and per_page must be integers"}, 400)
                     return
+                try:
+                    since = float(query["since"][0]) if "since" in query else None
+                    until = float(query["until"][0]) if "until" in query else None
+                except ValueError:
+                    self._json_response({"error": "since and until must be numbers"}, 400)
+                    return
                 action_filter = query.get("action", [None])[0]
                 entity_filter = query.get("entity", [None])[0]
-                self._json_response(audit.handle_list(page, per_page, action_filter, entity_filter))
+                name_filter = query.get("name", [None])[0]
+                self._json_response(audit.handle_list(
+                    page, per_page, action_filter, entity_filter,
+                    name=name_filter, since=since, until=until,
+                ))
 
             elif path.startswith("/api/audit/"):
                 entry_id = path.split("/")[-1]

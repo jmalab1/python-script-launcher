@@ -2,7 +2,9 @@ import {
     profiles, workflows, schedules, scriptStatusCache,
     profileHistoryPage, workflowHistoryPage,
     profileHistoryData, workflowHistoryData,
+    profileHistoryFilters, workflowHistoryFilters,
     auditPage, auditData, auditAction, auditEntity,
+    auditName, auditSince, auditUntil,
     logData, logOffset,
 } from './state.js';
 
@@ -133,13 +135,40 @@ export async function fetchHistoryRun(runId, runType) {
     return api('GET', url);
 }
 
+// A picked day ('YYYY-MM-DD') becomes an epoch range covering the whole
+// local day. No date picked ('') means no filter.
+function dayStartEpoch(day) {
+    if (!day) return null;
+    const epoch = Date.parse(day + 'T00:00:00') / 1000;
+    return Number.isFinite(epoch) ? epoch : null;
+}
+
+function dayEndEpoch(day) {
+    if (!day) return null;
+    const epoch = Date.parse(day + 'T23:59:59') / 1000;
+    return Number.isFinite(epoch) ? epoch : null;
+}
+
+function addHistoryFilterParams(params, f) {
+    if (f.name) params.set('name', f.name);
+    if (f.status) params.set('status', f.status);
+    const since = dayStartEpoch(f.since);
+    const until = dayEndEpoch(f.until);
+    if (since !== null) params.set('since', since);
+    if (until !== null) params.set('until', until);
+}
+
 export async function loadProfileHistory() {
-    const data = await api('GET', `/api/history?page=${profileHistoryPage.value}&per_page=15&type=profile`);
+    const params = new URLSearchParams({ page: profileHistoryPage.value, per_page: 15, type: 'profile' });
+    addHistoryFilterParams(params, profileHistoryFilters.value);
+    const data = await api('GET', '/api/history?' + params.toString());
     profileHistoryData.value = data;
 }
 
 export async function loadWorkflowHistory() {
-    const data = await api('GET', `/api/history?page=${workflowHistoryPage.value}&per_page=15&type=workflow`);
+    const params = new URLSearchParams({ page: workflowHistoryPage.value, per_page: 15, type: 'workflow' });
+    addHistoryFilterParams(params, workflowHistoryFilters.value);
+    const data = await api('GET', '/api/history?' + params.toString());
     workflowHistoryData.value = data;
 }
 
@@ -163,6 +192,11 @@ export async function loadAudit() {
     const params = new URLSearchParams({ page: auditPage.value, per_page: 20 });
     if (auditAction.value) params.set('action', auditAction.value);
     if (auditEntity.value) params.set('entity', auditEntity.value);
+    if (auditName.value) params.set('name', auditName.value);
+    const since = dayStartEpoch(auditSince.value);
+    const until = dayEndEpoch(auditUntil.value);
+    if (since !== null) params.set('since', since);
+    if (until !== null) params.set('until', until);
     auditData.value = await api('GET', '/api/audit?' + params.toString());
 }
 

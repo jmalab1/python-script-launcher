@@ -9,7 +9,8 @@ Tiller is a local, zero-dependency web tool for managing and running Python scri
 - **Profiles**: Reusable script presets with a name, script path, and arguments. Run with one click.
 - **Workflows**: Chain profiles as sequential steps or parallel groups, with configurable error handling.
 - **Schedules**: Run profiles or workflows automatically on cron-like schedules — every hour, daily at 09:00, weekdays at 08:30, or any 5-field cron expression.
-- **Run History**: Full audit log of every run with output capture and status tracking.
+- **Run History**: Full audit log of every run with output capture and status tracking. Search and filter by name, status, and date range.
+- **Audit**: Complete trail of every profile, workflow, and schedule change. Filter by action, entity type, name, and date range.
 - **Server Logs**: Built-in log viewer with live tailing, level highlighting, and text search; the log file rotates automatically.
 - **Custom Arguments**: Define typed input fields that appear on profile cards for quick parameter editing.
 - **Modern UI**: Dark/light theme, drag-to-reorder, responsive layout, terminal-style output viewer.
@@ -146,6 +147,17 @@ minute hour day-of-month month day-of-week
 - **Run now** fires a schedule immediately without changing its cadence; the firing is recorded in the **Audit** panel.
 - Scheduled runs use the profile's stored argument values (as shown on the card) and appear in **Run History** with a "Scheduled" badge. Profile and workflow cards show a clock badge while an enabled schedule exists.
 - Moving a profile or workflow to the trash pauses its schedule (the card shows "Target in trash"); restoring resumes it. **Permanently deleting** a target deletes its schedules.
+
+## Searching History and Audit
+
+Both **Run History** panels (Profile and Workflow) and the **Audit** panel have a filter bar above the table:
+
+- **Name search**: case-insensitive substring match, applied as you type.
+- **Status** (Run History only): Running, Completed, or Failed.
+- **Action / Entity** (Audit only): filter on what happened and to what (including `Run now` firings and `Schedules`).
+- **Date range**: From/To day pickers; both ends of the range are inclusive.
+
+Filters combine (AND), reset the list to page 1, and clear with the **Clear** button. The list request carries them as query parameters: `name`, `status` (history), `action`/`entity` (audit), `since` and `until` (epoch seconds).
 
 ## Configuration
 

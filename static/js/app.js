@@ -4,6 +4,7 @@ import {
     profiles, workflows, currentPanel, theme, sidebarOpen, PANELS,
     profileHistoryData, workflowHistoryData,
     profileHistoryPage, workflowHistoryPage,
+    profileHistoryFilters, workflowHistoryFilters,
     auditData, auditPage,
     profileTags, workflowTags,
     logData,
@@ -188,7 +189,7 @@ function App() {
                                                 <h2 class="font-semibold text-gray-800 dark:text-gray-100">Profile Run History</h2>
                                             </header>
                                             <div class="p-3 flex-1 min-h-0 overflow-hidden">
-                                                <${HistoryTable} data=${profileHistoryData.value} pageSignal=${profileHistoryPage} onLoad=${loadProfileHistory} type="profile" onOpenRun=${openRunModal} />
+                                                <${HistoryTable} data=${profileHistoryData.value} pageSignal=${profileHistoryPage} filters=${profileHistoryFilters} onLoad=${loadProfileHistory} type="profile" onOpenRun=${openRunModal} />
                                             </div>
                                         </div>
                                     </div>
@@ -226,7 +227,7 @@ function App() {
                                                 <h2 class="font-semibold text-gray-800 dark:text-gray-100">Run History</h2>
                                             </header>
                                             <div class="p-3 flex-1 min-h-0 overflow-hidden">
-                                                <${HistoryTable} data=${workflowHistoryData.value} pageSignal=${workflowHistoryPage} onLoad=${loadWorkflowHistory} type="workflow" onOpenRun=${openRunModal} />
+                                                <${HistoryTable} data=${workflowHistoryData.value} pageSignal=${workflowHistoryPage} filters=${workflowHistoryFilters} onLoad=${loadWorkflowHistory} type="workflow" onOpenRun=${openRunModal} />
                                             </div>
                                         </div>
                                     </div>

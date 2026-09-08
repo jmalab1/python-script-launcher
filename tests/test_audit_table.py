@@ -13,7 +13,8 @@ def read(path):
 def test_audit_panel_is_registered_as_a_valid_panel():
     state = read(JS / "state.js")
     assert re.search(r"export const PANELS = \[[^\]]*'audit'", state), "PANELS must include 'audit'"
-    for signal in ("auditPage", "auditData", "auditAction", "auditEntity"):
+    for signal in ("auditPage", "auditData", "auditAction", "auditEntity",
+                   "auditName", "auditSince", "auditUntil"):
         assert f"export const {signal}" in state, f"missing {signal} signal"
 
 
@@ -43,8 +44,19 @@ def test_audit_table_has_action_and_entity_filters():
     src = read(COMPONENTS / "AuditTable.js")
     assert "<select value=${auditAction.value}" in src
     assert "<select value=${auditEntity.value}" in src
-    for action in ("created", "updated", "deleted", "reordered", "restored"):
+    for action in ("created", "updated", "deleted", "reordered", "restored", "run_now"):
         assert f'value="{action}"' in src, f"missing filter option for {action}"
+    for entity in ("profile", "workflow", "schedule"):
+        assert f'value="{entity}"' in src, f"missing filter option for {entity}"
+
+
+def test_audit_filters_include_search_dates_and_clear():
+    src = read(COMPONENTS / "AuditTable.js")
+    assert "<${SearchInput} value=${auditName.value}" in src, "audit filter bar needs a name search"
+    assert "onSince=${(since) => update(auditSince, since)}" in src
+    assert "onUntil=${(until) => update(auditUntil, until)}" in src
+    assert "auditPage.value = 1" in src, "filter changes must reset to page 1"
+    assert "Clear" in src, "active filters must offer a clear button"
 
 
 def test_audit_table_rows_have_no_restore_action():

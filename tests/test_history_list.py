@@ -40,6 +40,54 @@ def test_handle_list_filters_by_type(store):
     assert all(e["type"] == "profile" for e in filtered["entries"])
 
 
+def _seed_history():
+    entries = [
+        {"id": "e1", "run_id": "r1", "name": "Database Backup", "type": "profile",
+         "status": "completed", "timestamp": 1000.0},
+        {"id": "e2", "run_id": "r2", "name": "backup logs", "type": "profile",
+         "status": "failed", "timestamp": 2000.0},
+        {"id": "e3", "run_id": "r3", "name": "Deploy Site", "type": "workflow",
+         "status": "running", "timestamp": 3000.0},
+    ]
+    storage.save_json("history", entries)
+
+
+def test_handle_list_filters_by_name_case_insensitively(store):
+    _seed_history()
+    res = history.handle_list(1, 10, None, name="BACKUP")
+    assert res["total"] == 2
+    assert {e["id"] for e in res["entries"]} == {"e1", "e2"}
+
+
+def test_handle_list_filters_by_status(store):
+    _seed_history()
+    res = history.handle_list(1, 10, None, status="failed")
+    assert res["total"] == 1
+    assert res["entries"][0]["id"] == "e2"
+
+
+def test_handle_list_filters_by_date_range_inclusive(store):
+    _seed_history()
+    # Both bounds are inclusive of the exact timestamps they match.
+    res = history.handle_list(1, 10, None, since=1000.0, until=2000.0)
+    assert res["total"] == 2
+    assert {e["id"] for e in res["entries"]} == {"e1", "e2"}
+
+    res = history.handle_list(1, 10, None, since=1000.001)
+    assert res["total"] == 2
+
+
+def test_handle_list_combines_filters_with_and(store):
+    _seed_history()
+    res = history.handle_list(1, 10, "profile", name="backup", status="failed")
+    assert res["total"] == 1
+    assert res["entries"][0]["id"] == "e2"
+
+    # Filtered totals drive pagination: 3 entries, 2 match name, per_page=1
+    res = history.handle_list(1, 1, None, name="backup")
+    assert res["total"] == 2 and res["pages"] == 2
+
+
 def test_save_history_previews_last_20_lines_and_stores_optional_fields(store):
     storage.save_history("run1", "Job", "profile", "completed", 0,
                          [f"line{i}\n" for i in range(30)], 42.0)

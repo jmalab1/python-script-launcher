@@ -1,9 +1,5 @@
 # Feature Suggestions
 
-## High Priority
-
-- **Search/filter on History and Audit panels** — filter by name, date range, status, or action type. Lists grow indefinitely and become hard to navigate without this.
-
 ## Medium Priority
 
 - **Export/import profiles and workflows** — save as JSON files for sharing between instances or backing up configurations.

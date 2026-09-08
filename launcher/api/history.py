@@ -24,10 +24,20 @@ def summarize_entry(entry):
     return summary
 
 
-def handle_list(page, per_page, type_filter):
+def handle_list(page, per_page, type_filter, name=None, status=None, since=None, until=None):
     all_history = load_history()
     if type_filter:
         all_history = [e for e in all_history if e.get("type") == type_filter]
+    if name:
+        # Case-insensitive substring so "back" finds "Database Backup"
+        needle = name.lower()
+        all_history = [e for e in all_history if needle in (e.get("name") or "").lower()]
+    if status:
+        all_history = [e for e in all_history if e.get("status") == status]
+    if since is not None:
+        all_history = [e for e in all_history if e.get("timestamp", 0) >= since]
+    if until is not None:
+        all_history = [e for e in all_history if e.get("timestamp", 0) <= until]
     all_history.sort(key=lambda x: x.get("timestamp", 0), reverse=True)
     total = len(all_history)
     start = (page - 1) * per_page

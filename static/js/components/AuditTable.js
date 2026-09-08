@@ -2,8 +2,9 @@ import { html } from '../../vendor/standalone-preact.esm.js';
 import { useState } from '../../vendor/standalone-preact.esm.js';
 import { esc, formatTime } from '../utils.js';
 import { Pagination } from './Pagination.js';
-import { auditPage, auditAction, auditEntity } from '../state.js';
+import { auditPage, auditAction, auditEntity, auditName, auditSince, auditUntil } from '../state.js';
 import { fetchAuditDetail } from '../api.js';
+import { SearchInput, DateInputs, hasActiveFilters } from './ListFilters.js';
 
 function formatAuditTime(ts) {
     return ts ? new Date(ts * 1000).toLocaleString() : '-';
@@ -89,7 +90,7 @@ export function AuditTable({ data, pageSignal, onLoad }) {
     const [detail, setDetail] = useState(null);
 
     if (!data || !data.entries || !data.entries.length) {
-        const filtered = auditAction.value || auditEntity.value;
+        const filtered = hasActiveFilters(auditAction.value, auditEntity.value, auditName.value, auditSince.value, auditUntil.value);
         return html`
             <div>
                 <div class="flex items-center justify-between gap-3 mb-3">
@@ -156,10 +157,29 @@ export function AuditTable({ data, pageSignal, onLoad }) {
 }
 
 export function AuditFilters({ onLoad }) {
+    function update(signal, value) {
+        signal.value = value;
+        auditPage.value = 1;
+        onLoad();
+    }
+
+    function clearAll() {
+        auditAction.value = '';
+        auditEntity.value = '';
+        auditName.value = '';
+        auditSince.value = '';
+        auditUntil.value = '';
+        auditPage.value = 1;
+        onLoad();
+    }
+
+    const active = hasActiveFilters(auditAction.value, auditEntity.value, auditName.value, auditSince.value, auditUntil.value);
+
     return html`
-        <div class="flex flex-col sm:flex-row sm:items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2">
+            <${SearchInput} value=${auditName.value} onCommit=${(name) => update(auditName, name)} />
             <select value=${auditAction.value}
-                onChange=${(ev) => { auditAction.value = ev.target.value; auditPage.value = 1; onLoad(); }}
+                onChange=${(ev) => update(auditAction, ev.target.value)}
                 class="text-xs bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700/60 rounded-lg px-2 py-1.5 text-gray-700 dark:text-gray-300">
                 <option value="">All actions</option>
                 <option value="created">Created</option>
@@ -167,14 +187,25 @@ export function AuditFilters({ onLoad }) {
                 <option value="deleted">Deleted</option>
                 <option value="reordered">Reordered</option>
                 <option value="restored">Restored</option>
+                <option value="run_now">Run now</option>
             </select>
             <select value=${auditEntity.value}
-                onChange=${(ev) => { auditEntity.value = ev.target.value; auditPage.value = 1; onLoad(); }}
+                onChange=${(ev) => update(auditEntity, ev.target.value)}
                 class="text-xs bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700/60 rounded-lg px-2 py-1.5 text-gray-700 dark:text-gray-300">
                 <option value="">All entities</option>
                 <option value="profile">Profiles</option>
                 <option value="workflow">Workflows</option>
+                <option value="schedule">Schedules</option>
             </select>
+            <${DateInputs} since=${auditSince.value} until=${auditUntil.value}
+                onSince=${(since) => update(auditSince, since)}
+                onUntil=${(until) => update(auditUntil, until)} />
+            ${active ? html`
+                <button onClick=${clearAll}
+                    class="text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 transition">
+                    Clear
+                </button>
+            ` : ''}
         </div>
     `;
 }

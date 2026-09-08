@@ -26,11 +26,20 @@ export const workflowHistoryPage = signal(1);
 export const profileHistoryData = signal(null);
 export const workflowHistoryData = signal(null);
 
+// History search filters. Dates are 'YYYY-MM-DD' strings ('' = unset) so
+// the browser date inputs can hold them directly; api.js converts them
+// to epoch seconds for the server.
+export const profileHistoryFilters = signal({ name: '', status: '', since: '', until: '' });
+export const workflowHistoryFilters = signal({ name: '', status: '', since: '', until: '' });
+
 // Audit log
 export const auditPage = signal(1);
 export const auditData = signal(null);
 export const auditAction = signal('');
 export const auditEntity = signal('');
+export const auditName = signal('');
+export const auditSince = signal('');
+export const auditUntil = signal('');
 
 // Server log viewer
 export const logData = signal([]);

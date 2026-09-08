@@ -4,16 +4,24 @@ import { esc, formatTime, formatDuration, colorizeStatus } from '../utils.js';
 import { Pagination } from './Pagination.js';
 import { deleteHistoryEntry, deleteHistoryEntries } from '../api.js';
 import { ConfirmModal } from './ConfirmModal.js';
+import { HistoryFilters, hasActiveFilters } from './ListFilters.js';
 
-export function HistoryTable({ data, pageSignal, onLoad, type, onOpenRun }) {
+export function HistoryTable({ data, pageSignal, filters, onLoad, type, onOpenRun }) {
     const [pendingDelete, setPendingDelete] = useState(null);
     const [pendingBulkDelete, setPendingBulkDelete] = useState(null);
     const [selected, setSelected] = useState(new Set());
 
     if (!data || !data.entries || !data.entries.length) {
+        const f = filters.value;
+        const filtered = hasActiveFilters(f.name, f.status, f.since, f.until);
         return html`
-            <div class="text-center py-8 text-sm text-gray-500 dark:text-gray-400">
-                No ${type} run history yet.
+            <div>
+                <div class="mb-3">
+                    <${HistoryFilters} filters=${filters} pageSignal=${pageSignal} onLoad=${onLoad} />
+                </div>
+                <div class="text-center py-8 text-sm text-gray-500 dark:text-gray-400">
+                    ${filtered ? 'No runs match the current filters.' : `No ${type} run history yet.`}
+                </div>
             </div>
         `;
     }
@@ -57,6 +65,9 @@ export function HistoryTable({ data, pageSignal, onLoad, type, onOpenRun }) {
 
     return html`
         <div class="flex flex-col h-full min-h-0">
+            <div class="shrink-0 mb-2">
+                <${HistoryFilters} filters=${filters} pageSignal=${pageSignal} onLoad=${onLoad} />
+            </div>
             ${someSelected ? html`
                 <div class="flex flex-wrap items-center gap-3 px-3 py-2 mb-2 bg-blue-50 dark:bg-blue-500/10 rounded-lg text-sm">
                     <span class="text-blue-700 dark:text-blue-300 font-medium">${selected.size} selected</span>
