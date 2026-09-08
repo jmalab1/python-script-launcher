@@ -35,3 +35,29 @@ def test_history_table_routes_deletion_through_the_confirm_modal():
     assert "<${ConfirmModal}" in table_src, "ConfirmModal is not rendered by HistoryTable"
     assert not re.search(r'onClick=\$\{\(ev\) => \{[^}]*deleteHistoryEntry', table_src), \
         "trash button still deletes directly"
+
+
+def test_profile_card_routes_deletion_through_the_confirm_modal():
+    card_src = (COMPONENTS / "ProfileCard.js").read_text()
+    assert "import { ConfirmModal } from './ConfirmModal.js';" in card_src, \
+        "ProfileCard does not import ConfirmModal"
+    assert "pendingDelete" in card_src, \
+        "ProfileCard has no pending-delete modal state"
+    assert "setPendingDelete" in card_src, \
+        "delete button does not open the delete modal"
+    assert "<${ConfirmModal}" in card_src, "ConfirmModal is not rendered by ProfileCard"
+    assert not re.search(r'confirm\(', card_src), \
+        "ProfileCard still uses native confirm()"
+
+
+def test_workflow_card_routes_deletion_through_the_confirm_modal():
+    card_src = (COMPONENTS / "WorkflowCard.js").read_text()
+    assert "import { ConfirmModal } from './ConfirmModal.js';" in card_src, \
+        "WorkflowCard does not import ConfirmModal"
+    assert "pendingDelete" in card_src, \
+        "WorkflowCard has no pending-delete modal state"
+    assert "setPendingDelete" in card_src, \
+        "delete button does not open the delete modal"
+    assert "<${ConfirmModal}" in card_src, "ConfirmModal is not rendered by WorkflowCard"
+    assert not re.search(r'confirm\(\s*[\'"]Delete this workflow', card_src), \
+        "WorkflowCard still uses native confirm() for delete"
