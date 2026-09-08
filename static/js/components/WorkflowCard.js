@@ -155,7 +155,8 @@ export function WorkflowCard({ workflow, onEdit, onRun }) {
                     <div class="flex items-center justify-between cursor-pointer select-none" onClick=${() => setExpanded(e => !e)} title=${expanded ? 'Collapse steps' : 'Expand steps'}>
                         <span class="text-[11px] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Steps</span>
                         <span class="flex items-center gap-1 text-[11px] text-gray-400 dark:text-gray-500">
-                            ${!expanded && html`<span class="group-hover/steps:hidden">hover to view</span>`}
+                            ${!expanded && html`<span class="group-hover/steps:hidden">hover to view</span><span class="hidden group-hover/steps:inline">Click to keep expanded</span>`}
+                            ${expanded && html`<span class="group-hover/steps:hidden">expanded</span><span class="hidden group-hover/steps:inline">Click to collapse</span>`}
                             <svg class="w-3 h-3 transition-transform duration-200 ${expanded ? 'rotate-180' : 'group-hover/steps:rotate-180'}" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
                         </span>
                     </div>
