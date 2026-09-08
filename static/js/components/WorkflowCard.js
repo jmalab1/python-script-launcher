@@ -155,15 +155,17 @@ export function WorkflowCard({ workflow, onEdit, onRun }) {
             <div class="p-4">
                 <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-3">
                     <div class="min-w-0 flex-1">
-                        <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-100">${w.name}</h3>
-                        <div class="flex flex-wrap items-center gap-1.5 mt-1.5">
-                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700/50 text-gray-600 dark:text-gray-400">${totalSteps} step${totalSteps !== 1 ? 's' : ''}</span>
+                        <div class="flex items-center flex-wrap gap-x-1.5 gap-y-1">
+                            <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-100">${w.name}</h3>
                             ${itemTags.map(t => html`
-                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium border ${tagColor(t).chip}">
-                                    <svg class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z"/><path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6z"/></svg>
+                                <span class="inline-flex items-center gap-0.5 px-1 py-px rounded-sm text-[9px] font-medium border ${tagColor(t).chip}">
+                                    <svg class="w-1.5 h-1.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z"/><path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6z"/></svg>
                                     ${t.name}
                                 </span>
                             `)}
+                        </div>
+                        <div class="flex flex-wrap items-center gap-1.5 mt-1.5">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700/50 text-gray-600 dark:text-gray-400">${totalSteps} step${totalSteps !== 1 ? 's' : ''}</span>
                             ${hasSchedule ? html`
                                 <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-violet-500/10 text-violet-600 dark:text-violet-400" title="Runs automatically on a schedule">
                                     <svg class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>

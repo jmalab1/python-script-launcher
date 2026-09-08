@@ -205,6 +205,9 @@ def test_profile_card_shows_tag_chips():
     assert "itemTags" in src, "ProfileCard does not resolve its tags"
     assert "tags.value.find" in src, "ProfileCard does not look up the global tags signal"
     assert "tagColor(" in src, "ProfileCard does not tint chips with the tag's color"
+    title, tags, badges = src.index("<h3"), src.index("itemTags.map"), src.index("${scriptBadge}")
+    assert title < tags < badges, \
+        "tag chips must sit beside the profile title, before the badge row"
 
 
 def test_workflow_card_shows_tag_chips():
@@ -212,6 +215,9 @@ def test_workflow_card_shows_tag_chips():
     assert "itemTags" in src, "WorkflowCard does not resolve its tags"
     assert "tags.value.find" in src, "WorkflowCard does not look up the global tags signal"
     assert "tagColor(" in src, "WorkflowCard does not tint chips with the tag's color"
+    title, tags, badges = src.index("<h3"), src.index("itemTags.map"), src.index("Missing script</span>")
+    assert title < tags < badges, \
+        "tag chips must sit beside the workflow title, before the badge row"
 
 
 # --- Tag colors ---
