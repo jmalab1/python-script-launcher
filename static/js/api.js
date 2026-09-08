@@ -27,14 +27,13 @@ export async function checkScriptExists(path) {
 }
 
 export async function checkAllScripts() {
-    for (const p of profiles.value) {
-        if (p.script_path) {
-            scriptStatusCache.value = {
-                ...scriptStatusCache.value,
-                [p.script_path]: await api('GET', '/api/script_exists?path=' + encodeURIComponent(p.script_path)).then(r => r.exists),
-            };
-        }
-    }
+    const paths = profiles.value.filter(p => p.script_path).map(p => p.script_path);
+    const results = await Promise.all(paths.map(async path => {
+        if (scriptStatusCache.value[path] !== undefined) return [path, scriptStatusCache.value[path]];
+        const res = await api('GET', '/api/script_exists?path=' + encodeURIComponent(path));
+        return [path, res.exists];
+    }));
+    scriptStatusCache.value = { ...scriptStatusCache.value, ...Object.fromEntries(results) };
 }
 
 export async function saveProfile(data) {

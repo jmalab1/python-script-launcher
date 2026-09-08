@@ -5,14 +5,14 @@ from .config import DATA_DIR, PROFILES_FILE, WORKFLOWS_FILE, HISTORY_FILE
 
 def load_json(path):
     if path.exists():
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             return json.load(f)
     return []
 
 
 def save_json(path, data):
     DATA_DIR.mkdir(exist_ok=True)
-    with open(path, "w") as f:
+    with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
 
 

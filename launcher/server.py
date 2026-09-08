@@ -2,12 +2,18 @@ import http.server
 import json
 import logging
 import mimetypes
+import os
+import sys
+import threading
 import traceback
 import urllib.parse
+import webbrowser
 from pathlib import Path
 
 from .config import PORT, DATA_DIR, INDEX_FILE, STATIC_DIR
 from .api import profiles, workflows, runs, history, filesystem
+from . import minify
+from . import compress
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -19,6 +25,9 @@ log = logging.getLogger("launcher")
 
 class LauncherHandler(http.server.SimpleHTTPRequestHandler):
 
+    protocol_version = "HTTP/1.1"
+    disable_nagle_algorithm = True
+
     def log_message(self, fmt, *args):
         log.info(fmt, *args)
 
@@ -29,14 +38,16 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
 
         try:
             if path == "/" or path == "/index.html":
+                content = INDEX_FILE.read_bytes()
                 self.send_response(200)
                 self.send_header("Content-Type", "text/html")
+                content = self._maybe_gzip("text/html", content, cache_path=INDEX_FILE)
+                self.send_header("Content-Length", str(len(content)))
                 self.end_headers()
-                with open(INDEX_FILE, "rb") as f:
-                    self.wfile.write(f.read())
+                self.wfile.write(content)
 
             elif path == "/api/browse":
-                dir_path = query.get("path", [Path.home().expanduser("~")])[0]
+                dir_path = query.get("path", [str(Path.home())])[0]
                 result = filesystem.browse_directory(dir_path)
                 self._json_response(result)
 
@@ -95,11 +106,11 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
                 pass
 
     def _serve_static(self, path):
-        static_dir = STATIC_DIR
-        file_path = static_dir / path[len("/static/"):]
+        static_dir = STATIC_DIR.resolve()
+        rel = urllib.parse.unquote(path[len("/static/"):])
+        file_path = (static_dir / rel).resolve()
         try:
-            file_path = file_path.resolve()
-            if not str(file_path).startswith(str(static_dir.resolve())):
+            if not file_path.is_relative_to(static_dir):
                 log.warning("Path traversal attempt blocked: %s", path)
                 self.send_error(403)
                 return
@@ -114,13 +125,19 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
         content_type, _ = mimetypes.guess_type(str(file_path))
         if content_type is None:
             content_type = "application/octet-stream"
+        content = None
+        if file_path.suffix == ".js":
+            content = minify.minified_js_bytes(file_path)
+        if content is None:
+            content = file_path.read_bytes()
         self.send_response(200)
         self.send_header("Content-Type", content_type)
         self.send_header("Cache-Control", "no-cache")
         self.send_header("Access-Control-Allow-Origin", "*")
+        content = self._maybe_gzip(content_type, content, cache_path=file_path)
+        self.send_header("Content-Length", str(len(content)))
         self.end_headers()
-        with open(file_path, "rb") as f:
-            self.wfile.write(f.read())
+        self.wfile.write(content)
 
     def do_POST(self):
         parsed = urllib.parse.urlparse(self.path)
@@ -208,18 +225,39 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
             except Exception:
                 pass
 
+    def _maybe_gzip(self, content_type, body, cache_path=None):
+        """gzip `body` when the client accepts it; sets Content-Encoding."""
+        if (compress.wants_gzip(self.headers.get("Accept-Encoding"))
+                and compress.should_compress(content_type, len(body))):
+            body = compress.gzip_static(cache_path, body) if cache_path else compress.gzip_bytes(body)
+            self.send_header("Content-Encoding", "gzip")
+            self.send_header("Vary", "Accept-Encoding")
+        return body
+
     def _json_response(self, data, status=200):
+        body = json.dumps(data).encode()
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
+        body = self._maybe_gzip("application/json", body)
+        self.send_header("Content-Length", str(len(body)))
         self.end_headers()
-        self.wfile.write(json.dumps(data).encode())
+        self.wfile.write(body)
 
 
 def main():
     DATA_DIR.mkdir(exist_ok=True)
-    server = http.server.HTTPServer(("127.0.0.1", PORT), LauncherHandler)
+    try:
+        server = http.server.ThreadingHTTPServer(("127.0.0.1", PORT), LauncherHandler)
+    except OSError as e:
+        log.error("Could not start server on port %s: %s", PORT, e)
+        log.error("Is another instance of the launcher already running?")
+        if os.name == "nt":
+            input("Press Enter to exit...")
+        sys.exit(1)
     log.info("Python Web Launcher running at http://127.0.0.1:%s", PORT)
     log.info("Press Ctrl+C to stop.")
+    if os.name == "nt":
+        threading.Timer(1.0, lambda: webbrowser.open(f"http://127.0.0.1:{PORT}")).start()
     try:
         server.serve_forever()
     except KeyboardInterrupt:

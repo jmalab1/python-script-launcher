@@ -9,6 +9,17 @@ active_runs = {}
 run_counter = 0
 run_lock = threading.Lock()
 
+_POPEN_KWARGS = {}
+if os.name == "nt":
+    _POPEN_KWARGS["creationflags"] = subprocess.CREATE_NO_WINDOW
+
+_CHILD_ENV = {
+    **os.environ,
+    "PYTHONUTF8": "1",
+    "PYTHONIOENCODING": "utf-8",
+    "PYTHONUNBUFFERED": "1",
+}
+
 
 def run_script(script_path, args, run_id):
     cmd = [sys.executable, script_path] + args
@@ -17,8 +28,11 @@ def run_script(script_path, args, run_id):
             cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
-            text=True,
+            encoding="utf-8",
+            errors="replace",
             bufsize=1,
+            env=_CHILD_ENV,
+            **_POPEN_KWARGS,
         )
         with run_lock:
             active_runs[run_id]["process"] = proc
