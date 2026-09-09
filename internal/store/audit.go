@@ -5,37 +5,38 @@ import (
 	"encoding/hex"
 	"log/slog"
 	"sort"
-)
 
+	"launchcontrol/internal/ordjson"
+)
 // RecordAudit appends a tamper-evident entry describing a change and
 // trims the trail to AuditMax, mirroring storage.record_audit from the
 // Python app.
 //
-// before/after/details are optional; omit a field entirely (nil) when
-// it does not apply so the stored JSON matches the Python shape.
-func (db *DB) RecordAudit(action, entityType, entityID, name string, before, after, details map[string]any) map[string]any {
-	entry := map[string]any{
-		"id":          NewID(),
-		"timestamp":   nowSeconds(),
-		"action":      action,
-		"entity_type": entityType,
-		"entity_id":   entityID,
-		"name":        name,
-	}
+// before/after/details are optional; pass nil when a field does not
+// apply so the stored JSON matches the Python shape (missing key, not
+// null).
+func (db *DB) RecordAudit(action, entityType, entityID, name string, before, after, details *ordjson.OMap) *ordjson.OMap {
+	entry := ordjson.New().
+		Set("id", NewID()).
+		Set("timestamp", ordjson.Number(nowSeconds())).
+		Set("action", action).
+		Set("entity_type", entityType).
+		Set("entity_id", entityID).
+		Set("name", name)
 	if before != nil {
-		entry["before"] = before
+		entry.Set("before", before)
 	}
 	if after != nil {
-		entry["after"] = after
+		entry.Set("after", after)
 	}
 	if details != nil {
-		entry["details"] = details
+		entry.Set("details", details)
 	}
 	// The hash is stored with the entry so tampering can be detected
 	// later (append_audit in the Python app).
-	entry["_hash"] = HashEntry(entry)
+	entry.Set("_hash", HashEntry(entry))
 
-	entries, _ := db.Load("audit")
+	entries, _ := db.LoadAudit()
 	entries = append(entries, entry)
 	if len(entries) > AuditMax {
 		entries = entries[len(entries)-AuditMax:]
@@ -46,22 +47,48 @@ func (db *DB) RecordAudit(action, entityType, entityID, name string, before, aft
 	return entry
 }
 
+// LoadAudit returns the audit trail, backfilling missing ids and hashes
+// the way Python's load_audit did (older entries may lack either).
+func (db *DB) LoadAudit() ([]*ordjson.OMap, error) {
+	entries, err := db.Load("audit")
+	if err != nil {
+		return nil, err
+	}
+	changed := false
+	for _, entry := range entries {
+		if ordjson.GetStr(entry, "id") == "" {
+			entry.Set("id", NewID())
+			changed = true
+		}
+		if entry.Get("_hash") == nil {
+			entry.Set("_hash", HashEntry(entry))
+			changed = true
+		}
+	}
+	if changed {
+		if err := db.Save("audit", entries); err != nil {
+			slog.Warn("Failed to backfill audit entries", "err", err)
+		}
+	}
+	return entries, nil
+}
+
 // ChangedFields returns the sorted top-level field names that differ
 // between before and after, or nil when there is no before state.
-func ChangedFields(before, after map[string]any) []string {
+func ChangedFields(before, after *ordjson.OMap) []string {
 	if before == nil {
 		return nil
 	}
 	seen := map[string]bool{}
-	for k := range before {
+	for _, k := range before.Keys() {
 		seen[k] = true
 	}
-	for k := range after {
+	for _, k := range after.Keys() {
 		seen[k] = true
 	}
 	var changed []string
 	for k := range seen {
-		if !jsonEqual(before[k], after[k]) {
+		if !jsonEqual(before.Get(k), after.Get(k)) {
 			changed = append(changed, k)
 		}
 	}
@@ -71,22 +98,17 @@ func ChangedFields(before, after map[string]any) []string {
 }
 
 func jsonEqual(a, b any) bool {
-	// Numbers may arrive as json.Number or float64 depending on origin;
-	// compare their canonical text so 1 and 1.0 count as equal values
-	// the way Python's == on parsed JSON would not distinguish them.
 	return canonicalJSON(Normalize(a)) == canonicalJSON(Normalize(b))
 }
 
 // HashEntry computes the tamper-evident hash of an audit entry,
 // byte-compatible with Python's sha256 over
 // json.dumps(entry, sort_keys=True, ensure_ascii=False).
-func HashEntry(entry map[string]any) string {
-	normalized := Normalize(entry)
-	if m, ok := normalized.(map[string]any); ok {
-		delete(m, "_hash")
-		normalized = m
-	}
-	sum := sha256.Sum256([]byte(canonicalJSON(normalized)))
+func HashEntry(entry *ordjson.OMap) string {
+	normalized := Normalize(entry).(*ordjson.OMap)
+	clean := normalized.Clone()
+	clean.Delete("_hash")
+	sum := sha256.Sum256([]byte(canonicalJSON(clean)))
 	return hex.EncodeToString(sum[:])
 }
 
@@ -99,16 +121,9 @@ func (db *DB) VerifyAuditIntegrity() (bool, []string) {
 	}
 	var tampered []string
 	for _, entry := range entries {
-		if HashEntry(entry) != asString(entry["_hash"]) {
-			tampered = append(tampered, asString(entry["id"]))
+		if HashEntry(entry) != ordjson.GetStr(entry, "_hash") {
+			tampered = append(tampered, ordjson.GetStr(entry, "id"))
 		}
 	}
 	return len(tampered) == 0, tampered
-}
-
-func asString(v any) string {
-	if s, ok := v.(string); ok {
-		return s
-	}
-	return ""
 }

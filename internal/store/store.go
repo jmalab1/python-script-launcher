@@ -5,28 +5,41 @@
 // migration. Collections are loaded whole and saved whole, matching the
 // original semantics; per-collection locks serialise read-modify-write
 // cycles exactly like the Python RLocks did.
+//
+// Records are ordjson.OMap values: key order and number literals are
+// preserved byte-for-byte across round trips, which both the step
+// rendering in the UI and the audit tamper hashes rely on.
 package store
 
 import (
 	"crypto/rand"
 	"database/sql"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 	"time"
+
+	"launchcontrol/internal/ordjson"
 
 	_ "modernc.org/sqlite"
 )
 
+// Collection names, used as SQLite table names and storage keys.
+const (
+	ColProfiles  = "profiles"
+	ColWorkflows = "workflows"
+	ColHistory   = "history"
+	ColAudit     = "audit"
+	ColSchedules = "schedules"
+)
+
 // Collections map to SQLite tables of the same name.
 var collections = map[string]bool{
-	"profiles": true, "workflows": true, "history": true,
-	"audit": true, "schedules": true,
+	ColProfiles: true, ColWorkflows: true, ColHistory: true,
+	ColAudit: true, ColSchedules: true,
 }
 
 // AuditMax caps the audit trail; older entries are dropped.
@@ -150,21 +163,31 @@ func (db *DB) migrateLegacy() {
 		if err != nil {
 			continue
 		}
-		var data []map[string]any
-		dec := json.NewDecoder(strings.NewReader(string(raw)))
-		dec.UseNumber()
-		if err := dec.Decode(&data); err != nil {
+		parsed, err := ordjson.Parse(raw)
+		if err != nil {
 			slog.Warn("Failed to read legacy file", "file", filename, "err", err)
 			continue
 		}
-		if len(data) == 0 {
+		arr, ok := parsed.([]any)
+		if !ok || len(arr) == 0 {
 			continue
 		}
-		slog.Info("Migrating legacy file into SQLite", "file", filename, "records", len(data))
-		if err := db.Save(collection, data); err != nil {
+		slog.Info("Migrating legacy file into SQLite", "file", filename, "records", len(arr))
+		items = toRecords(arr)
+		if err := db.Save(collection, items); err != nil {
 			slog.Warn("Legacy migration failed", "file", filename, "err", err)
 		}
 	}
+}
+
+func toRecords(arr []any) []*ordjson.OMap {
+	out := make([]*ordjson.OMap, 0, len(arr))
+	for _, item := range arr {
+		if m, ok := item.(*ordjson.OMap); ok {
+			out = append(out, m)
+		}
+	}
+	return out
 }
 
 // Collection returns the per-collection write lock, creating it on
@@ -190,9 +213,8 @@ func (db *DB) WithCollection(collection string, fn func()) {
 }
 
 // Load returns every record in the collection, in insertion (rowid)
-// order. All numbers arrive as json.Number so re-serialising is
-// loss-free.
-func (db *DB) Load(collection string) ([]map[string]any, error) {
+// order.
+func (db *DB) Load(collection string) ([]*ordjson.OMap, error) {
 	table, err := tableFor(collection)
 	if err != nil {
 		return nil, err
@@ -202,35 +224,29 @@ func (db *DB) Load(collection string) ([]map[string]any, error) {
 		return nil, err
 	}
 	defer rows.Close()
-	var out []map[string]any
+	var out []*ordjson.OMap
 	for rows.Next() {
 		var blob string
 		if err := rows.Scan(&blob); err != nil {
 			return nil, err
 		}
-		item, err := unmarshalItem(blob)
+		parsed, err := ordjson.Parse([]byte(blob))
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("corrupt %s record: %w", table, err)
 		}
-		out = append(out, item)
+		m, ok := parsed.(*ordjson.OMap)
+		if !ok {
+			return nil, fmt.Errorf("corrupt %s record: not an object", table)
+		}
+		out = append(out, m)
 	}
 	return out, rows.Err()
-}
-
-func unmarshalItem(blob string) (map[string]any, error) {
-	dec := json.NewDecoder(strings.NewReader(blob))
-	dec.UseNumber()
-	var item map[string]any
-	if err := dec.Decode(&item); err != nil {
-		return nil, err
-	}
-	return item, nil
 }
 
 // Save replaces the whole collection. Items without an "id" get a new
 // random hex id, like the Python implementation. The delete + inserts
 // run in one transaction so a crash cannot leave the collection empty.
-func (db *DB) Save(collection string, items []map[string]any) error {
+func (db *DB) Save(collection string, items []*ordjson.OMap) error {
 	table, err := tableFor(collection)
 	if err != nil {
 		return err
@@ -244,22 +260,22 @@ func (db *DB) Save(collection string, items []map[string]any) error {
 		return err
 	}
 	for _, item := range items {
-		if item["id"] == nil || item["id"] == "" {
-			item["id"] = NewID()
+		if item.Get("id") == nil || ordjson.GetStr(item, "id") == "" {
+			item.Set("id", NewID())
 		}
-		blob, err := json.Marshal(item)
+		blob, err := ordjson.Marshal(item)
 		if err != nil {
 			return err
 		}
 		if table == "history" {
 			_, err = tx.Exec(
 				`INSERT INTO "history" (id, run_id, type, json) VALUES (?, ?, ?, ?)`,
-				toString(item["id"]), toString(item["run_id"]), toString(item["type"]), string(blob),
+				GetString(item, "id"), GetString(item, "run_id"), GetString(item, "type"), string(blob),
 			)
 		} else {
 			_, err = tx.Exec(
 				`INSERT INTO "`+table+`" (id, json) VALUES (?, ?)`,
-				toString(item["id"]), string(blob),
+				GetString(item, "id"), string(blob),
 			)
 		}
 		if err != nil {
@@ -269,25 +285,18 @@ func (db *DB) Save(collection string, items []map[string]any) error {
 	return tx.Commit()
 }
 
-func toString(v any) string {
-	if v == nil {
-		return ""
-	}
-	if s, ok := v.(string); ok {
-		return s
-	}
-	return fmt.Sprint(v)
-}
-
-// nowSeconds returns the current time as float seconds since the epoch,
-// matching Python's time.time() shape used throughout the stored data.
-func nowSeconds() float64 {
-	return float64(time.Now().UnixNano()) / 1e9
-}
+// GetString is the store-local string accessor (nil-safe).
+func GetString(m *ordjson.OMap, key string) string { return ordjson.GetStr(m, key) }
 
 func tableFor(collection string) (string, error) {
 	if !collections[collection] {
 		return "", fmt.Errorf("unknown collection: %q", collection)
 	}
 	return collection, nil
+}
+
+// nowSeconds returns the current time as float seconds since the epoch,
+// matching Python's time.time() shape used throughout the stored data.
+func nowSeconds() float64 {
+	return float64(time.Now().UnixNano()) / 1e9
 }
