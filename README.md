@@ -239,11 +239,11 @@ internal/
   store/                 # SQLite persistence (legacy *.json migration included)
   web/                   # Embedded-asset serving (index + static)
 go.mod / go.sum          # Go module (only pure-Go dependencies)
+cmd/                     # launcher (the app) + dev tools (fetchruntimes,
+                         #   checkbrowser, screencast)
 index.html               # Main SPA shell
 static/                  # Frontend assets (Preact components, vendored libs)
 scripts/testing/         # Example scripts for exercising the launcher
-scripts/dev/             # Dev tooling (runtime fetcher, browser check,
-                         #   screencast recorder)
 tests/e2e/               # Playwright end-to-end browser tests
 data/                    # Runtime data (gitignored)
 ```
@@ -264,9 +264,10 @@ The `scripts/testing/` directory holds example scripts for exercising the launch
 
 ## Building From Source
 
-Requires Go 1.24+ (pure-Go dependencies; no cgo). Dev dependency tools for
-the demo recorder (Python) live in `requirements-dev.txt`; the e2e suite
-runs in Go via playwright-go (no pip needed).
+Requires Go 1.24+ (pure-Go dependencies; no cgo). Every dev tool runs
+with `go run`, no pip needed. The only optional Python piece is the
+pre-commit hook runner, set up by `make hooks` (installs `pre-commit`
+from `requirements-dev.txt`).
 
 | Command | What it does |
 |---|---|
@@ -279,10 +280,12 @@ runs in Go via playwright-go (no pip needed).
 | `make go-release-local` | Release binary with embedded CPython for this machine |
 | `make go-release` | Release binaries for linux, windows, macos (amd64 + arm64) |
 | `make start` / `make stop` | Start the server in the background / stop it |
-| `make demo` | Record the demo screencast into `demo/` |
+| `make demo` | Record the demo screencast (webm) into `demo/` |
+| `make check-browser` | Quick manual check: profile editor's Browse button opens the file explorer and picks an example script |
 
 ## Requirements
 
 A compiled binary needs nothing installed — even Python comes bundled.
-Development needs Go (1.24+) for the app and the e2e tests; the demo
-recorder additionally needs `pip install -r requirements-dev.txt`.
+Development needs Go (1.24+) for the app, the dev tools and the e2e
+tests; the browser-driving ones additionally need the Chromium driver
+(`go run github.com/mxschmitt/playwright-go/cmd/playwright install chromium`).

@@ -1,4 +1,4 @@
-.PHONY: start stop restart go-build go-test go-fmt go-sec hooks test test-e2e demo fetch-runtimes go-release go-release-local go-clean
+.PHONY: start stop restart go-build go-test go-fmt go-sec hooks test test-e2e demo check-browser fetch-runtimes go-release go-release-local go-clean
 
 # Find the Go toolchain: the user's PATH if it has one, otherwise the
 # well-known install locations this repo uses (~/.local/go from the
@@ -49,9 +49,9 @@ go-sec:
 	fi
 	PATH="$$(dirname "$(GO)"):$${PATH}" $(GOSEC) -quiet ./...
 
-# The pre-commit framework runs gofmt, gosec and pytest before every
-# commit (see .pre-commit-config.yaml). Installs the tool first if pip
-# can reach it; `pre-commit install` wires git to run it.
+# The pre-commit framework runs gofmt and gosec on Go changes before
+# every commit (see .pre-commit-config.yaml). Installs the tool first
+# if pip can reach it; `pre-commit install` wires git to run it.
 hooks:
 	python3 -m pip install --user --break-system-packages -q -r requirements-dev.txt
 	python3 -m pre_commit install
@@ -64,8 +64,16 @@ test: go-test
 test-e2e:
 	$(GO) test -tags e2e -v ./tests/e2e
 
+# Record a demo screencast of the UI into demo/ (needs the Chromium
+# driver, installed once like for test-e2e).
 demo:
-	python3 scripts/dev/make_screencast.py
+	$(GO) run ./cmd/screencast
+
+# Quick manual check of the profile editor's Browse button (file
+# explorer opens, picks scripts/testing/test_script.py). Same driver
+# requirement as demo above.
+check-browser:
+	$(GO) run ./cmd/checkbrowser
 
 # --- Go build targets ---
 # Development build: no embedded Python runtime; user scripts run with a
@@ -74,9 +82,9 @@ go-build:
 	$(GO) build -o dist/launchctl ./cmd/launcher
 
 # Pull the CPython archives release builds embed (see
-# scripts/dev/fetch_runtimes.py).
+# cmd/fetchruntimes).
 fetch-runtimes:
-	python3 scripts/dev/fetch_runtimes.py
+	$(GO) run ./cmd/fetchruntimes
 
 go-clean:
 	rm -rf dist internal/pythonrt/runtime.tar.gz

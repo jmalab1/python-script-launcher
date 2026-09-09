@@ -66,7 +66,7 @@ When adding or editing code, always include a unit test (or update existing ones
 - After backend changes, restart the server so changes take effect: `make restart`.
 - `make restart` does NOT rebuild by itself — it stops and starts `dist/launchctl` as-is, and `make start` skips the build when the binary exists. Always pair code edits with an explicit `make go-build` first (or use `make go-build && make restart`).
 - This applies to frontend files too: `index.html` and everything under `static/` are embedded into the binary at build time, so editing JS/HTML does nothing until the binary is rebuilt and the server restarted (then hard-refresh the browser).
-- A quick end-to-end sanity check after UI changes: `python3 scripts/dev/check_file_browser.py` (or `make test-e2e` for the full suite).
+- A quick end-to-end sanity check after UI changes: `make check-browser` (or `make test-e2e` for the full suite).
 
 ## File ownership
 
