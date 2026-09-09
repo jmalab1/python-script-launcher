@@ -1,6 +1,11 @@
 // Command launcher is Launch Control's compiled server: port of
 // launcher.py's main(), with the same defaults (127.0.0.1:8765,
 // auto-open browser on Windows, graceful Ctrl+C shutdown).
+//
+// By default (Linux/macOS) it detaches into the background so closing
+// the terminal keeps the app running: ./launchctl starts it,
+// ./launchctl -stop stops it; -foreground opts out of detaching.
+// Windows runs in the foreground with the browser auto-opened.
 package main
 
 import (
@@ -19,17 +24,82 @@ import (
 	"launchcontrol/internal/api"
 	"launchcontrol/internal/applog"
 	"launchcontrol/internal/config"
+	"launchcontrol/internal/daemon"
 	"launchcontrol/internal/pythonrt"
 	"launchcontrol/internal/runner"
 	"launchcontrol/internal/scheduler"
 	"launchcontrol/internal/store"
 )
 
+const detachTimeout = 10 * time.Second
+
 func main() {
 	port := flag.Int("port", config.DefaultPort, "listen port (0 picks a free port)")
+	foreground := flag.Bool("foreground", false, "stay attached to this terminal instead of running in the background")
+	stopFlag := flag.Bool("stop", false, "stop a background instance started earlier")
+	childFlag := flag.Bool("_child", false, "internal: this process IS the detached server")
 	flag.Parse()
 
 	dataDir := config.DataDir()
+
+	if *stopFlag {
+		stopped, err := daemon.Stop()
+		switch {
+		case err != nil:
+			fmt.Println("Could not stop the server:", err)
+		case !stopped:
+			fmt.Println("No background instance is running.")
+		default:
+			fmt.Println("Server stopped.")
+		}
+		return
+	}
+
+	// The detached child (and -foreground runs) just serve; the parent
+	// process handles daemonising.
+	if *childFlag || *foreground || runtime.GOOS == "windows" {
+		serve(*port, dataDir)
+		return
+	}
+
+	// Default: detach. Nothing else may already own the port.
+	if *port == 0 {
+		fmt.Println("Port 0 (auto) only works with -foreground; pick a real port for background mode.")
+		os.Exit(1)
+	}
+	pid, alive := daemon.IsRunning()
+	if daemon.PortOpen(*port) {
+		if alive {
+			fmt.Printf("Launch Control is already running in the background (PID %d).\n", pid)
+			return
+		}
+		fmt.Printf("Port %d is already in use by another program - not starting.\n", *port)
+		os.Exit(1)
+	}
+	exe, err := os.Executable()
+	if err != nil {
+		fmt.Println("Cannot locate the executable:", err)
+		os.Exit(1)
+	}
+	childPID, err := daemon.StartDetached(
+		exe, []string{"-port", fmt.Sprint(*port), "-_child"}, os.Environ(), detachTimeout,
+		func() bool { return daemon.PortOpen(*port) },
+	)
+	if err != nil {
+		fmt.Println("Failed to start:", err)
+		os.Exit(1)
+	}
+	if err := daemon.RecordPID(childPID); err != nil {
+		slog.Warn("Could not record the server PID file", "err", err)
+	}
+	fmt.Printf("Launch Control running in the background (PID %d) at http://127.0.0.1:%d\n", childPID, *port)
+	fmt.Println("  - log: data/server.log (tail with: tail -f data/server.log)")
+	fmt.Println("  - stop it with: ./dist/launchctl -stop  (or: make stop)")
+}
+
+// serve is the detached/foreground server: logging, database,
+// scheduler and the HTTP listener, stopped cleanly on Ctrl+C.
+func serve(port int, dataDir string) {
 	rotator := applog.Setup(config.LogFile(), config.LogMaxBytes, config.LogBackupCount)
 	if rotator != nil {
 		defer rotator.Close()
@@ -52,9 +122,9 @@ func main() {
 	})
 	sched := scheduler.New(db, runs)
 
-	listener, err := net.Listen("tcp", net.JoinHostPort("127.0.0.1", fmt.Sprint(*port)))
+	listener, err := net.Listen("tcp", net.JoinHostPort("127.0.0.1", fmt.Sprint(port)))
 	if err != nil {
-		slog.Error("Could not start server on port", "port", *port, "err", err)
+		slog.Error("Could not start server on port", "port", port, "err", err)
 		slog.Error("Is another instance of Launch Control already running?")
 		// Windows console windows close on exit, so the user would never
 		// read the error without a pause (Python did the same).
@@ -65,7 +135,7 @@ func main() {
 		shutdown(1)
 	}
 	defer listener.Close()
-	_ = listener.Addr().(net.Addr)
+	portNum := listener.Addr().(*net.TCPAddr).Port
 
 	server := &http.Server{Handler: api.New(db, runs, sched, dataDir, config.LogFile())}
 
@@ -74,7 +144,6 @@ func main() {
 	sched.Start()
 	defer sched.Stop()
 
-	portNum := listener.Addr().(*net.TCPAddr).Port
 	slog.Info(fmt.Sprintf("Launch Control running at http://127.0.0.1:%d", portNum))
 	slog.Info("Press Ctrl+C to stop.")
 

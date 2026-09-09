@@ -11,6 +11,7 @@ This is a **portable Go web launcher** that must run on any system — no instal
 - Never use platform-specific code without a build-tagged file (see `internal/runner/sysproc_*.go` and `internal/api/fs_drives_*.go` for the pattern).
 - All paths must use `filepath.Join` (no hardcoded `/` or `\` separators).
 - The server auto-opens a browser on Windows and pauses "Press Enter" on port conflict — keep these guards in place.
+- Background mode is built into the binary (`internal/daemon`: detach by default on Linux/macOS, `-stop`, `-foreground`). `make start`/`stop` call it; keep `server_main`-style wrapper scripts out. Test data dirs set `LAUNCHER_DATA_DIR` or the e2e suite budget of a free port.
 
 ### The bundled Python runtime
 

@@ -1,47 +1,20 @@
 .PHONY: start stop restart go-build go-test test test-e2e demo fetch-runtimes go-release go-release-local go-clean
 
-PIDFILE := .server.pid
-
 GO := go
 GOOS_TARGETS := linux-amd64 linux-arm64 windows-amd64 macos-amd64 macos-arm64
 
+# start/stop go through the binary's built-in detach mode: it starts
+# itself in the background and survives the terminal closing.
 start:
 	@if [ ! -x dist/launchctl ]; then $(MAKE) -s go-build; fi
 	@if [ ! -x dist/launchctl ]; then \
 		echo "Build failed - is Go on PATH? (~/.local/go/bin if installed via this repo)"; \
 		exit 1; \
 	fi
-	@if [ -f $(PIDFILE) ] && kill -0 $$(cat $(PIDFILE)) 2>/dev/null; then \
-		echo "Server already running (PID $$(cat $(PIDFILE)))"; \
-	else \
-		nohup dist/launchctl -port 8765 > server.log 2>&1 & \
-		pid=$$!; \
-		sleep 1; \
-		if kill -0 $$pid 2>/dev/null; then \
-			echo $$pid > $(PIDFILE); \
-			echo "Server started (PID $$pid)"; \
-		else \
-			rm -f $(PIDFILE); \
-			echo "Server failed to start — last lines of server.log:"; \
-			tail -n 5 server.log 2>/dev/null || true; \
-		fi; \
-	fi
+	@dist/launchctl -port 8765
 
 stop:
-	@if [ -f $(PIDFILE) ]; then \
-		pid=$$(cat $(PIDFILE)); \
-		if kill $$pid 2>/dev/null; then \
-			echo "Server stopped"; \
-			rm -f $(PIDFILE); \
-		elif kill -0 $$pid 2>/dev/null; then \
-			echo "Server PID $$pid belongs to another user — stop it with sudo (keeping $(PIDFILE))"; \
-		else \
-			echo "Server not running (stale PID $$pid)"; \
-			rm -f $(PIDFILE); \
-		fi; \
-	else \
-		echo "No PID file found"; \
-	fi
+	@dist/launchctl -stop
 
 restart: stop start
 
