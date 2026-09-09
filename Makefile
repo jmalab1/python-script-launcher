@@ -1,6 +1,10 @@
 .PHONY: start stop restart go-build go-test test test-e2e demo fetch-runtimes go-release go-release-local go-clean
 
-GO := go
+# Find the Go toolchain: the user's PATH if it has one, otherwise the
+# well-known install locations this repo uses (~/.local/go from the
+# official tarball). Keeps make working in shells that never sourced
+# .bashrc.
+GO := $(shell command -v go 2>/dev/null || echo $(HOME)/.local/go/bin/go)
 GOOS_TARGETS := linux-amd64 linux-arm64 windows-amd64 macos-amd64 macos-arm64
 
 # start/stop go through the binary's built-in detach mode: it starts
