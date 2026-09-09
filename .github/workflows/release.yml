@@ -1,0 +1,75 @@
+# Build a release on every push to main. The version starts at v0.1.0
+# and the patch number goes up by one for every push (v0.1.1, v0.1.2, ...).
+# Runs can also be triggered by hand from the Actions tab.
+name: Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Queue builds one after another instead of running them in parallel:
+# every push still gets its own release, and two close pushes can never
+# race to create the same version tag.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      # Full history is needed so the workflow can read the existing
+      # version tags and pick the next number.
+      - name: Checkout (with tags)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Figure out the next version
+        id: version
+        run: |
+          LAST_TAG=$(git tag --list 'v*' --sort=-v:refname | head -n 1)
+          if [ -z "$LAST_TAG" ]; then
+            VERSION="v0.1.0"
+          else
+            MAJOR=$(echo "$LAST_TAG" | cut -d. -f1)
+            MINOR=$(echo "$LAST_TAG" | cut -d. -f2)
+            PATCH=$(echo "$LAST_TAG" | cut -d. -f3)
+            VERSION="$MAJOR.$MINOR.$((PATCH + 1))"
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Next version: $VERSION"
+
+      # Runs the unit tests and builds all five platforms (see the
+      # go-release target in the Makefile). It also downloads the Python
+      # runtime archives that get embedded into the binaries.
+      - name: Run tests and build all platforms
+        run: make go-release
+
+      - name: Give the Windows binary its .exe name
+        run: mv dist/launchctl-windows-amd64 dist/launchctl-windows-amd64.exe
+
+      - name: Create tag and GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "$VERSION" -m "Release $VERSION"
+          git push origin "$VERSION"
+          gh release create "$VERSION" dist/* \
+            --title "$VERSION" \
+            --generate-notes
+
+      - name: Show result in the run summary
+        run: echo "Released ${{ steps.version.outputs.version }}" >> "$GITHUB_STEP_SUMMARY"

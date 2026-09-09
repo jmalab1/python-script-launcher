@@ -262,6 +262,15 @@ The `scripts/testing/` directory holds example scripts for exercising the launch
 | `backup.py` | File backup | `--dir`, `--compress` |
 | `unstable_task.py` | Random failures | `--fail-rate` |
 
+## Automated Releases
+
+Every push to `main` triggers a GitHub Actions workflow
+(`.github/workflows/release.yml`) that runs the unit tests, builds all
+five platform binaries via `make go-release`, tags the commit, and
+publishes a GitHub release with the binaries attached. The version runs
+as `v0.1.0`, `v0.1.1`, ... — the patch number goes up by one on every
+push, based on the highest existing `v*` tag.
+
 ## Building From Source
 
 Requires Go 1.24+ (pure-Go dependencies; no cgo). Every dev tool runs
