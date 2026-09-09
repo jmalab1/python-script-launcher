@@ -265,7 +265,8 @@ The `scripts/testing/` directory holds example scripts for exercising the launch
 ## Building From Source
 
 Requires Go 1.24+ (pure-Go dependencies; no cgo). Dev dependency tools for
-the e2e suite/demorecorder (Python) live in `requirements-dev.txt`.
+the demo recorder (Python) live in `requirements-dev.txt`; the e2e suite
+runs in Go via playwright-go (no pip needed).
 
 | Command | What it does |
 |---|---|
@@ -274,7 +275,8 @@ the e2e suite/demorecorder (Python) live in `requirements-dev.txt`.
 | `make go-fmt` | Format all Go code with gofmt |
 | `make go-sec` | Security scan with gosec (needs `go install github.com/securego/gosec/v2/cmd/gosec@latest` once) |
 | `make hooks` | Activate the pre-commit gate (gofmt + gosec on Go changes) — needs `pip install -r requirements-dev.txt` |
-| `make test-e2e` | Playwright suite against the built binary |
+| `make test-e2e` | E2E suite (Go + playwright-go) against the built binary; install the browser driver once with `go run github.com/mxschmitt/playwright-go/cmd/playwright install chromium` |
+| `make test-e2e-py` | Escape hatch: the original pytest/Playwright e2e suite |
 | `make go-release-local` | Release binary with embedded CPython for this machine |
 | `make go-release` | Release binaries for linux, windows, macos (amd64 + arm64) |
 | `make start` / `make stop` | Start the server in the background / stop it |
@@ -283,5 +285,5 @@ the e2e suite/demorecorder (Python) live in `requirements-dev.txt`.
 ## Requirements
 
 A compiled binary needs nothing installed — even Python comes bundled.
-Development needs Go (1.24+) for the app itself; the e2e tests and demo
-recorder additionally need `pip install -r requirements-dev.txt`.
+Development needs Go (1.24+) for the app and the e2e tests; the demo
+recorder additionally needs `pip install -r requirements-dev.txt`.

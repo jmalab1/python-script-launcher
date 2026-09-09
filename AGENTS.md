@@ -52,8 +52,14 @@ When adding or editing code, always include a unit test (or update existing ones
   `make go-test`
 - Race-check before finishing touched concurrency code:
   `go test -race ./...`
-- End-to-end tests (Chromium) run with:
-  `make test-e2e`  (needs `pip install -r requirements-dev.txt` + `python3 -m playwright install chromium`)
+- End-to-end tests (Chromium, via playwright-go) run with:
+  `make test-e2e`
+  Install the browser driver once:
+  `go run github.com/mxschmitt/playwright-go/cmd/playwright install chromium`
+  The suite lives under `tests/e2e/` behind the `e2e` build tag, so plain
+  `go test ./...` never touches it. Escape hatch (old pytest suite):
+  `make test-e2e-py` (`pip install -r requirements-dev.txt` +
+  `python3 -m playwright install chromium`)
 - Test helpers use `t.TempDir()` for scratch files and never mutate global state without cleanup.
 
 ## Server restart
