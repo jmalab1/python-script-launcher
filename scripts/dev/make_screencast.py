@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Generate a screencast demo of the launcher UI with Playwright.
 
-Boots the real server (via tests/e2e/server_main.py) on a free port with a
+Boots the compiled server (dist/launchctl) on a free port with a
 throwaway data directory, seeds it with tagged profiles/workflows/schedules
 built from the example scripts, then drives the browser through a guided tour
 while recording video.
@@ -20,6 +20,7 @@ This is a dev tool only -- the app itself never imports it.
 
 import argparse
 import json
+import os
 import shutil
 import socket
 import subprocess
@@ -31,8 +32,7 @@ import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-SERVER_MAIN = ROOT / "tests" / "e2e" / "server_main.py"
-EXAMPLE_SCRIPTS = ROOT / "scripts" / "testing"
+SERVER_BIN._ = None  # placeholderEXAMPLE_SCRIPTS = ROOT / "scripts" / "testing"
 
 
 def _free_port():
@@ -386,8 +386,9 @@ def main():
     log_path = data_dir / "server.log"
 
     proc = subprocess.Popen(
-        [sys.executable, str(SERVER_MAIN), str(data_dir), str(port)],
+        [str(ROOT / "dist" / "launchctl"), "-port", str(port)],
         cwd=str(ROOT),
+        env={**os.environ, "LAUNCHER_DATA_DIR": str(data_dir)},
         stdout=log_path.open("w"),
         stderr=subprocess.STDOUT,
     )

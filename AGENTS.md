@@ -2,21 +2,33 @@
 
 ## Project quirks — read this first
 
-This is a **portable Python web launcher** that must run on any system with Python 3 — no install step, no platform assumptions.
+This is a **portable Go web launcher** that must run on any system — no install step, no platform assumptions.
 
 ### Portability
 
-- The app (`launcher/`, `launcher.py`, `index.html`, `static/`) must be fully portable across Linux, macOS, and Windows.
-- Never use platform-specific APIs unless guarded behind `os.name` / `sys.platform` checks.
-- All paths must use `pathlib.Path` (no hardcoded `/` or `\` separators).
-- The server auto-opens a browser on Windows (`os.name == "nt"`) and prompts for Enter on port conflict — keep these guards in place.
+- The app (`cmd/launcher/`, `internal/`, `assets.go`, `index.html`, `static/`) must be fully portable across Linux, macOS, and Windows.
+- **Dependencies must be pure Go** (no cgo) so `CGO_ENABLED=0` cross-compilation stays a one-command build for every target.
+- Never use platform-specific code without a build-tagged file (see `internal/runner/sysproc_*.go` and `internal/api/fs_drives_*.go` for the pattern).
+- All paths must use `filepath.Join` (no hardcoded `/` or `\` separators).
+- The server auto-opens a browser on Windows and pauses "Press Enter" on port conflict — keep these guards in place.
 
-### Dependency policy
+### The bundled Python runtime
 
-- **App code**: Python stdlib only. No third-party imports. No install step. If you need something beyond stdlib, find another way.
-- **Unit tests**: May use dev dependencies (tracked in `requirements-dev.txt`, currently just pytest). Never import a dev dependency from app code.
-- When adding a new stdlib import, verify it exists in Python 3.8+ (the minimum supported version).
-- Frontend (`static/js/`, `index.html`) uses vanilla JS — no npm, no bundler, no transpilation.
+- Release builds (`make go-release*`) embed a CPython 3.12 archive (`-tags embedded`); on first run it extracts into `data/runtime/`.
+- **Dev builds** (`make go-build`) have no runtime and fall back to a `python3`/`python` on PATH — handy for development, but tests must never assume one exists for non-runner packages.
+- `internal/pythonrt` owns extraction + interpreter lookup; the runner only consumes `Interpreter()`.
+- `make fetch-runtimes` re-downloads the archives into `build/runtimes/` (gitignored).
+
+### Data compatibility is sacred
+
+- `internal/store` reads and writes the same `data/launcher.db` schema the earlier Python app used. Do not change the schema or the JSON blob format.
+- Every stored record is an `internal/ordjson.OMap` — **object key order and numeric literals must survive round trips** (the run panel renders workflow steps via `Object.entries`, and audit hashes are computed over exact bytes).
+- Audit hashes must stay byte-compatible with Python's `json.dumps(entry, sort_keys=True, ensure_ascii=False)`; the fixtures under `internal/store/testdata/` prove it. Regenerate with `python3 scripts/dev/gen_audit_fixtures.py` if the canonical serializer changes (it must not, silently).
+
+### Parity fixtures
+
+- `internal/scheduler/testdata/cron_fixtures.json` locks the cron engine to the original Python behaviour (fire times, error messages, descriptions). Regenerate with `python3 scripts/dev/gen_cron_fixtures.py` (runs in UTC; the Go test pins its zone to match).
+- `tests/e2e/` drives the real UI in Chromium against the compiled server. It passes both on this platform and (via CI) against the release binaries.
 
 ## Comments & clarity — write for a junior dev
 
@@ -29,27 +41,21 @@ This is a **portable Python web launcher** that must run on any system with Pyth
 
 When adding or editing code, always include a unit test (or update existing ones) that covers the change.
 
-- Tests live in `tests/` and use **pytest** (functions + asserts, no classes needed).
-- Run the full suite with:
-  `python3 -m pytest tests/`
-- Isolation conventions:
-  - Use the `store` fixture from `tests/conftest.py` — it repoints the module-level store paths (`config.DB_PATH`, `storage.DB_PATH`, etc.) to a throwaway SQLite database in a tmp dir. Tests that touch disk or runs must request it.
-  - Use pytest's built-in `tmp_path` for scratch files and `monkeypatch` for patching (never leave globals mutated).
-  - Use the `new_run` fixture for tests that create `runner.active_runs` entries.
-- Frontend (JS) behavior is covered by source-inspection tests (e.g. `test_confirm_modal.py`) that assert on the files in `static/js/components/` — follow that pattern for UI changes.
-- After any change, run the full suite and confirm it passes before finishing.
+- Go unit tests live next to the code (`*_test.go`) and run with:
+  `make go-test`
+- Race-check before finishing touched concurrency code:
+  `go test -race ./...`
+- End-to-end tests (Chromium) run with:
+  `make test-e2e`  (needs `pip install -r requirements-dev.txt` + `python3 -m playwright install chromium`)
+- Test helpers use `t.TempDir()` for scratch files and never mutate global state without cleanup.
 
 ## Server restart
 
-- After changes to backend files (`launcher/`), restart the server so the changes take effect. Run `make restart` from the project root.
+- After backend changes, restart the server so changes take effect: `make restart` (runs `go-build` first).
 
-### Agent shell runs as root — keep files user-owned
+## File ownership
 
-- The agent's terminal runs as root, but the user runs under a normal account. Any file the agent creates or edits becomes owned by `root`, which blocks the user from editing or deleting it later.
-- Find the account that owns the project files (`ls -la Makefile`) — call it `<user>` below.
-- **After every edit or file creation**, chown the affected files back to the user. For a single file: `chown <user>:<user> <file>`. For multiple files or directories: `chown -R <user>:<user> <dir>`.
-- **Server restarts**: If the agent needs to restart the server, run it as that account instead: `sudo -u <user> make restart`.
-- **Before finishing**, do a final sweep: `find . -user root -type f` to list any remaining root-owned files and chown them all back: `chown -R <user>:<user> <any root-owned paths>`. Root-owned leftovers cause permission errors for the user.
+- Run commands as the normal user; do not create files as root (they would block the user from editing them). If root-owned files appear, chown them back with the account that owns `Makefile`.
 
 ## Documentation updates
 

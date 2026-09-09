@@ -1,4 +1,4 @@
-.PHONY: start stop restart test test-e2e demo go-build go-test go-run go-embed go-release go-clean fetch-runtimes
+.PHONY: start stop restart go-build go-test test test-e2e demo fetch-runtimes go-release go-release-local go-clean
 
 PIDFILE := .server.pid
 
@@ -6,10 +6,11 @@ GO := go
 GOOS_TARGETS := linux-amd64 linux-arm64 windows-amd64 macos-amd64 macos-arm64
 
 start:
+	@$(MAKE) -s go-build
 	@if [ -f $(PIDFILE) ] && kill -0 $$(cat $(PIDFILE)) 2>/dev/null; then \
 		echo "Server already running (PID $$(cat $(PIDFILE)))"; \
 	else \
-		nohup python3 launcher.py > server.log 2>&1 & \
+		nohup dist/launchctl -port 8765 > server.log 2>&1 & \
 		pid=$$!; \
 		sleep 1; \
 		if kill -0 $$pid 2>/dev/null; then \
@@ -40,24 +41,25 @@ stop:
 
 restart: stop start
 
-test:
-	python3 -m pytest tests/
+# Go unit tests (the backend's test suite).
+go-test:
+	$(GO) test ./...
 
+# Alias so the old habit still works.
+test: go-test
+
+# Playwright end-to-end tests against the compiled server.
 test-e2e:
 	python3 -m pytest tests/e2e/
 
 demo:
 	python3 scripts/dev/make_screencast.py
 
-# --- Go port build targets ---
-# Development build: no embedded Python runtime; scripts run with a
+# --- Go build targets ---
+# Development build: no embedded Python runtime; user scripts run with a
 # python3/python found on PATH.
 go-build:
 	$(GO) build -o dist/launchctl ./cmd/launcher
-
-# Run the Go test suite.
-go-test:
-	$(GO) test ./...
 
 # Pull the CPython archives release builds embed (see
 # scripts/dev/fetch_runtimes.py).
@@ -90,4 +92,3 @@ go-release-local: fetch-runtimes
 	cp build/runtimes/$$os-$$arch.tar.gz internal/pythonrt/runtime.tar.gz; \
 	$(GO) build -trimpath -ldflags "-s -w" -tags embedded -o dist/launchctl ./cmd/launcher; \
 	rm -f internal/pythonrt/runtime.tar.gz;
-

@@ -1,6 +1,6 @@
 # Launch Control
 
-Launch Control is a local, zero-dependency web tool for managing and running Python scripts through a browser UI. No `pip install`, no database, no build step -- just run it.
+Launch Control is a local web tool for managing and running Python scripts through a browser UI. It ships as a **single compiled binary** with a CPython interpreter built in — no Python installation, no `pip install`, no build step before you run it.
 
 ![Launch Control demo](demo/launcher_demo.gif)
 
@@ -22,11 +22,22 @@ Launch Control is a local, zero-dependency web tool for managing and running Pyt
 
 ## Quick Start
 
+Grab a binary from `dist/` (built per platform) or build one yourself:
+
 ```bash
-python3 launcher.py
+make go-release-local    # builds dist/launchctl with a bundled Python 3.12
+```
+
+Then run it:
+
+```bash
+./dist/launchctl
 ```
 
 Opens at `http://127.0.0.1:8765`. On Windows, the browser opens automatically.
+
+On first launch the binary extracts its bundled CPython into `data/runtime/`
+so your scripts run even with no Python installed on the system.
 
 ## How Script Parameters Work
 
@@ -54,7 +65,7 @@ In the profile editor, click **+ Add Argument Field** to create one. Each field 
 |---|---|
 | **Flag** | The CLI flag name, e.g. `--name`, `--rows` |
 | **Label** | Display label on the card (defaults to the flag name) |
-| **Type** | `Text` for string values, `Checkbox` for boolean flags |
+| **Type** | `Text` for string values, `Checkbox` for boolean flags, `Date` for date pickers |
 | **Default** | Default value (text fields only) |
 
 When you run the profile, the current values of these fields are passed to the script. For example, given this Python script:
@@ -97,7 +108,7 @@ Create a custom argument field with flag `--verbose` and type `Checkbox`. When t
 You can use both static arguments and custom fields in the same profile. Static arguments are fixed. Custom fields are editable. At runtime, custom field values are placed first, followed by any static arguments:
 
 ```
-<executable> <script> [--custom-field value ...] [static-arg ...]
+<python runtime> <script> [--custom-field value ...] [static-arg ...]
 ```
 
 ### Arguments in Workflows
@@ -138,7 +149,7 @@ Pick a preset kind and fill in the values — the compiled cron expression and t
 | (unit: days) | any number 1–31, at a time | `M H */N * *` | every 2 days at 06:30 |
 | **Daily at a time** | any HH:MM | `M H * * *` | daily at 09:00 |
 | **Weekly on days at a time** | any day combination | `M H * * D,D,...` | Mondays & Fridays at 08:00 |
-| **Monthly on a day at a time** | day 1–31, any HH:MM | `M H D * *` | the 15th at 08:00 |
+| **Monthly on a day at a time** | day 1–31, any HH:MM | `M H D * *` | the 15th at 08:30 |
 
 Repeat counts are free number inputs clamped to valid cron ranges (a "minute" repeat can't exceed 59, and so on). Monthly schedules skip months that lack the chosen day (e.g. Feb 30); day repeats count from the 1st of the month.
 
@@ -158,7 +169,7 @@ minute hour day-of-month month day-of-week
 
 - Times are **local wall-clock time**, minute granularity. On DST change days a scheduled wall-clock time may be skipped or run twice, like a real cron.
 - **Missed runs are skipped**: if Launch Control is not running when a run is due, the next run happens at the next normal occurrence.
-- **No overlap**: a schedule will not start a new run while its previous run is still active; the run starts on the next tick once the previous one finishes (ticks are every `SCHEDULER_TICK_SECONDS`).
+- **No overlap**: a schedule will not start a new run while its previous run is still active; the run starts on the next tick once the previous one finishes (ticks are every 5 seconds).
 - **Run now** fires a schedule immediately without changing its cadence; the firing is recorded in the **Audit** panel.
 - **Duplicate** copies a schedule as `<name> (copy)` with the same cron and target; the copy starts enabled with fresh last-run info and appears in the **Audit** panel.
 - Scheduled runs use the profile's stored argument values (as shown on the card) and appear in **Run History** with a "Scheduled" badge. Profile and workflow cards show a clock badge while an enabled schedule exists.
@@ -179,51 +190,44 @@ Filters combine (AND), reset the list to page 1, and clear with the **Clear** bu
 
 ## Configuration
 
-All config lives in `launcher/config.py`:
+The server reads a few settings as flags and environment variables:
 
-| Option | Default | Description |
+| Setting | Default | Description |
 |---|---|---|
-| `PORT` | `8765` | Server listen port |
-| `DATA_DIR` | `data/` | Where JSON data files are stored |
-| `SCHEDULER_TICK_SECONDS` | `5` | How often the scheduler wakes up to check for due schedules |
-| `LOG_MAX_BYTES` | `2000000` | Rotate `data/server.log` when it reaches this size (`0` disables rotation) |
-| `LOG_BACKUP_COUNT` | `3` | How many datetime-stamped copies (e.g. `server.log.2026-09-08_11-19-10`) to keep |
+| `-port` flag | `8765` | Server listen port (bound to 127.0.0.1) |
+| `LAUNCHER_DATA_DIR` | `data/` next to the binary | Where the database, logs, and extracted Python runtime live |
+| log rotation | 2 MB, 3 backups | `data/server.log` rotates automatically; the **Logs** panel tails it |
 
-The server mirrors its log output to `data/server.log` (rotated automatically at `LOG_MAX_BYTES`). The **Logs** panel in the UI tails this file with live updates, level highlighting, and text search, so it works on every platform regardless of how the server was launched — `python3 launcher.py`, the Makefile, or `start.bat` on Windows.
+Override the data directory for tests or several instances:
+
+```bash
+LAUNCHER_DATA_DIR=/tmp/demo dist/launchctl -port 9001
+```
 
 ## Project Structure
 
 ```
-launcher.py              # Entry point
+cmd/launcher/            # Entry point: flags, browser opening, shutdown
+assets.go                # Embeds index.html + static/ into the binary
+internal/
+  api/                   # HTTP routes and handlers (profiles, workflows,
+                         #   schedules, runs, history, audit, logs, browse)
+  applog/                # Rotating server log with timestamped backups
+  compress/              # Gzip responses with an internal cache
+  config/                # Settings and data-dir resolution
+  ordjson/               # Order-preserving JSON objects (Python-dict parity)
+  pythonrt/              # Bundled CPython: extraction and interpreter lookup
+  runner/                # Script execution, timeouts, cancel, workflow engine
+  scheduler/             # Cron parser, next-run scanner, tick loop
+  store/                 # SQLite persistence (legacy *.json migration included)
+  web/                   # Embedded-asset serving (index + static)
+go.mod / go.sum          # Go module (only pure-Go dependencies)
 index.html               # Main SPA shell
-
-launcher/                # Python backend
-  server.py              # HTTP server, routing, gzip
-  config.py              # Port and file paths
-  runner.py              # Script execution, workflow engine
-  scheduler.py           # Cron engine and background scheduler
-  storage.py             # JSON persistence, history
-  compress.py            # Gzip compression with caching
-  api/                   # API route handlers
-    profiles.py          # Profile CRUD, reorder, duplicate
-    workflows.py         # Workflow CRUD, reorder, duplicate
-    runs.py              # Run execution and polling
-    schedules.py         # Schedule CRUD, toggle, run-now, cron preview
-    history.py           # History list, detail, delete
-    filesystem.py        # Directory browsing, file dialog
-    audit.py             # Audit trail list and detail
-    logs.py              # Server log tailing for the Logs panel
-
-static/                  # Frontend assets
-  js/                    # Preact components
-  vendor/                # Vendored Preact + Tailwind
-  fonts/                 # Inter font
-
-scripts/                 # Demo material for exercising the launcher
-  testing/               # Example scripts (profiles, workflows, failure tests)
-  dev/                   # Dev tooling (screencast demo generator)
-tests/                   # pytest suite (dev-only; app stays stdlib-only)
-  e2e/                   # Playwright end-to-end browser tests
+static/                  # Frontend assets (Preact components, vendored libs)
+scripts/testing/         # Example scripts for exercising the launcher
+scripts/dev/             # Dev tooling (runtime fetcher, fixture generators,
+                         #   screencast recorder)
+tests/e2e/               # Playwright end-to-end browser tests
 data/                    # Runtime data (gitignored)
 ```
 
@@ -241,53 +245,23 @@ The `scripts/testing/` directory holds example scripts for exercising the launch
 | `backup.py` | File backup | `--dir`, `--compress` |
 | `unstable_task.py` | Random failures | `--fail-rate` |
 
-Dev tooling (not part of the example workload) lives in `scripts/dev/`.
+## Building From Source
 
-## Running Tests
+Requires Go 1.24+ (pure-Go dependencies; no cgo). Dev dependency tools for
+the e2e suite/demorecorder (Python) live in `requirements-dev.txt`.
 
-Tests use pytest (a dev-only dependency; the app itself needs nothing installed):
-
-```bash
-python3 -m pytest tests/
-```
-
-Run a single file or test:
-
-```bash
-python3 -m pytest tests/test_workflows.py
-python3 -m pytest tests/test_workflow_execute.py -k parallel
-```
-
-### End-to-End Browser Tests
-
-`tests/e2e/` contains Playwright tests that drive the real app — the stdlib server plus the browser UI — through actual page interactions (navigation, running profiles and workflows, modals, history, audit, logs, theme toggle).
-
-They are part of the normal suite (`python3 -m pytest tests/`) and are skipped automatically when Playwright or Chromium is not installed. To run them:
-
-```bash
-pip install -r requirements-dev.txt
-python3 -m playwright install chromium
-python3 -m pytest tests/e2e/
-```
-
-Notes:
-
-- Each run boots the server as a subprocess on a free port with a throwaway data directory, so e2e tests never touch your real `data/` store.
-- Tests run headless; add `--headed` to watch them in a visible browser window.
-
-### Demo Screencast
-
-`scripts/dev/make_screencast.py` records a narrated-less video tour of the app with Playwright. It boots the real server on a free port with a throwaway data directory, seeds it with tagged profiles, a workflow, schedules, and run history (built from the example scripts), then drives the browser through every panel — running a profile with live output, filtering by tag, assigning an extra tag while editing, the tag manager, executing a workflow, the schedule editor's live cron preview, the audit trail, server logs, and the theme toggle — while recording the screen.
-
-```bash
-make demo                                    # writes demo/launcher_demo.webm
-python3 scripts/dev/make_screencast.py --headed  # watch while it records
-python3 scripts/dev/make_screencast.py --output demo/tour.webm --pause 1.5
-python3 scripts/dev/make_screencast.py --gif demo/launcher_demo.gif   # also an animated GIF
-```
-
-Requires the same dev setup as the e2e tests (`pip install -r requirements-dev.txt` and `python3 -m playwright install chromium`). The `--gif` mode samples screenshots during the tour and assembles them with Pillow (also in `requirements-dev.txt`), resizing to `--gif-width` (default 800px); identical adjacent frames are merged so the pacing matches the recording. The output lands in `demo/` (gitignored); the throwaway data directory is removed afterwards.
+| Command | What it does |
+|---|---|
+| `make go-build` | Dev binary (uses a system `python3` for scripts) |
+| `make go-test` | Go unit test suite |
+| `make test-e2e` | Playwright suite against the built binary |
+| `make go-release-local` | Release binary with embedded CPython for this machine |
+| `make go-release` | Release binaries for linux, windows, macos (amd64 + arm64) |
+| `make start` / `make stop` | Run the server detached / stop it |
+| `make demo` | Record the demo screencast into `demo/` |
 
 ## Requirements
 
-Python 3.8+ with only the standard library — no packages needed to run the app. Unit tests additionally need pytest, and the e2e tests need pytest-playwright (`pip install -r requirements-dev.txt`).
+A compiled binary needs nothing installed — even Python comes bundled.
+Development needs Go (1.24+) for the app itself; the e2e tests and demo
+recorder additionally need `pip install -r requirements-dev.txt`.
