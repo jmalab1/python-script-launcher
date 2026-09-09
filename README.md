@@ -238,7 +238,7 @@ go.mod / go.sum          # Go module (only pure-Go dependencies)
 index.html               # Main SPA shell
 static/                  # Frontend assets (Preact components, vendored libs)
 scripts/testing/         # Example scripts for exercising the launcher
-scripts/dev/             # Dev tooling (runtime fetcher, fixture generators,
+scripts/dev/             # Dev tooling (runtime fetcher, browser check,
                          #   screencast recorder)
 tests/e2e/               # Playwright end-to-end browser tests
 data/                    # Runtime data (gitignored)

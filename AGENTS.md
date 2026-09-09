@@ -24,11 +24,11 @@ This is a **portable Go web launcher** that must run on any system — no instal
 
 - `internal/store` reads and writes the same `data/launcher.db` schema the earlier Python app used. Do not change the schema or the JSON blob format.
 - Every stored record is an `internal/ordjson.OMap` — **object key order and numeric literals must survive round trips** (the run panel renders workflow steps via `Object.entries`, and audit hashes are computed over exact bytes).
-- Audit hashes must stay byte-compatible with Python's `json.dumps(entry, sort_keys=True, ensure_ascii=False)`; the fixtures under `internal/store/testdata/` prove it. Regenerate with `python3 scripts/dev/gen_audit_fixtures.py` if the canonical serializer changes (it must not, silently).
+- Audit hashes must stay byte-compatible with Python's `json.dumps(entry, sort_keys=True, ensure_ascii=False)`; the fixtures under `internal/store/testdata/` prove it. Those fixtures are frozen snapshots produced by the archived Python implementation (its sources are gone) — never regenerate or edit the testdata silently.
 
 ### Parity fixtures
 
-- `internal/scheduler/testdata/cron_fixtures.json` locks the cron engine to the original Python behaviour (fire times, error messages, descriptions). Regenerate with `python3 scripts/dev/gen_cron_fixtures.py` (runs in UTC; the Go test pins its zone to match).
+- `internal/scheduler/testdata/cron_fixtures.json` locks the cron engine to the original Python behaviour (fire times, error messages, descriptions, computed in UTC; the Go test pins its zone to match). Frozen snapshot from the archived Python implementation — do not regenerate.
 - `tests/e2e/` drives the real UI in Chromium against the compiled server. It passes both on this platform and (via CI) against the release binaries.
 
 ## Comments & clarity — write for a junior dev

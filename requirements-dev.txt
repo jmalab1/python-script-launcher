@@ -1,4 +1,5 @@
-# Development-only dependencies. The app itself must stay stdlib-only.
+# Development-only dependencies (e2e tests and the demo recorder). The
+# app itself is pure Go and needs none of these.
 pytest>=7.0
 
 # End-to-end browser tests (tests/e2e).

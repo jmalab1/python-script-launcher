@@ -76,9 +76,9 @@ func parseFixtureTime(s string) (time.Time, error) {
 }
 
 func TestMain(m *testing.M) {
-	// Fixtures are generated in UTC (see scripts/dev/gen_cron_fixtures.py);
-	// pin the test process to the same zone so wall-clock comparisons are
-	// deterministic regardless of the machine's timezone.
+	// Fixtures were computed in UTC by the archived Python
+	// implementation (frozen snapshot); pin the test process to the same
+	// zone so wall-clock comparisons stay deterministic on any machine.
 	time.Local = time.UTC
 	os.Exit(m.Run())
 }
