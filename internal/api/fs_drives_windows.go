@@ -11,7 +11,10 @@ import (
 // listDrives enumerates the available drive letters via
 // GetLogicalDrives, mirroring the Python ctypes call.
 func listDrives() []any {
-	bitmask := windows.GetLogicalDrives()
+	bitmask, err := windows.GetLogicalDrives()
+	if err != nil {
+		return nil
+	}
 	drives := []any{}
 	for i, letter := range "ABCDEFGHIJKLMNOPQRSTUVWXYZ" {
 		if bitmask>>uint(i)&1 != 0 {
