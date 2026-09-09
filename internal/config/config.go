@@ -7,9 +7,11 @@
 package config
 
 import (
+	"log/slog"
 	"os"
 	"path/filepath"
 	"runtime"
+	"sync"
 	"time"
 )
 
@@ -37,30 +39,96 @@ const (
 	LogBackupCount = 3
 )
 
+// AppDataDirName is the folder name used inside the OS's per-user state
+// location. One deterministic spot per user, no matter where the binary
+// was launched from or which copy of it was used.
+const AppDataDirName = "launchctl-data"
+
+// legacyDataDirLayouts are data directories created by earlier builds
+// ("data" and "launchctl-data" next to the executable); startup moves
+// the first one found onto the canonical per-user location.
+var legacyDataDirNames = []string{"data", AppDataDirName}
+
 // DataDir returns the directory holding the database, logs and the
 // extracted Python runtime.
 //
 // Resolution order:
 //  1. LAUNCHER_DATA_DIR env var (tests and the e2e harness)
-//  2. "data" next to the executable (portable single-binary layout)
-//  3. "data" in the current directory (go run / development)
+//  2. the OS's per-user state location with AppDataDirName underneath
+//     (Linux: XDG data home; macOS: Application Support; Windows:
+//     %APPDATA%), so every binary copy shares one home
 func DataDir() string {
 	if v := os.Getenv("LAUNCHER_DATA_DIR"); v != "" {
 		return v
 	}
-	if exe, err := os.Executable(); err == nil {
-		// Under "go run" the executable lives in a temp dir; using it
-		// would scatter data across throwaway folders, so fall through
-		// to the working directory instead.
-		if dir := filepath.Dir(exe); !isGoRunCache(dir) {
-			return filepath.Join(dir, "data")
-		}
-	}
-	return "data"
+	return filepath.Join(UserStateDir(), AppDataDirName)
 }
 
-func isGoRunCache(dir string) bool {
-	return filepath.Base(filepath.Dir(dir)) == "go-build"
+// UserStateDir is the per-user base for app state, following platform
+// conventions. Falls back to the executable's directory (or the current
+// one) when neither the OS homes nor the user's home are known.
+func UserStateDir() string {
+	switch runtime.GOOS {
+	case "windows":
+		if dir, err := os.UserConfigDir(); err == nil && dir != "" {
+			return dir
+		}
+	case "darwin":
+		if home, err := os.UserHomeDir(); err == nil && home != "" {
+			return filepath.Join(home, "Library", "Application Support")
+		}
+	default:
+		if xdg := os.Getenv("XDG_DATA_HOME"); xdg != "" {
+			return xdg
+		}
+		if home, err := os.UserHomeDir(); err == nil && home != "" {
+			return filepath.Join(home, ".local", "share")
+		}
+	}
+	if exe, err := os.Executable(); err == nil {
+		return filepath.Dir(exe)
+	}
+	return "."
+}
+
+// adoptLegacyDataDir moves an earlier-build data directory next to the
+// executable onto the canonical per-user location (best effort): only
+// when the destination does not exist yet and a legacy directory with
+// data is found. Runs once per process.
+func adoptLegacyDataDir() {
+	datadir := DataDir()
+	if _, err := os.Stat(datadir); err == nil {
+		return
+	}
+	for _, legacyName := range legacyDataDirNames {
+		legacyPath := ""
+		if exe, err := os.Executable(); err == nil {
+			legacyPath = filepath.Join(filepath.Dir(exe), legacyName)
+		} else {
+			legacyPath = legacyName
+		}
+		if legacyPath == datadir {
+			continue
+		}
+		if info, err := os.Stat(legacyPath); err == nil && info.IsDir() {
+			if err := os.MkdirAll(filepath.Dir(datadir), 0o755); err != nil {
+				return
+			}
+			if err := os.Rename(legacyPath, datadir); err == nil {
+				slog.Info("Adopted the existing data directory",
+					"from", legacyPath, "to", datadir)
+				return
+			}
+		}
+	}
+}
+
+var adoptOnce sync.Once
+
+// AdoptLegacyDataDir runs the one-time legacy data-dir adoption check.
+// Startup calls it before anything else touches the data directory.
+func AdoptLegacyDataDir() {
+	adoptOnce.Do(adoptLegacyDataDir)
 }
 
 // DBPath is the SQLite database file inside DataDir.

@@ -98,7 +98,7 @@ def launcher_server(tmp_path_factory):
         binary = ROOT / "dist" / "launchctl"
         if not binary.exists():
             subprocess.run(["make", "go-build"], cwd=str(ROOT), check=True)
-        argv = [str(binary), "-port", str(port)]
+        argv = [str(binary), "-port", str(port), "-foreground"]
     server_env = {**os.environ, "LAUNCHER_DATA_DIR": str(data_dir)}
 
     with log_path.open("w") as log_file:

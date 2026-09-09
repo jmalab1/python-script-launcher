@@ -30,7 +30,7 @@ def main():
     env = {"LAUNCHER_DATA_DIR": str(data_dir), "PATH": "/usr/bin:/bin"}
     log = data_dir / "server.log"
     proc = subprocess.Popen(
-        [str(ROOT / "dist" / "launchctl"), "-port", str(port)],
+        [str(ROOT / "dist" / "launchctl"), "-port", str(port), "-foreground"],
         stdout=log.open("w"), stderr=subprocess.STDOUT, env=env,
     )
     try:

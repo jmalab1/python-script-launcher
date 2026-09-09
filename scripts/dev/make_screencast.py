@@ -386,7 +386,7 @@ def main():
     log_path = data_dir / "server.log"
 
     proc = subprocess.Popen(
-        [str(ROOT / "dist" / "launchctl"), "-port", str(port)],
+        [str(ROOT / "dist" / "launchctl"), "-port", str(port), "-foreground"],
         cwd=str(ROOT),
         env={**os.environ, "LAUNCHER_DATA_DIR": str(data_dir)},
         stdout=log_path.open("w"),

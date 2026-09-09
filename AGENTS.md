@@ -22,7 +22,7 @@ This is a **portable Go web launcher** that must run on any system — no instal
 
 ### Data compatibility is sacred
 
-- `internal/store` reads and writes the same `data/launcher.db` schema the earlier Python app used. Do not change the schema or the JSON blob format.
+- `internal/store` reads and writes the same `launchctl-data/launcher.db` schema the earlier Python app used. Do not change the schema or the JSON blob format.
 - Every stored record is an `internal/ordjson.OMap` — **object key order and numeric literals must survive round trips** (the run panel renders workflow steps via `Object.entries`, and audit hashes are computed over exact bytes).
 - Audit hashes must stay byte-compatible with Python's `json.dumps(entry, sort_keys=True, ensure_ascii=False)`; the fixtures under `internal/store/testdata/` prove it. Those fixtures are frozen snapshots produced by the archived Python implementation (its sources are gone) — never regenerate or edit the testdata silently.
 

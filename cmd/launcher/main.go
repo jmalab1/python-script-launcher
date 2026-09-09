@@ -119,7 +119,12 @@ func replacePrevious(port int) {
 
 // serve is the detached/foreground server: logging, database,
 // scheduler and the HTTP listener, stopped cleanly on Ctrl+C.
-func serve(port int, dataDir string) {
+func serve(port int, _ string) {
+	dataDir := config.DataDir()
+	// One-time adoption: earlier builds kept their data next to the
+	// executable; move it onto the per-user state location before
+	// anything else touches it.
+	config.AdoptLegacyDataDir()
 	rotator := applog.Setup(config.LogFile(), config.LogMaxBytes, config.LogBackupCount)
 	if rotator != nil {
 		defer rotator.Close()

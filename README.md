@@ -41,9 +41,12 @@ command again automatically **stops the previous instance and restarts**
 `./dist/launchctl -stop` stops it. On Windows it
 runs in the foreground and opens the browser automatically, like before.
 
-On first launch the binary extracts its bundled CPython into
-`data/runtime/` (next to the binary), so your scripts run even with no
-Python installed on the system. Handy flags:
+All state lives in one per-user folder — `~/.local/share/launchctl-data`
+on Linux, `~/Library/Application Support/launchctl-data` on macOS,
+`%APPDATA%/launchctl-data` on Windows — no matter which copy of the
+binary you run or where you launched it from. On first launch the
+bundled CPython is extracted into `launchctl-data/runtime/`, so your
+scripts run even with no Python installed on the system. Handy flags:
 
 | Flag | Effect |
 |---|---|
@@ -208,10 +211,10 @@ The server reads a few settings as flags and environment variables:
 | Setting | Default | Description |
 |---|---|---|
 | `-port` flag | `8765` | Server listen port (bound to 127.0.0.1; `-stop`/`-foreground` also built in) |
-| `LAUNCHER_DATA_DIR` | `data/` next to the binary | Where the database, logs, and extracted Python runtime live |
-| log rotation | 2 MB, 3 backups | `data/server.log` rotates automatically; the **Logs** panel tails it |
+| `LAUNCHER_DATA_DIR` | `launchctl-data/` in the OS user-data dir | Where the database, logs, and extracted Python runtime live |
+| log rotation | 2 MB, 3 backups | `launchctl-data/server.log` rotates automatically; the **Logs** panel tails it |
 
-Override the data directory for tests or several instances:
+Override the data directory for tests, shared locations, or a portable stick:
 
 ```bash
 LAUNCHER_DATA_DIR=/tmp/demo dist/launchctl -port 9001
