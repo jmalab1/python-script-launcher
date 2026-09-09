@@ -262,24 +262,25 @@ export function RunModal({ isOpen, onClose, runId, title, runType }) {
                         </div>
                         <${ErrorBanner} message=${error} />
                     </div>
-                    ${tabs.length ? html`
-                        <div class="shrink-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700/60 px-6">
-                            <div class="flex gap-1 -mb-px overflow-x-auto">
-                                <button onClick=${() => switchTab('workflow')}
-                                    class="px-3 py-2 text-xs font-medium border-b-2 transition ${activeTab === 'workflow' ? 'border-violet-500 text-violet-600 dark:text-violet-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}">Workflow</button>
-                                ${tabs.map(t => {
-                                    const dot = t.status === 'completed' ? 'bg-green-400' : t.status === 'failed' ? 'bg-red-400' : t.status === 'cancelled' ? 'bg-amber-400' : t.status === 'running' ? 'bg-sky-400 animate-pulse' : 'bg-gray-400';
-                                    return html`
-                                        <button onClick=${() => switchTab(t.name)}
-                                            class="px-3 py-2 text-xs font-medium border-b-2 transition flex items-center gap-1.5 ${activeTab === t.name ? 'border-violet-500 text-violet-600 dark:text-violet-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}">
-                                            <span class="w-1.5 h-1.5 rounded-full ${dot}"></span>${t.name}
-                                        </button>`;
-                                })}
+                    <div class="flex-1 min-h-0 flex overflow-hidden">
+                        ${tabs.length ? html`
+                            <div class="shrink-0 w-40 border-r border-gray-200 dark:border-gray-700/60 bg-gray-50 dark:bg-gray-900/50 overflow-y-auto">
+                                <div class="flex flex-col p-2 gap-0.5">
+                                    <button onClick=${() => switchTab('workflow')}
+                                        class="px-3 py-2 text-xs font-medium rounded-lg transition text-left ${activeTab === 'workflow' ? 'bg-violet-50 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-800 dark:hover:text-gray-200'}">Workflow</button>
+                                    ${tabs.map(t => {
+                                        const dot = t.status === 'completed' ? 'bg-green-400' : t.status === 'failed' ? 'bg-red-400' : t.status === 'cancelled' ? 'bg-amber-400' : t.status === 'running' ? 'bg-sky-400 animate-pulse' : 'bg-gray-400';
+                                        return html`
+                                            <button onClick=${() => switchTab(t.name)}
+                                                class="px-3 py-2 text-xs font-medium rounded-lg transition flex items-center gap-1.5 text-left ${activeTab === t.name ? 'bg-violet-50 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-800 dark:hover:text-gray-200'}">
+                                                <span class="shrink-0 w-1.5 h-1.5 rounded-full ${dot}"></span>
+                                                <span class="truncate">${t.name}</span>
+                                            </button>`;
+                                    })}
+                                </div>
                             </div>
-                        </div>
-                    ` : ''}
-                    <div class="flex-1 overflow-hidden p-4">
-                        <div class="h-full flex flex-col gap-2">
+                        ` : ''}
+                        <div class="flex-1 min-w-0 flex flex-col gap-2 p-4">
                             ${command ? html`<div class="shrink-0 bg-gray-900 rounded-lg px-3 py-2 font-mono text-xs text-gray-300 border border-gray-800 break-all"><span class="text-gray-500">Command: </span>${Array.isArray(command) ? command.join(' ') : String(command)}</div>` : ''}
                             <div ref=${outputRef} class="flex-1 min-h-0 bg-gray-950 rounded-xl p-4 font-mono text-xs leading-relaxed overflow-y-auto text-gray-300 whitespace-pre-wrap break-all">
                                 ${renderLines(output)}
