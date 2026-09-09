@@ -6,7 +6,11 @@ GO := go
 GOOS_TARGETS := linux-amd64 linux-arm64 windows-amd64 macos-amd64 macos-arm64
 
 start:
-	@$(MAKE) -s go-build
+	@if [ ! -x dist/launchctl ]; then $(MAKE) -s go-build; fi
+	@if [ ! -x dist/launchctl ]; then \
+		echo "Build failed - is Go on PATH? (~/.local/go/bin if installed via this repo)"; \
+		exit 1; \
+	fi
 	@if [ -f $(PIDFILE) ] && kill -0 $$(cat $(PIDFILE)) 2>/dev/null; then \
 		echo "Server already running (PID $$(cat $(PIDFILE)))"; \
 	else \
