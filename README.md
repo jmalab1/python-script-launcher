@@ -1,8 +1,8 @@
-# Tiller
+# Launch Control
 
-Tiller is a local, zero-dependency web tool for managing and running Python scripts through a browser UI. No `pip install`, no database, no build step -- just run it.
+Launch Control is a local, zero-dependency web tool for managing and running Python scripts through a browser UI. No `pip install`, no database, no build step -- just run it.
 
-![Tiller demo](demo/launcher_demo.gif)
+![Launch Control demo](demo/launcher_demo.gif)
 
 ## Features
 
@@ -105,7 +105,7 @@ When a profile is added to a workflow, its current custom argument values are ca
 
 ## Script Timeouts
 
-Each profile can set a **Timeout (seconds)** in the profile editor — a plain number like `60` or a decimal like `2.5`. Whether the profile is run directly, as a workflow step, or on a schedule, Tiller kills the script if it is still running after that long. The timed-out run is marked **failed**, and a `Timed out after Ns and was killed` line appears in its output. Leave the field blank to let scripts run indefinitely (the default).
+Each profile can set a **Timeout (seconds)** in the profile editor — a plain number like `60` or a decimal like `2.5`. Whether the profile is run directly, as a workflow step, or on a schedule, Launch Control kills the script if it is still running after that long. The timed-out run is marked **failed**, and a `Timed out after Ns and was killed` line appears in its output. Leave the field blank to let scripts run indefinitely (the default).
 
 The run modal's **Export** button downloads the run as a timestamped `.txt` file. For a workflow, the file combines the workflow progress log with every step's output, each under its own headed section; for a profile run it is the script's output (with the command that ran).
 
@@ -115,7 +115,7 @@ While a profile or workflow is still running, the run modal shows a **Stop** but
 
 ## Scheduling Runs
 
-The **Schedules** panel runs profiles or workflows automatically while Tiller is running — for example "run this script every hour".
+The **Schedules** panel runs profiles or workflows automatically while Launch Control is running — for example "run this script every hour".
 
 ### Creating a Schedule
 
@@ -156,7 +156,7 @@ minute hour day-of-month month day-of-week
 ### Behaviour
 
 - Times are **local wall-clock time**, minute granularity. On DST change days a scheduled wall-clock time may be skipped or run twice, like a real cron.
-- **Missed runs are skipped**: if Tiller is not running when a run is due, the next run happens at the next normal occurrence.
+- **Missed runs are skipped**: if Launch Control is not running when a run is due, the next run happens at the next normal occurrence.
 - **No overlap**: a schedule will not start a new run while its previous run is still active; the run starts on the next tick once the previous one finishes (ticks are every `SCHEDULER_TICK_SECONDS`).
 - **Run now** fires a schedule immediately without changing its cadence; the firing is recorded in the **Audit** panel.
 - Scheduled runs use the profile's stored argument values (as shown on the card) and appear in **Run History** with a "Scheduled" badge. Profile and workflow cards show a clock badge while an enabled schedule exists.

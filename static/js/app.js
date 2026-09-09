@@ -278,7 +278,7 @@ function App() {
                                 <div class="flex items-center justify-between mb-6 shrink-0">
                                     <div class="min-w-0">
                                         <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Server Logs</h1>
-                                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Live view of Tiller's own log file — new lines are tailed every 2 seconds.</p>
+                                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Live view of Launch Control's own log file — new lines are tailed every 2 seconds.</p>
                                     </div>
                                 </div>
                                 <div class="bg-white dark:bg-gray-800 shadow-xs rounded-xl border border-gray-200 dark:border-gray-700/60 flex flex-col flex-1 min-h-0">

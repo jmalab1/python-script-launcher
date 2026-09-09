@@ -43,12 +43,13 @@ When adding or editing code, always include a unit test (or update existing ones
 
 - After changes to backend files (`launcher/`), restart the server so the changes take effect. Run `make restart` from the project root.
 
-### Agent shell runs as root — keep server state user-owned
+### Agent shell runs as root — keep files user-owned
 
-- The agent's terminal runs as root, but the user runs under a normal account. If the agent runs `make restart` (or starts the server) directly, the server and its files (`server.log`, `data/launcher.db*`, `data/server.log*`) end up owned by root. The user's own `make restart` then fails: it cannot kill the server or overwrite `server.log`, which looks like a confusing mix of "Server not running" and "Permission denied".
+- The agent's terminal runs as root, but the user runs under a normal account. Any file the agent creates or edits becomes owned by `root`, which blocks the user from editing or deleting it later.
 - Find the account that owns the project files (`ls -la Makefile`) — call it `<user>` below.
-- When the agent needs to restart the server, run it as that account instead: `sudo -u <user> make restart`.
-- Before finishing, check `ls -la server.log data/` and chown any root-owned files back: `chown -R <user>:<user> server.log data/`. Root-owned leftovers block the user's next restart even after the server is stopped.
+- **After every edit or file creation**, chown the affected files back to the user. For a single file: `chown <user>:<user> <file>`. For multiple files or directories: `chown -R <user>:<user> <dir>`.
+- **Server restarts**: If the agent needs to restart the server, run it as that account instead: `sudo -u <user> make restart`.
+- **Before finishing**, do a final sweep: `find . -user root -type f` to list any remaining root-owned files and chown them all back: `chown -R <user>:<user> <any root-owned paths>`. Root-owned leftovers cause permission errors for the user.
 
 ## Documentation updates
 

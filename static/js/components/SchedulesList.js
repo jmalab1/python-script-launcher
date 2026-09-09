@@ -45,7 +45,7 @@ export function SchedulesList({ onEdit }) {
     }
 
     return html`
-        <div class="flex flex-col gap-3">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             ${list.map(s => {
                 const missing = !s.target_name;
                 const trashed = s.target_trashed;

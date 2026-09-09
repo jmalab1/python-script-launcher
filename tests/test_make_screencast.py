@@ -62,6 +62,13 @@ def test_screencast_tours_every_panel_and_the_theme_toggle():
         "tour must demonstrate the theme toggle"
 
 
+def test_screencast_demonstrates_the_tag_color_picker():
+    src = _source()
+    assert '"Change color"' in src, "tour must open a tag's color palette"
+    assert 'name="rose"' in src, "tour must pick a color from the palette"
+    assert "color: '" in src, "seeded tags must carry colors so chips show variety"
+
+
 def test_screencast_is_wired_into_the_makefile():
     makefile = (ROOT / "Makefile").read_text()
     assert "demo:" in makefile, "Makefile has no demo target"

@@ -171,9 +171,9 @@ def _seed_browser_tags(context):
     """
     context.add_init_script(
         "localStorage.setItem('tags', JSON.stringify(["
-        "{ id: 'tag_reports', name: 'Reports' },"
-        "{ id: 'tag_data', name: 'Data' },"
-        "{ id: 'tag_ops', name: 'Ops' },"
+        "{ id: 'tag_reports', name: 'Reports', color: 'sky' },"
+        "{ id: 'tag_data', name: 'Data', color: 'violet' },"
+        "{ id: 'tag_ops', name: 'Ops', color: 'amber' },"
         "]));"
     )
 
@@ -292,9 +292,14 @@ def _tour(page, base_url, pause):
     modal.wait_for(state="hidden")
     page.wait_for_timeout(pause)
 
-    # 6. Tag manager: one global list shared by profiles and workflows.
+    # 6. Tag manager: one global list shared by profiles and workflows,
+    #    each with a pickable color.
     page.get_by_role("button", name="Tags").first.click()
     modal.get_by_role("heading", name="Manage Tags").wait_for()
+    page.wait_for_timeout(pause * 1.5)
+    modal.get_by_role("button", name="Change color").last.click()
+    page.wait_for_timeout(pause)
+    modal.get_by_role("button", name="rose").click()
     page.wait_for_timeout(pause * 1.5)
     modal.get_by_role("button", name="Done").click()
     modal.wait_for(state="hidden")
@@ -358,8 +363,8 @@ def main():
                         help="Where to write the .webm video")
     parser.add_argument("--gif", metavar="PATH", default=None,
                         help="Also write an animated GIF (e.g. demo/launcher_demo.gif)")
-    parser.add_argument("--gif-width", type=int, default=800,
-                        help="Width of the generated GIF (default: 800)")
+    parser.add_argument("--gif-width", type=int, default=1200,
+                        help="Width of the generated GIF (default: 1200)")
     parser.add_argument("--headed", action="store_true",
                         help="Watch the browser while recording")
     parser.add_argument("--pause", type=float, default=1.0,
@@ -405,9 +410,9 @@ def main():
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=not args.headed)
             context = browser.new_context(
-                viewport={"width": 1280, "height": 800},
+                viewport={"width": 1600, "height": 900},
                 record_video_dir=str(video_dir),
-                record_video_size={"width": 1280, "height": 800},
+                record_video_size={"width": 1600, "height": 900},
             )
             _seed_browser_tags(context)
             page = context.new_page()
