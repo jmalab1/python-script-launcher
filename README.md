@@ -34,9 +34,11 @@ Then run it:
 ./dist/launchctl
 ```
 
-Starts at `http://127.0.0.1:8765`. On Linux/macOS it immediately detaches
-into the background, so **closing the terminal does not stop it** — stop
-it again with `./dist/launchctl -stop` (or `make stop`). On Windows it
+Starts at `http://127.0.0.1:8765` on Linux/macOS, detaching into the
+background so **closing the terminal does not stop it**. Running the
+command again automatically **stops the previous instance and restarts**
+(one instance per port — a second `-port` value runs alongside).
+`./dist/launchctl -stop` stops it. On Windows it
 runs in the foreground and opens the browser automatically, like before.
 
 On first launch the binary extracts its bundled CPython into
@@ -45,7 +47,7 @@ Python installed on the system. Handy flags:
 
 | Flag | Effect |
 |---|---|
-| (default) | Start detached; survives terminal exit |
+| (default) | Start detached; a running instance on the same port is stopped and restarted |
 | `-stop` | Stop a background instance |
 | `-foreground` | Stay attached to the terminal (Ctrl+C quits) |
 | `-port N` | Listen on a different port (default 8765) |

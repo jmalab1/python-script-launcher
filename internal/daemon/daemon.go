@@ -18,12 +18,16 @@ import (
 	"launchcontrol/internal/config"
 )
 
-// PIDFile is where the detached server's PID is recorded.
-func PIDFile() string { return filepath.Join(config.DataDir(), "launcher.pid") }
+// PIDFile records the detached server listening on `port`; one file
+// per port keeps instances and their stop targets apart.
+func PIDFile(port int) string {
+	return filepath.Join(config.DataDir(), fmt.Sprintf("launcher-%d.pid", port))
+}
 
-// ReadPID returns the recorded PID, or false when there is none.
-func ReadPID() (int, bool) {
-	raw, err := os.ReadFile(PIDFile())
+// ReadPID returns the recorded PID for the port, or false when there
+// is none.
+func ReadPID(port int) (int, bool) {
+	raw, err := os.ReadFile(PIDFile(port))
 	if err != nil {
 		return 0, false
 	}
@@ -34,13 +38,13 @@ func ReadPID() (int, bool) {
 	return pid, true
 }
 
-// RecordPID records the pid of the detached server (used by the
-// parent process right after spawning it).
-func RecordPID(pid int) error { return writePID(pid) }
+// RecordPID records the pid of the detached server listening on the
+// given port (the parent right after spawning it).
+func RecordPID(port, pid int) error { return writePID(port, pid) }
 
 // writePID records the pid.
-func writePID(pid int) error {
-	return os.WriteFile(PIDFile(), []byte(strconv.Itoa(pid)), 0o644)
+func writePID(port, pid int) error {
+	return os.WriteFile(PIDFile(port), []byte(strconv.Itoa(pid)), 0o644)
 }
 
 // alive reports whether a process still exists (does not distinguish
@@ -58,15 +62,15 @@ func alive(pid int) bool {
 	return proc.Signal(syscall.Signal(0)) == nil
 }
 
-// IsRunning reports the live PID of a previously detached server, if
-// any (stale pid files are cleaned up here).
-func IsRunning() (int, bool) {
-	pid, ok := ReadPID()
+// IsRunning reports the live PID of the previously detached server on
+// the given port, if any (stale pid files are cleaned up here).
+func IsRunning(port int) (int, bool) {
+	pid, ok := ReadPID(port)
 	if !ok {
 		return 0, false
 	}
 	if !alive(pid) {
-		os.Remove(PIDFile())
+		os.Remove(PIDFile(port))
 		return 0, false
 	}
 	return pid, true
@@ -113,16 +117,16 @@ func StartDetached(exe string, args []string, env []string, timeout time.Duratio
 	}
 }
 
-// Stop terminates a detached server recorded in the PID file. Returns
+// Stop terminates the detached server recorded for the port. Returns
 // whether something was actually running.
-func Stop() (bool, error) {
-	pid, ok := IsRunning()
+func Stop(port int) (bool, error) {
+	pid, ok := IsRunning(port)
 	if !ok {
 		return false, nil
 	}
 	proc, err := os.FindProcess(pid)
 	if err != nil {
-		os.Remove(PIDFile())
+		os.Remove(PIDFile(port))
 		return false, nil
 	}
 	// Ask nicely first, then force after a short grace period.
@@ -141,6 +145,6 @@ func Stop() (bool, error) {
 	} else {
 		_ = proc.Kill()
 	}
-	os.Remove(PIDFile())
+	os.Remove(PIDFile(port))
 	return true, nil
 }

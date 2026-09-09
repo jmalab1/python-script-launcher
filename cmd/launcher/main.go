@@ -43,7 +43,7 @@ func main() {
 	dataDir := config.DataDir()
 
 	if *stopFlag {
-		stopped, err := daemon.Stop()
+		stopped, err := daemon.Stop(*port)
 		switch {
 		case err != nil:
 			fmt.Println("Could not stop the server:", err)
@@ -62,20 +62,13 @@ func main() {
 		return
 	}
 
-	// Default: detach. Nothing else may already own the port.
+	// Default: detach, replacing any earlier background instance first
+	// so "run the command" always means "restart it".
 	if *port == 0 {
 		fmt.Println("Port 0 (auto) only works with -foreground; pick a real port for background mode.")
 		os.Exit(1)
 	}
-	pid, alive := daemon.IsRunning()
-	if daemon.PortOpen(*port) {
-		if alive {
-			fmt.Printf("Launch Control is already running in the background (PID %d).\n", pid)
-			return
-		}
-		fmt.Printf("Port %d is already in use by another program - not starting.\n", *port)
-		os.Exit(1)
-	}
+	replacePrevious(*port)
 	exe, err := os.Executable()
 	if err != nil {
 		fmt.Println("Cannot locate the executable:", err)
@@ -89,12 +82,39 @@ func main() {
 		fmt.Println("Failed to start:", err)
 		os.Exit(1)
 	}
-	if err := daemon.RecordPID(childPID); err != nil {
+	if err := daemon.RecordPID(*port, childPID); err != nil {
 		slog.Warn("Could not record the server PID file", "err", err)
 	}
 	fmt.Printf("Launch Control running in the background (PID %d) at http://127.0.0.1:%d\n", childPID, *port)
 	fmt.Println("  - log: data/server.log (tail with: tail -f data/server.log)")
-	fmt.Println("  - stop it with: ./dist/launchctl -stop  (or: make stop)")
+	fmt.Println("  - stop it with: ./dist/launchctl -stop")
+}
+
+// replacePrevious frees the port so a fresh instance can take over:
+// running the launcher again stops the previous background instance
+// first. A port held by some other program is never touched.
+func replacePrevious(port int) {
+	if !daemon.PortOpen(port) {
+		return
+	}
+	if pid, ok := daemon.IsRunning(port); ok {
+		fmt.Printf("Stopping previous instance (PID %d)...\n", pid)
+		if _, err := daemon.Stop(port); err != nil {
+			fmt.Println("Could not stop the previous instance:", err)
+			os.Exit(1)
+		}
+		// Wait for the kernel to release the port.
+		for i := 0; i < 20 && daemon.PortOpen(port); i++ {
+			time.Sleep(100 * time.Millisecond)
+		}
+		if daemon.PortOpen(port) {
+			fmt.Println("Previous instance did not release the port in time - not starting.")
+			os.Exit(1)
+		}
+		return
+	}
+	fmt.Printf("Port %d is already in use by another program - not starting.\n", port)
+	os.Exit(1)
 }
 
 // serve is the detached/foreground server: logging, database,
