@@ -1,0 +1,85 @@
+[
+ {
+  "id": "a1",
+  "timestamp": 1759234567.123456,
+  "action": "created",
+  "entity_type": "profile",
+  "entity_id": "profile_123",
+  "name": "Backup <script> & run",
+  "_hash": "55667f05528fce0c45883f9a43264a5ae450b06bd1785a41f83e3e238035df32"
+ },
+ {
+  "id": "a2",
+  "timestamp": 1759234567.0,
+  "action": "updated",
+  "entity_type": "workflow",
+  "entity_id": "workflow_abc",
+  "name": "Unicode: héllo wörld 日本語 🎉",
+  "before": {
+   "timeout": null,
+   "args": [
+    "--x",
+    "1"
+   ],
+   "enabled": true
+  },
+  "after": {
+   "timeout": 2.5,
+   "args": [],
+   "enabled": false
+  },
+  "details": {
+   "changed": [
+    "timeout",
+    "args",
+    "enabled"
+   ]
+  },
+  "_hash": "717e4949537571c984133a7b336e56e6c0bff5151f2f3de90176b278b7fe7a50"
+ },
+ {
+  "id": "a3",
+  "timestamp": 1760000000,
+  "action": "reordered",
+  "entity_type": "profiles",
+  "entity_id": null,
+  "name": "Profile order",
+  "details": {
+   "order": [
+    "p3",
+    "p1",
+    "p2"
+   ]
+  },
+  "nested": {
+   "deep": {
+    "deeper": [
+     {
+      "list": [
+       "a",
+       1,
+       2.5,
+       null,
+       true
+      ]
+     }
+    ]
+   }
+  },
+  "escapes": "line\nbreak\ttab\"quote\\back slash/solid",
+  "_hash": "c8cce6ab23bcb673416ea241699ebe9d4f219312ccc75bbc3820c69b2fe12b43"
+ },
+ {
+  "id": "a4",
+  "timestamp": 1760000001.5,
+  "action": "deleted",
+  "entity_type": "schedule",
+  "entity_id": "sched_x",
+  "name": "0",
+  "zero": 0,
+  "empty": {},
+  "empty_list": [],
+  "flag": false,
+  "_hash": "477b9dde6f487f121a129b7138d23ad5732857712586d3db3e9a34a1a46256db"
+ }
+]
