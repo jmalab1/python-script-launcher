@@ -1,4 +1,4 @@
-.PHONY: start stop restart go-build go-test go-fmt go-sec hooks test test-e2e demo fetch-runtimes test-e2e-py go-release go-release-local go-clean
+.PHONY: start stop restart go-build go-test go-fmt go-sec hooks test test-e2e demo fetch-runtimes go-release go-release-local go-clean
 
 # Find the Go toolchain: the user's PATH if it has one, otherwise the
 # well-known install locations this repo uses (~/.local/go from the
@@ -63,11 +63,6 @@ test: go-test
 # Chromium driver installed once: go run github.com/mxschmitt/playwright-go/cmd/playwright install chromium
 test-e2e:
 	$(GO) test -tags e2e -v ./tests/e2e
-
-# Escape hatch: the original pytest suite, kept until the Go suite has
-# proven itself on CI too.
-test-e2e-py:
-	python3 -m pytest tests/e2e/
 
 demo:
 	python3 scripts/dev/make_screencast.py

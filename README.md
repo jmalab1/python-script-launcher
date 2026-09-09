@@ -276,7 +276,6 @@ runs in Go via playwright-go (no pip needed).
 | `make go-sec` | Security scan with gosec (needs `go install github.com/securego/gosec/v2/cmd/gosec@latest` once) |
 | `make hooks` | Activate the pre-commit gate (gofmt + gosec on Go changes) — needs `pip install -r requirements-dev.txt` |
 | `make test-e2e` | E2E suite (Go + playwright-go) against the built binary; install the browser driver once with `go run github.com/mxschmitt/playwright-go/cmd/playwright install chromium` |
-| `make test-e2e-py` | Escape hatch: the original pytest/Playwright e2e suite |
 | `make go-release-local` | Release binary with embedded CPython for this machine |
 | `make go-release` | Release binaries for linux, windows, macos (amd64 + arm64) |
 | `make start` / `make stop` | Start the server in the background / stop it |

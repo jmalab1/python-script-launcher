@@ -29,7 +29,8 @@ This is a **portable Go web launcher** that must run on any system — no instal
 ### Parity fixtures
 
 - `internal/scheduler/testdata/cron_fixtures.json` locks the cron engine to the original Python behaviour (fire times, error messages, descriptions, computed in UTC; the Go test pins its zone to match). Frozen snapshot from the archived Python implementation — do not regenerate.
-- `tests/e2e/` drives the real UI in Chromium against the compiled server. It passes both on this platform and (via CI) against the release binaries.
+- `tests/e2e/` drives the real UI in Chromium against the compiled
+  server (also verified against the release binary).
 
 ## Comments & clarity — write for a junior dev
 
@@ -57,9 +58,7 @@ When adding or editing code, always include a unit test (or update existing ones
   Install the browser driver once:
   `go run github.com/mxschmitt/playwright-go/cmd/playwright install chromium`
   The suite lives under `tests/e2e/` behind the `e2e` build tag, so plain
-  `go test ./...` never touches it. Escape hatch (old pytest suite):
-  `make test-e2e-py` (`pip install -r requirements-dev.txt` +
-  `python3 -m playwright install chromium`)
+  `go test ./...` never touches it.
 - Test helpers use `t.TempDir()` for scratch files and never mutate global state without cleanup.
 
 ## Server restart

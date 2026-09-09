@@ -1,13 +1,14 @@
-# Development-only dependencies (e2e tests and the demo recorder). The
-# app itself is pure Go and needs none of these.
-pytest>=7.0
+# Development-only dependencies. The app itself is pure Go and needs
+# none of these.
 
-# Git pre-commit gate (gofmt/gosec/pytest) set up by `make hooks`.
-pre-commit>=3.0
-
-# End-to-end browser tests (tests/e2e).
+# The manual dev scripts (scripts/dev/check_file_browser.py,
+# scripts/dev/make_screencast.py) drive Chromium through python playwright.
+# The test suite itself is Go (make test-e2e).
 # After installing, fetch a browser: python3 -m playwright install chromium
-pytest-playwright>=0.5
+playwright>=1.40
 
 # Animated-GIF output for the screencast demo (scripts/dev/make_screencast.py --gif)
 pillow>=10.0
+
+# Git pre-commit gate (gofmt/gosec) set up by `make hooks`.
+pre-commit>=3.0
