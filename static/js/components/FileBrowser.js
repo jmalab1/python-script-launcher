@@ -62,7 +62,7 @@ export function FileBrowser({ isOpen, onClose, onSelect, initialPath, initialDir
         <div class="fixed inset-0 z-[60]">
             <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick=${onClose}></div>
             <div class="relative flex items-center justify-center min-h-full p-4 pointer-events-none">
-                <div class="pointer-events-auto bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col border border-gray-200 dark:border-gray-700/60">
+                <div class="pointer-events-auto bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col border border-gray-200 dark:border-gray-700/60">
                     <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700/60">
                         <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Select Python Script</h2>
                     </div>
@@ -84,14 +84,14 @@ export function FileBrowser({ isOpen, onClose, onSelect, initialPath, initialDir
                                     <li key=${entry.path}>
                                         <button onClick=${() => pick(entry)}
                                             onDblClick=${() => entry.is_dir ? pick(entry) : confirm()}
-                                            class="w-full text-left flex items-center gap-2 px-2 py-2 rounded-lg text-sm
+                                            class="w-full text-left flex items-center gap-2 px-2 py-2 rounded-lg text-sm text-gray-700 dark:text-gray-200
                                                 ${selectedFile && selectedFile.path === entry.path
-                                                    ? 'bg-indigo-50 dark:bg-indigo-900/40'
+                                                    ? 'bg-indigo-50 dark:bg-indigo-900/40 text-indigo-900 dark:text-indigo-100'
                                                     : 'hover:bg-gray-100 dark:hover:bg-gray-700/60'}">
                                             ${entry.is_dir
                                                 ? html`<svg class="w-4 h-4 text-indigo-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>`
                                                 : html`<svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6M7 3h7l5 5v13H7V3z"/></svg>`}
-                                            <span class=${entry.is_dir ? '' : 'font-mono'}
+                                            <span class=${entry.is_dir ? '' : 'font-mono'} style="color: inherit"
                                                 title=${entry.path}>${entry.name}</span>
                                         </button>
                                     </li>`)}
