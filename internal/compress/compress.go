@@ -16,11 +16,11 @@ import (
 )
 
 var compressible = map[string]bool{
-	"text/html":             true,
-	"text/css":              true,
-	"text/javascript":       true,
+	"text/html":              true,
+	"text/css":               true,
+	"text/javascript":        true,
 	"application/javascript": true,
-	"application/json":      true,
+	"application/json":       true,
 }
 
 const minSize = 1024

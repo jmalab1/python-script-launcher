@@ -18,11 +18,11 @@ const DefaultPort = 8765
 
 // Collection names, used as SQLite table names and storage keys.
 const (
-	ColProfiles   = "profiles"
-	ColWorkflows  = "workflows"
-	ColHistory    = "history"
-	ColAudit      = "audit"
-	ColSchedules  = "schedules"
+	ColProfiles  = "profiles"
+	ColWorkflows = "workflows"
+	ColHistory   = "history"
+	ColAudit     = "audit"
+	ColSchedules = "schedules"
 )
 
 // SchedulerTickSeconds is how often the scheduler wakes up to check for

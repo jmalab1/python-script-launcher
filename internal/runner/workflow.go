@@ -32,9 +32,9 @@ func (m *Manager) StartProfileRun(profile *ordjson.OMap, argValues *ordjson.OMap
 	m.counter++
 	runID = "prof_" + milliStamp(startedAt) + "_" + itoa(m.counter)
 	r := &Run{
-		ID:     runID,
-		Status: "running",
-		Output: []string{},
+		ID:      runID,
+		Status:  "running",
+		Output:  []string{},
 		Trigger: trigger,
 		Command: command,
 	}
@@ -475,6 +475,15 @@ func (m *Manager) PollAll() *ordjson.OMap {
 	return all
 }
 
+// IsRunning reports whether the given run is still active. The
+// scheduler uses it to avoid overlapping a schedule's runs.
+func (m *Manager) IsRunning(runID string) bool {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	r, ok := m.runs[runID]
+	return ok && r.Status == "running"
+}
+
 // --- small helpers ---
 
 func (m *Manager) get(runID string) *Run {
@@ -554,4 +563,3 @@ func joinStrings(parts []string, sep string) string {
 }
 
 func returnCodePtr(n int) *int { return &n }
-

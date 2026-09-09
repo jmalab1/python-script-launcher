@@ -8,6 +8,7 @@ import (
 
 	"launchcontrol/internal/ordjson"
 )
+
 // RecordAudit appends a tamper-evident entry describing a change and
 // trims the trail to AuditMax, mirroring storage.record_audit from the
 // Python app.
