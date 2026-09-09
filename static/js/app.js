@@ -27,6 +27,7 @@ import { AuditTable } from './components/AuditTable.js';
 import { LogViewer } from './components/LogViewer.js';
 import { RunModal } from './components/RunModal.js';
 import { TagManager } from './components/TagManager.js';
+import { SettingsPanel } from './components/SettingsPanel.js';
 
 function App() {
     const [initialized, setInitialized] = useState(false);
@@ -291,8 +292,22 @@ function App() {
                                 </div>
                             </div>
                         ` : ''}
+                        ${currentPanel.value === 'settings' ? html`
+                            <div id="panel-settings" class="panel flex flex-col flex-1 min-h-0">
+                                <div class="flex items-center justify-between mb-6 shrink-0">
+                                    <div class="min-w-0">
+                                        <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Settings</h1>
+                                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">App-wide options — no restart needed, they apply from the next run.</p>
+                                    </div>
+                                </div>
+                                <div class="flex-1 min-h-0 overflow-y-auto">
+                                    <${SettingsPanel} />
+                                </div>
+                            </div>
+                        ` : ''}
 
                     </div>
+
                 </div>
             </div>
 

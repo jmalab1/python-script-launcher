@@ -13,6 +13,7 @@ Launch Control is a local web tool for managing and running Python scripts throu
 - **Run History**: Full audit log of every run with output capture and status tracking. A run appears here as **Running** as soon as it starts — profile and workflow runs alike — and is updated in place when it finishes. Search and filter by name, status, and date range.
 - **Audit**: Complete trail of every profile, workflow, and schedule change. Filter by action, entity type, name, and date range.
 - **Server Logs**: Built-in log viewer with live tailing, level highlighting, and text search; the log file rotates automatically.
+- **Settings Page**: Choose which Python runtime runs your scripts — use your own interpreter or virtualenv (with your pip packages) instead of the bundled one. Falls back to the packaged runtime when nothing is set.
 - **Custom Arguments**: Define typed input fields that appear on profile cards for quick parameter editing.
 - **Script Timeout**: Per-profile time limit that kills runaway scripts and marks the run failed.
 - **Stop Runs**: Kill a running script or workflow from the run panel; the run is recorded as cancelled with its output so far kept.
@@ -35,9 +36,11 @@ Then run it:
 ```
 
 Starts at `http://127.0.0.1:8765` on Linux/macOS, detaching into the
-background so **closing the terminal does not stop it**. Running the
+background so **closing the terminal does not stop it**. Every launch
+opens the UI in your default browser automatically. Running the
 command again automatically **stops the previous instance and restarts**
-(one instance per port — a second `-port` value runs alongside).
+(one instance per port — a second `-port` value runs alongside) and
+opens the browser again too.
 `./dist/launchctl -stop` stops it. On Windows it
 runs in the foreground and opens the browser automatically, like before.
 
@@ -205,6 +208,31 @@ Both **Run History** panels (Profile and Workflow) and the **Audit** panel have 
 Filters combine (AND), reset the list to page 1, and clear with the **Clear** button. The list request carries them as query parameters: `name`, `status` (history), `action`/`entity` (audit), `since` and `until` (epoch seconds).
 
 ## Configuration
+
+### Settings page
+
+The **Settings** panel in the UI has one option: the **Python runtime
+location** used to run scripts — the interpreter itself (e.g.
+`/opt/python/bin/python3`), or a Python install / virtualenv directory
+(e.g. a `venv/` folder). A leading `~` resolves to your home directory.
+
+Scripts that import third-party packages (pip-installed ones) fail with
+`ModuleNotFoundError` on the bundled runtime, which is intentionally
+stdlib-only: point the runtime location at a venv or interpreter where
+you have installed what your scripts need. The configured runtime is
+used by default; the **packaged** runtime (or a system `python3` on dev
+builds) is only the fallback when nothing is configured or the
+configured path is missing. Changes take effect from the next run — no
+server restart needed. The setting is saved to
+`launchctl-data/settings.json`, which is also the only place these
+options live (the `launcher.db` schema is unchanged).
+
+`GET /api/config` returns the saved location plus the interpreter
+currently in use; `POST /api/config` with `{"runtime_path": "..."}` sets
+it (an empty value clears it) and rejects paths with no usable
+interpreter.
+
+### Flags and environment variables
 
 The server reads a few settings as flags and environment variables:
 

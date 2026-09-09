@@ -3,6 +3,9 @@ package main
 import (
 	"net/http"
 	"net/http/httptest"
+	"os/exec"
+	"runtime"
+	"slices"
 	"testing"
 	"time"
 )
@@ -40,5 +43,34 @@ func TestNewServerServes(t *testing.T) {
 
 	if rec.Code != http.StatusOK {
 		t.Errorf("status = %d, want %d", rec.Code, http.StatusOK)
+	}
+}
+
+// TestBuildChildArgs verifies the detached child is always told to
+// open the browser - every launch, including a restart over a running
+// instance, should bring the UI up.
+func TestBuildChildArgs(t *testing.T) {
+	args := buildChildArgs(8765)
+	want := []string{"-port", "8765", "-_child", "-_browser"}
+	if !slices.Equal(args, want) {
+		t.Errorf("args = %v, want %v", args, want)
+	}
+}
+
+// TestStartAndReap verifies the browser opener helper starts the
+// command and reaps it after exit (no zombie child left behind), and
+// reports failure for a command that cannot even be started. Uses a
+// no-op command instead of a real browser opener so nothing pops up
+// while the tests run.
+func TestStartAndReap(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("uses a unix no-op command")
+	}
+	if !startAndReap(exec.Command("true")) {
+		t.Fatal("startAndReap could not start `true`")
+	}
+
+	if startAndReap(exec.Command("/nonexistent-binary-xyz")) {
+		t.Error("startAndReap reported success for a missing command")
 	}
 }

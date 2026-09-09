@@ -5,7 +5,9 @@
 // By default (Linux/macOS) it detaches into the background so closing
 // the terminal keeps the app running: ./launchctl starts it,
 // ./launchctl -stop stops it; -foreground opts out of detaching.
-// Windows runs in the foreground with the browser auto-opened.
+// Windows runs in the foreground with the browser auto-opened. In
+// background mode every launch - fresh start or restart - also opens
+// the browser.
 package main
 
 import (
@@ -18,6 +20,7 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -38,6 +41,9 @@ func main() {
 	foreground := flag.Bool("foreground", false, "stay attached to this terminal instead of running in the background")
 	stopFlag := flag.Bool("stop", false, "stop a background instance started earlier")
 	childFlag := flag.Bool("_child", false, "internal: this process IS the detached server")
+	// Set by the parent on a fresh start (no instance was replaced) so
+	// the detached child opens the browser once it is serving.
+	browserFlag := flag.Bool("_browser", false, "internal: open the browser after the detached server is up")
 	flag.Parse()
 
 	dataDir := config.DataDir()
@@ -56,9 +62,10 @@ func main() {
 	}
 
 	// The detached child (and -foreground runs) just serve; the parent
-	// process handles daemonising.
+	// process handles daemonising. Windows always wants the browser
+	// (its only mode is foreground); the child decides from the flag.
 	if *childFlag || *foreground || runtime.GOOS == "windows" {
-		serve(*port, dataDir)
+		serve(*port, dataDir, *browserFlag || runtime.GOOS == "windows")
 		return
 	}
 
@@ -77,7 +84,7 @@ func main() {
 	}
 
 	childPID, err := daemon.StartDetached(
-		exe, []string{"-port", fmt.Sprint(*port), "-_child"}, os.Environ(), detachTimeout,
+		exe, buildChildArgs(*port), os.Environ(), detachTimeout,
 		func() bool { return daemon.PortOpen(*port) },
 	)
 	if err != nil {
@@ -120,10 +127,17 @@ func replacePrevious(port int) {
 	os.Exit(1)
 }
 
+// buildChildArgs assembles the detached child's command line. The
+// browser flag is always passed down so every launch (including a
+// restart over a previous instance) opens the UI.
+func buildChildArgs(port int) []string {
+	return []string{"-port", strconv.Itoa(port), "-_child", "-_browser"}
+}
+
 // serve is the detached/foreground server: logging, database,
-// scheduler and the HTTP listener, stopped cleanly on Ctrl+C.
-func serve(port int, _ string) {
-	dataDir := config.DataDir()
+// scheduler and the HTTP listener, stopped cleanly on Ctrl+C. When
+// openUI is set it opens the browser shortly after the server is up.
+func serve(port int, dataDir string, openUI bool) {
 	// One-time adoption: earlier builds kept their data next to the
 	// executable; move it onto the per-user state location before
 	// anything else touches it.
@@ -146,7 +160,7 @@ func serve(port int, _ string) {
 	defer db.Close()
 
 	runs := runner.NewManager(db, func() (string, error) {
-		return pythonrt.Interpreter()
+		return pythonrt.Resolve()
 	})
 	sched := scheduler.New(db, runs)
 
@@ -175,7 +189,7 @@ func serve(port int, _ string) {
 	slog.Info(fmt.Sprintf("Launch Control running at http://127.0.0.1:%d", portNum))
 	slog.Info("Press Ctrl+C to stop.")
 
-	if runtime.GOOS == "windows" {
+	if openUI {
 		// Open the browser shortly after the server is reachable, like
 		// the Python timer did.
 		go func() {

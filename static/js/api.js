@@ -253,3 +253,11 @@ export async function pollLogs() {
     }
     logOffset.value = data.next_offset;
 }
+
+export async function loadSettings() {
+    return api('GET', '/api/config');
+}
+
+export async function saveSettings(runtimePath) {
+    return api('POST', '/api/config', { runtime_path: runtimePath });
+}

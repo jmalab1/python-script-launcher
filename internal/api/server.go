@@ -190,6 +190,9 @@ func (a *API) get(w http.ResponseWriter, r *http.Request, path string) {
 	case path == "/api/logs":
 		a.writeJSON(w, r, a.TailLogs(q.Get("lines"), nonEmpty(q.Get("after"))), http.StatusOK)
 
+	case path == "/api/config":
+		a.writeJSON(w, r, a.ConfigGet(), http.StatusOK)
+
 	default:
 		http.Error(w, "Not Found", http.StatusNotFound)
 	}
@@ -302,6 +305,10 @@ func (a *API) post(w http.ResponseWriter, r *http.Request, path string) {
 
 	case path == "/api/history/bulk":
 		a.writeJSON(w, r, a.HistoryBulkDelete(data), http.StatusOK)
+
+	case path == "/api/config":
+		result, status := a.ConfigSet(data)
+		a.writeJSON(w, r, result, status)
 
 	case path == "/api/run/profile":
 		result, status := a.RunProfile(data)
