@@ -59,6 +59,11 @@ def run_script(script_path, args, run_id, result=None, timeout=None):
     cmd = build_command(script_path, args)
     done = threading.Event()
     seconds = parse_timeout(timeout)
+    # Set only when THIS script's own watchdog kills it. Parallel
+    # workflow steps each get their own generator, so a shared flag
+    # would let whichever step finishes first swallow (or misplace) the
+    # "Timed out" message.
+    timed_out_here = threading.Event()
     try:
         proc = subprocess.Popen(
             cmd,
@@ -87,17 +92,14 @@ def run_script(script_path, args, run_id, result=None, timeout=None):
             # False when the timeout elapses and we must kill it.
             if done.wait(seconds):
                 return
-            with run_lock:
-                entry = active_runs.get(run_id)
-                if entry is not None and proc in entry.get("processes", []):
-                    # Per-script marker; run_script turns it into the
-                    # run-entry "timed_out" flag once it reports the kill.
-                    entry["_step_timed_out"] = True
+            # Finishing a hair before the deadline is not a timeout.
+            if proc.poll() is not None:
+                return
             try:
-                if proc.poll() is None:
-                    proc.kill()
+                proc.kill()
             except OSError:
                 pass
+            timed_out_here.set()
 
         if seconds:
             threading.Thread(target=kill_after_timeout, daemon=True).start()
@@ -114,12 +116,11 @@ def run_script(script_path, args, run_id, result=None, timeout=None):
             # Keep the run-level flag (used by poll and history) in sync:
             # it stays True for the rest of the run once any script hit
             # its timeout.
-            timed_out = active_runs[run_id].pop("_step_timed_out", False)
-            if timed_out:
+            if timed_out_here.is_set():
                 active_runs[run_id]["timed_out"] = True
             if result is not None:
                 result["returncode"] = proc.returncode
-        if timed_out:
+        if timed_out_here.is_set():
             message = f"ERROR: Timed out after {seconds:g}s and was killed.\n"
             with run_lock:
                 active_runs[run_id]["output"].append(message)

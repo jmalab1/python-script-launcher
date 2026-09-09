@@ -183,3 +183,18 @@ def test_audit_append_only_prevents_deletion(store):
     assert len(entries) == 2
     assert entries[0]["id"] == e1["id"]
     assert entries[1]["id"] == e2["id"]
+
+
+def test_list_clamps_bogus_paging_values(store):
+    store.seed("audit", [
+        {"action": "created", "entity_type": "profile", "entity_id": str(i), "name": f"N{i}"}
+        for i in range(3)
+    ])
+    result = audit.handle_list(0, 0)
+    assert result["page"] == 1 and result["per_page"] == 1
+    assert len(result["entries"]) == 1 and result["pages"] == 3
+
+    assert audit.handle_list(1, 9999)["per_page"] == 200
+
+    junk = audit.handle_list("x", "y")
+    assert junk["page"] == 1 and junk["per_page"] == 20

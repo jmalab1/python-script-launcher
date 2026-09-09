@@ -181,3 +181,26 @@ def test_profile_modal_clearing_the_timeout_saves_no_timeout_value():
     src = (COMPONENTS / "ProfileModal.js").read_text()
     assert "if (parsedTimeout !== null) profileData.timeout = parsedTimeout;" in src, \
         "a blank timeout must be omitted rather than saved as 0 or ''"
+
+
+def test_timeout_message_stays_in_the_step_that_was_killed(new_run, hang_script, tmp_path):
+    """A parallel sibling finishing while another step's watchdog fires
+    must not swallow or inherit the "Timed out" line (the old shared
+    run-level flag let whichever step finished first pop it)."""
+    run_id = new_run("r1")
+    quick = tmp_path / "quick.py"
+    quick.write_text("print('quick done')\n")
+
+    hanging = run_script(str(hang_script), [], run_id, timeout=0.5)
+    next(hanging)  # consume the first line; the watchdog is now armed
+    time.sleep(0.7)  # let the hanging step's timeout fire and kill it
+
+    # The quick step runs to completion *after* the timeout has fired.
+    quick_lines = list(run_script(str(quick), [], run_id))
+    assert not any("Timed out" in line for line in quick_lines), \
+        "a sibling step must not inherit the timeout message"
+
+    hang_lines = list(hanging)
+    assert any("Timed out after 0.5s" in line for line in hang_lines), \
+        "the step whose watchdog killed it must carry the timeout message"
+    assert runner.active_runs[run_id]["timed_out"] is True

@@ -335,3 +335,46 @@ def test_pruned_runs_stop_being_pollable(store, runs_env, clean_active_runs, mon
     runner.prune_active_runs()
     assert runs.handle_poll(body["run_id"]) is None, \
         "pruned runs fall back to history on the client"
+
+
+# ----------------------------------------------------------------- poll snapshots
+
+
+def test_poll_returns_snapshots_not_live_references(store, clean_active_runs):
+    runner = clean_active_runs
+    runner.active_runs["r1"] = {
+        "output": ["a\n"], "workflow_log": ["log"], "status": "running",
+        "returncode": None,
+        "steps": {"1. Step": {"output": ["x\n"], "status": "running"}},
+    }
+    polled = runs.handle_poll("r1")
+
+    # Run threads keep writing to active_runs while the HTTP thread
+    # serializes an earlier poll result, so the response must be an
+    # independent copy rather than an alias of the live entry.
+    with runner.run_lock:
+        runner.active_runs["r1"]["output"].append("b\n")
+        runner.active_runs["r1"]["workflow_log"].append("more")
+        runner.active_runs["r1"]["steps"]["2. Step"] = {"output": ["y\n"], "status": "running"}
+        runner.active_runs["r1"]["steps"]["1. Step"]["output"].append("x2\n")
+
+    assert polled["output"] == ["a\n"]
+    assert polled["workflow_log"] == ["log"]
+    assert list(polled["steps"]) == ["1. Step"]
+    assert polled["steps"]["1. Step"]["output"] == ["x\n"]
+
+
+def test_poll_all_returns_snapshots_not_live_references(store, clean_active_runs):
+    runner = clean_active_runs
+    runner.active_runs["r1"] = {
+        "output": ["a\n"], "status": "running",
+        "steps": {"1. Step": {"output": ["x\n"]}},
+    }
+    polled = runs.handle_poll_all()["r1"]
+
+    with runner.run_lock:
+        runner.active_runs["r1"]["output"].append("b\n")
+        runner.active_runs["r1"]["steps"]["1. Step"]["output"].append("x2\n")
+
+    assert polled["output"] == ["a\n"]
+    assert polled["steps"]["1. Step"]["output"] == ["x\n"]

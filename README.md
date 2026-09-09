@@ -15,9 +15,10 @@ Launch Control is a local, zero-dependency web tool for managing and running Pyt
 - **Server Logs**: Built-in log viewer with live tailing, level highlighting, and text search; the log file rotates automatically.
 - **Custom Arguments**: Define typed input fields that appear on profile cards for quick parameter editing.
 - **Script Timeout**: Per-profile time limit that kills runaway scripts and marks the run failed.
-- **Stop Runs**: Kill a running script or workflow from the run modal; the run is recorded as cancelled with its output so far kept.
-- **Output Export**: Download a run's output as a text file from the run modal.
-- **Modern UI**: Dark/light theme, drag-to-reorder, responsive layout, terminal-style output viewer.
+- **Stop Runs**: Kill a running script or workflow from the run panel; the run is recorded as cancelled with its output so far kept.
+- **Output Export**: Download a run's output as a text file from the run panel.
+- **Run Panel**: Run output opens in a panel docked to the right side of the screen, sliding in on open and sliding back out on close. Drag the grip pill on its left edge to resize it — the chosen width is remembered for next time. Clicking outside the panel closes it, but clicking another history row just swaps in that run's output.
+- **Modern UI**: Dark/light theme, drag-to-reorder (editing or re-saving an item keeps its place in the list), responsive layout, terminal-style output viewer. If a run fails to start (for example the script was deleted after the page loaded), the card shows an inline error banner instead of failing silently.
 
 ## Quick Start
 
@@ -107,11 +108,11 @@ When a profile is added to a workflow, its current custom argument values are ca
 
 Each profile can set a **Timeout (seconds)** in the profile editor — a plain number like `60` or a decimal like `2.5`. Whether the profile is run directly, as a workflow step, or on a schedule, Launch Control kills the script if it is still running after that long. The timed-out run is marked **failed**, and a `Timed out after Ns and was killed` line appears in its output. Leave the field blank to let scripts run indefinitely (the default).
 
-The run modal's **Export** button downloads the run as a timestamped `.txt` file. For a workflow, the file combines the workflow progress log with every step's output, each under its own headed section; for a profile run it is the script's output (with the command that ran).
+The run panel's **Export** button downloads the run as a timestamped `.txt` file. For a workflow, the file combines the workflow progress log with every step's output, each under its own headed section; for a profile run it is the script's output (with the command that ran).
 
 ## Stopping a Run
 
-While a profile or workflow is still running, the run modal shows a **Stop** button next to **Close**. Confirming it kills the running script right away — for a workflow, the current step is killed and the remaining steps are skipped. The run is recorded as **cancelled** (not failed) in Run History, with a `Cancelled by user.` line at the end of its output; output produced before the stop is kept and can still be exported. Cancelled is also an option in the history status filter.
+While a profile or workflow is still running, the run panel shows a **Stop** button next to **Close**. Confirming it kills the running script right away — for a workflow, the current step is killed and the remaining steps are skipped. The run is recorded as **cancelled** (not failed) in Run History, with a `Cancelled by user.` line at the end of its output; output produced before the stop is kept and can still be exported. Cancelled is also an option in the history status filter.
 
 ## Scheduling Runs
 

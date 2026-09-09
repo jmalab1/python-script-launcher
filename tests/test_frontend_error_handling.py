@@ -88,3 +88,13 @@ def test_modals_surface_errors_inline_via_error_banner():
         src = read(COMPONENTS / name)
         assert "<${ErrorBanner}" in src, f"{name} does not render ErrorBanner"
         assert "setError(" in src, f"{name} has no inline error state"
+
+
+def test_run_buttons_surface_errors_inline_via_error_banner():
+    """A run that fails to start (script deleted after the badge check,
+    server hiccup) used to fail silently — no modal, no message."""
+    for name in ("ProfileCard.js", "WorkflowCard.js"):
+        src = read(COMPONENTS / name)
+        assert "<${ErrorBanner}" in src, f"{name} does not render ErrorBanner"
+        assert "setError(res.error)" in src, f"{name} ignores server errors when starting a run"
+        assert "Could not start the run." in src, f"{name} ignores fetch failures when starting a run"

@@ -67,8 +67,9 @@ export async function previewCron(cron) {
     return api('GET', '/api/schedules/preview?cron=' + encodeURIComponent(cron));
 }
 
+// Both checks always hit the server and refresh the cache: a cached
+// "missing" must not pin the badge after the script reappears on disk.
 export async function checkScriptExists(path) {
-    if (scriptStatusCache.value[path] !== undefined) return scriptStatusCache.value[path];
     const res = await api('GET', '/api/script_exists?path=' + encodeURIComponent(path));
     scriptStatusCache.value = { ...scriptStatusCache.value, [path]: res.exists };
     return res.exists;
@@ -77,7 +78,6 @@ export async function checkScriptExists(path) {
 export async function checkAllScripts() {
     const paths = profiles.value.filter(p => p.script_path).map(p => p.script_path);
     const results = await Promise.all(paths.map(async path => {
-        if (scriptStatusCache.value[path] !== undefined) return [path, scriptStatusCache.value[path]];
         const res = await api('GET', '/api/script_exists?path=' + encodeURIComponent(path));
         return [path, res.exists];
     }));

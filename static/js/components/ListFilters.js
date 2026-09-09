@@ -19,11 +19,13 @@ export function SearchInput({ value, onCommit, placeholder }) {
     const timer = useRef(null);
 
     // If the value changes elsewhere (e.g. the Clear button), follow it.
-    // The guard keeps our own commits from clobbering text mid-typing.
+    // The guard keeps our own commits from clobbering text mid-typing,
+    // and drops any pending commit that would override the new value.
     useEffect(() => {
         if (value !== committed.current) {
             committed.current = value;
             setText(value);
+            clearTimeout(timer.current);
         }
     }, [value]);
 

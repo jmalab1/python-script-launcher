@@ -1,5 +1,6 @@
 from ..storage import load_audit
 from ..config import COL_AUDIT
+from .history import _clamp_paging
 
 _LIST_FIELDS = ("id", "timestamp", "action", "entity_type", "entity_id", "name", "details")
 
@@ -9,6 +10,7 @@ def summarize_entry(entry):
 
 
 def handle_list(page, per_page, action_filter=None, entity_filter=None, name=None, since=None, until=None):
+    page, per_page = _clamp_paging(page, per_page, 20)
     entries = load_audit()
     if action_filter:
         entries = [e for e in entries if e.get("action") == action_filter]

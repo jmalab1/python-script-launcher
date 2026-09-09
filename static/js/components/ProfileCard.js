@@ -3,6 +3,7 @@ import { scriptStatusCache, schedules, tags, TRASH_GROUP } from '../state.js';
 import { tagColor } from '../tagColors.js';
 import { runProfile, saveProfile as apiSaveProfile, loadProfiles, duplicateProfile, restoreProfile, permanentDeleteProfile } from '../api.js';
 import { ConfirmModal } from './ConfirmModal.js';
+import { ErrorBanner } from './ErrorBanner.js';
 
 export function ProfileCard({ profile, onEdit, onRun }) {
     const p = profile;
@@ -12,6 +13,7 @@ export function ProfileCard({ profile, onEdit, onRun }) {
     const sa = p.args || [];
     const [pendingDelete, setPendingDelete] = useState(null);
     const [pendingPermanentDelete, setPendingPermanentDelete] = useState(null);
+    const [error, setError] = useState('');
     const isTrashed = p.group === TRASH_GROUP;
     const hasSchedule = schedules.value.some(s => s.enabled && s.target_type === 'profile' && s.target_id === p.id);
     const itemTags = (p.tags || [])
@@ -20,13 +22,19 @@ export function ProfileCard({ profile, onEdit, onRun }) {
 
     async function handleRun() {
         if (scriptMissing) return;
+        setError('');
         const argValues = {};
         if (p.custom_args) p.custom_args.forEach((ca, i) => {
             const el = document.getElementById(`arg-${p.id}-${i}`);
             if (el) argValues[ca.name] = ca.type === 'checkbox' ? (el.checked ? 'true' : 'false') : el.value;
         });
-        const res = await runProfile(p.id, argValues);
-        if (res.run_id && onRun) onRun(res.run_id, 'Profile Run');
+        try {
+            const res = await runProfile(p.id, argValues);
+            if (res.error) { setError(res.error); return; }
+            if (res.run_id && onRun) onRun(res.run_id, 'Profile Run');
+        } catch (err) {
+            setError(err.message || 'Could not start the run.');
+        }
     }
 
     function confirmDelete() {
@@ -137,6 +145,7 @@ export function ProfileCard({ profile, onEdit, onRun }) {
                             })}
                         </div>
                     ` : ''}
+                    <${ErrorBanner} message=${error} />
                 </div>
                 <div class="flex items-center gap-1 shrink-0 flex-wrap">
                     ${isTrashed ? html`

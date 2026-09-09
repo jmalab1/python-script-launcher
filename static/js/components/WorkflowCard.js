@@ -3,6 +3,7 @@ import { profiles, schedules, scriptStatusCache, tags, TRASH_GROUP } from '../st
 import { tagColor } from '../tagColors.js';
 import { runWorkflow, loadWorkflows, duplicateWorkflow, restoreWorkflow, permanentDeleteWorkflow } from '../api.js';
 import { ConfirmModal } from './ConfirmModal.js';
+import { ErrorBanner } from './ErrorBanner.js';
 
 export function WorkflowCard({ workflow, onEdit, onRun }) {
     const w = workflow;
@@ -11,6 +12,7 @@ export function WorkflowCard({ workflow, onEdit, onRun }) {
     const [pendingDelete, setPendingDelete] = useState(null);
     const [pendingPermanentDelete, setPendingPermanentDelete] = useState(null);
     const [pendingRun, setPendingRun] = useState(false);
+    const [error, setError] = useState('');
     const isTrashed = w.group === TRASH_GROUP;
     const hasSchedule = schedules.value.some(s => s.enabled && s.target_type === 'workflow' && s.target_id === w.id);
     const profileMap = Object.fromEntries(profiles.value.map(p => [p.id, p]));
@@ -42,8 +44,14 @@ export function WorkflowCard({ workflow, onEdit, onRun }) {
     const hasMissingScripts = missing.length > 0;
 
     async function startRun() {
-        const res = await runWorkflow(w.id);
-        if (res.run_id && onRun) onRun(res.run_id, 'Workflow Run');
+        setError('');
+        try {
+            const res = await runWorkflow(w.id);
+            if (res.error) { setError(res.error); return; }
+            if (res.run_id && onRun) onRun(res.run_id, 'Workflow Run');
+        } catch (err) {
+            setError(err.message || 'Could not start the run.');
+        }
     }
 
     function handleRun() {
@@ -175,6 +183,7 @@ export function WorkflowCard({ workflow, onEdit, onRun }) {
                             ${hasMissingScripts ? html`<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 6a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 6zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/></svg>Missing script</span>` : ''}
                             ${w.continue_on_error ? html`<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400">continues on error</span>` : ''}
                         </div>
+                        <${ErrorBanner} message=${error} />
                     </div>
                     <div class="flex items-center gap-1 shrink-0 flex-wrap">
                         ${isTrashed ? html`

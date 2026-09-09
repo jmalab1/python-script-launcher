@@ -45,3 +45,14 @@ def test_no_stale_brand_string_in_brand_files():
     ]
     for path in paths:
         assert "Python Web Launcher" not in path.read_text(), f"stale brand string in {path.name}"
+
+
+def test_theme_boot_script_defaults_to_dark_without_dead_branches():
+    """The old boot script forced dark even when the system preferred
+    light, and its matchMedia branch could never change the outcome."""
+    src = read(ROOT / "index.html")
+    assert "matchMedia" not in src, "the dead system-preference branch should be gone"
+    assert "t==='light'){document.documentElement.classList.remove('dark');}" in src, \
+        "a stored light theme must remove the dark class"
+    assert "else{document.documentElement.classList.add('dark');}" in src, \
+        "anything else stays dark, matching the app default"

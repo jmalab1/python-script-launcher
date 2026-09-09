@@ -25,13 +25,25 @@ def handle_poll_all():
 
 
 def _polled_entry(entry):
-    """One run's poll view: the fields the run modal renders."""
+    """One run's poll view: the fields the run modal renders.
+
+    Everything mutable is copied: the HTTP thread serializes the result
+    outside run_lock while run threads keep appending to the real
+    output, so returning live lists/dicts would expose the serializer
+    to concurrent mutation.
+    """
+    steps = {}
+    for name, step in entry.get("steps", {}).items():
+        step_copy = dict(step)
+        if "output" in step_copy:
+            step_copy["output"] = list(step_copy["output"])
+        steps[name] = step_copy
     return {
-        "output": entry["output"],
-        "workflow_log": entry.get("workflow_log", []),
+        "output": list(entry["output"]),
+        "workflow_log": list(entry.get("workflow_log", [])),
         "status": entry.get("status", "running"),
         "returncode": entry.get("returncode"),
-        "steps": entry.get("steps", {}),
+        "steps": steps,
         "current_step": entry.get("current_step"),
         "command": entry.get("command"),
         "timed_out": bool(entry.get("timed_out")),

@@ -5,7 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Launch Control</title>
 <script>
-(function(){var t=localStorage.getItem('theme');if(t==='light')document.documentElement.classList.remove('dark');else if(t==='dark')document.documentElement.classList.add('dark');else if(window.matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.classList.add('dark');else document.documentElement.classList.add('dark');})();
+// Stored theme wins; anything else (no choice yet, or 'dark') is dark,
+// matching the app default in state.js.
+(function(){var t=localStorage.getItem('theme');if(t==='light'){document.documentElement.classList.remove('dark');}else{document.documentElement.classList.add('dark');}})();
 </script>
 <link rel="preload" href="/static/fonts/InterVariable.woff2" as="font" type="font/woff2" crossorigin>
 <style>
@@ -76,6 +78,26 @@ aside { width: 12rem; }
 }
 .dark .data-table thead th {
     background-color: #1f2937;
+}
+
+/* The run output panel slides in from the right when it opens and slides
+   back out when it closes. The transforms apply only while the animations
+   run, so they never catch fixed-position children (the stop confirm
+   modal) once the panel has settled — except during slide-out, where the
+   panel is being removed anyway. */
+@keyframes run-panel-slide-in {
+    from { transform: translateX(100%); }
+    to   { transform: translateX(0); }
+}
+@keyframes run-panel-slide-out {
+    from { transform: translateX(0); }
+    to   { transform: translateX(100%); }
+}
+.run-panel-in {
+    animation: run-panel-slide-in 180ms ease-out;
+}
+.run-panel-out {
+    animation: run-panel-slide-out 220ms ease-in-out forwards;
 }
 </style>
 </head>

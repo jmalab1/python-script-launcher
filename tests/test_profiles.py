@@ -123,3 +123,17 @@ def test_handle_duplicate_preserves_group(store):
     p = profiles.handle_create({"name": "G", "script_path": "/tmp/a.py", "args": [], "group": "f1"})
     dup = profiles.handle_duplicate(p["id"])
     assert dup.get("group") == "f1"
+
+
+def test_handle_create_upsert_keeps_the_items_position(store):
+    profiles.handle_create({"id": "a", "name": "A", "script_path": "/tmp/a.py", "args": []})
+    profiles.handle_create({"id": "b", "name": "B", "script_path": "/tmp/b.py", "args": []})
+    profiles.handle_create({"id": "c", "name": "C", "script_path": "/tmp/c.py", "args": []})
+    profiles.handle_reorder({"order": ["c", "a", "b"]})
+
+    profiles.handle_create({"id": "a", "name": "A Edited", "script_path": "/tmp/a.py", "args": []})
+
+    saved = store.read("profiles")
+    assert [p["id"] for p in saved] == ["c", "a", "b"], \
+        "editing a profile must not move it in the drag-ordered list"
+    assert next(p for p in saved if p["id"] == "a")["name"] == "A Edited"

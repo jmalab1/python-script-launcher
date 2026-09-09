@@ -177,3 +177,17 @@ def test_handle_duplicate_preserves_group(store):
     w = workflows.handle_create({"name": "G", "steps": [], "group": "f1"})
     dup = workflows.handle_duplicate(w["id"])
     assert dup.get("group") == "f1"
+
+
+def test_handle_create_upsert_keeps_the_items_position(store):
+    workflows.handle_create({"id": "a", "name": "A", "steps": []})
+    workflows.handle_create({"id": "b", "name": "B", "steps": []})
+    workflows.handle_create({"id": "c", "name": "C", "steps": []})
+    workflows.handle_reorder({"order": ["c", "a", "b"]})
+
+    workflows.handle_create({"id": "a", "name": "A Edited", "steps": []})
+
+    saved = store.read("workflows")
+    assert [w["id"] for w in saved] == ["c", "a", "b"], \
+        "editing a workflow must not move it in the drag-ordered list"
+    assert next(w for w in saved if w["id"] == "a")["name"] == "A Edited"

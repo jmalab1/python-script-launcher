@@ -210,3 +210,22 @@ def test_clearing_history_does_not_lose_concurrent_appends(store, monkeypatch):
     # handle_clear intentionally wipes everything while holding the history
     # lock, but the concurrent append must not deadlock or corrupt it.
     assert isinstance(store.read("history"), list)
+
+
+def test_list_clamps_bogus_paging_values(store):
+    store.seed("history", [
+        {"run_id": f"r{i}", "name": f"Run {i}", "type": "profile", "status": "completed",
+         "output": [], "timestamp": 1000 + i}
+        for i in range(3)
+    ])
+    # per_page=0 used to raise ZeroDivisionError; junk strings came from
+    # hand-crafted query strings.
+    result = history.handle_list(0, 0, None)
+    assert result["page"] == 1 and result["per_page"] == 1
+    assert len(result["entries"]) == 1 and result["pages"] == 3
+
+    assert history.handle_list(1, 9999, None)["per_page"] == 200, \
+        "a huge per_page must be capped instead of serializing everything"
+
+    junk = history.handle_list("x", "y", None)
+    assert junk["page"] == 1 and junk["per_page"] == 15

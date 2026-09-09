@@ -1,5 +1,22 @@
 from ..storage import load_history, remove_history, replace_history
 
+# Hard caps so a bogus query string (per_page=0 would previously divide
+# by zero; a huge value would serialize the whole table) gets a sane
+# response instead of a 500.
+MAX_PER_PAGE = 200
+
+
+def _clamp_paging(page, per_page, default_per_page):
+    try:
+        page = int(page)
+    except (TypeError, ValueError):
+        page = 1
+    try:
+        per_page = int(per_page)
+    except (TypeError, ValueError):
+        per_page = default_per_page
+    return max(1, page), max(1, min(per_page, MAX_PER_PAGE))
+
 
 def summarize_entry(entry):
     summary = dict(entry)
@@ -35,6 +52,7 @@ def _entry_time(entry):
 
 
 def handle_list(page, per_page, type_filter, name=None, status=None, since=None, until=None):
+    page, per_page = _clamp_paging(page, per_page, 15)
     all_history = load_history()
     if type_filter:
         all_history = [e for e in all_history if e.get("type") == type_filter]

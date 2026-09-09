@@ -27,8 +27,13 @@ def handle_create(data):
         profile["id"] = f"profile_{int(time.time() * 1000)}"
     existing = next((p for p in profiles if p.get("id") == profile["id"]), None)
     before = copy.deepcopy(existing) if existing else None
-    profiles = [p for p in profiles if p.get("id") != profile["id"]]
-    profiles.append(profile)
+    if existing:
+        # Updating an existing profile replaces it in place: appending it
+        # would reshuffle the list on every save and undo the user's
+        # drag-to-reorder arrangement.
+        profiles = [profile if p.get("id") == profile["id"] else p for p in profiles]
+    else:
+        profiles.append(profile)
     save_json(COL_PROFILES, profiles)
     record_audit(
         "created" if before is None else "updated",

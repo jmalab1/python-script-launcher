@@ -47,8 +47,13 @@ def handle_create(data):
     existing = next((w for w in workflows if w.get("id") == workflow["id"]), None)
     before = copy.deepcopy(existing) if existing else None
     _embed_profile_snapshots(workflow)
-    workflows = [w for w in workflows if w.get("id") != workflow["id"]]
-    workflows.append(workflow)
+    if existing:
+        # Updating an existing workflow replaces it in place: appending it
+        # would reshuffle the list on every save and undo the user's
+        # drag-to-reorder arrangement.
+        workflows = [workflow if w.get("id") == workflow["id"] else w for w in workflows]
+    else:
+        workflows.append(workflow)
     save_json(COL_WORKFLOWS, workflows)
     record_audit(
         "created" if before is None else "updated",

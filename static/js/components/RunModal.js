@@ -15,11 +15,25 @@ export function RunModal({ isOpen, onClose, runId, title, runType }) {
     const [command, setCommand] = useState(null);
     const [pendingCancel, setPendingCancel] = useState(false);
     const [error, setError] = useState('');
+    // Run output is shown in a right-side panel. Its width is draggable and
+    // remembered in localStorage so the requested size survives page reloads.
+    const [width, setWidth] = useState(() => Number(localStorage.getItem('runPanelWidth')) || 760);
+    // The panel stays rendered for its slide-out animation after isOpen
+    // goes false; the CSS 'animationend' event then reports it done.
+    const [visible, setVisible] = useState(false);
+    const panelRef = useRef(null);
+    // Keep the latest onClose reachable from the click listener without
+    // re-subscribing every render.
+    const onCloseRef = useRef(onClose);
+    onCloseRef.current = onClose;
     const timerRef = useRef(null);
     const outputRef = useRef(null);
     const activeTabRef = useRef('workflow');
     const lastDataRef = useRef(null);
     const autoPolledRef = useRef(false);
+    // True only while the modal is open: async work that resolves after
+    // close (e.g. the first history fetch) must not start a poll timer.
+    const openRef = useRef(false);
     activeTabRef.current = activeTab;
 
     function linesFor(data) {
@@ -132,6 +146,31 @@ export function RunModal({ isOpen, onClose, runId, title, runType }) {
         }
     }
 
+    // Dragging the panel's left edge changes its width. Pointer events are
+    // tracked on the window so the drag keeps working when the pointer
+    // briefly moves off the handle. The final width is saved for next time.
+    function startResize(ev) {
+        ev.preventDefault();
+        const startPosX = ev.clientX;
+        const startWidth = width;
+        const min = 320;
+        function clampWidth(px) {
+            return Math.min(Math.max(px, min), window.innerWidth - 60);
+        }
+        function onMove(e) {
+            setWidth(clampWidth(startWidth - (e.clientX - startPosX)));
+        }
+        function onUp(e) {
+            window.removeEventListener('pointermove', onMove);
+            window.removeEventListener('pointerup', onUp);
+            const finalWidth = clampWidth(startWidth - (e.clientX - startPosX));
+            setWidth(finalWidth);
+            localStorage.setItem('runPanelWidth', String(finalWidth));
+        }
+        window.addEventListener('pointermove', onMove);
+        window.addEventListener('pointerup', onUp);
+    }
+
     async function loadFromHistory(rid, rType) {
         let hist;
         try {
@@ -157,8 +196,14 @@ export function RunModal({ isOpen, onClose, runId, title, runType }) {
     }
 
     async function pollActiveRun(rid) {
+        if (!openRef.current) return;
         if (timerRef.current) { clearInterval(timerRef.current); }
         timerRef.current = setInterval(async () => {
+            if (!openRef.current) {
+                clearInterval(timerRef.current);
+                timerRef.current = null;
+                return;
+            }
             let data;
             try {
                 data = await pollRun(rid);
@@ -188,9 +233,29 @@ export function RunModal({ isOpen, onClose, runId, title, runType }) {
     }
 
     useEffect(() => {
+        setVisible(isOpen);
+    }, [isOpen]);
+
+    // Clicks outside the panel close it, but by listening in the capture
+    // phase the clicked element still receives the event itself — so
+    // clicking another history row swaps the panel's contents instead of
+    // closing it on the way.
+    useEffect(() => {
+        if (!isOpen) return;
+        function onOutsideClick(e) {
+            if (panelRef.current && !panelRef.current.contains(e.target)) {
+                onCloseRef.current();
+            }
+        }
+        document.addEventListener('click', onOutsideClick, true);
+        return () => document.removeEventListener('click', onOutsideClick, true);
+    }, [isOpen]);
+
+    useEffect(() => {
         if (!isOpen || !runId) return;
         lastDataRef.current = null;
         autoPolledRef.current = false;
+        openRef.current = true;
         setOutput([]);
         setStatus('starting');
         setTabs([]);
@@ -210,6 +275,7 @@ export function RunModal({ isOpen, onClose, runId, title, runType }) {
 
         return () => {
             if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+            openRef.current = false;
         };
     }, [isOpen, runId]);
 
@@ -220,7 +286,7 @@ export function RunModal({ isOpen, onClose, runId, title, runType }) {
         }
     }, [activeTab]);
 
-    if (!isOpen) return null;
+    if (!visible) return null;
 
     const statusColors = {
         running: 'bg-sky-50 dark:bg-sky-500/10 text-sky-700 dark:text-sky-400 border-sky-200 dark:border-sky-500/20',
@@ -236,72 +302,80 @@ export function RunModal({ isOpen, onClose, runId, title, runType }) {
     const statusLabels = { completed: 'Completed', failed: 'Failed', running: 'Running...', cancelled: 'Cancelled' };
 
     return html`
-        <div class="fixed inset-0 z-50">
-            <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick=${onClose}></div>
-            <div class="relative flex items-center justify-center min-h-full p-4">
-                <div class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-5xl max-h-[85vh] flex flex-col border border-gray-200 dark:border-gray-700/60">
-                    <div class="shrink-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700/60 px-6 py-4 rounded-t-2xl">
-                        <div class="flex items-center justify-between">
-                            <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100">${title || 'Run Output'}</h2>
-                            <button onClick=${onClose} class="p-1 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
-                            </button>
-                        </div>
-                        <div class="mt-3 flex items-center gap-3">
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${statusColors[status] || statusColors.starting}">
-                                <span class="w-1.5 h-1.5 rounded-full ${dotColors[status] || dotColors.starting} ${status === 'running' ? 'animate-pulse' : ''}"></span>
-                                <span>${statusLabels[status] || 'Starting...'}</span>
-                            </span>
-                            ${timedOut ? html`
-                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400 border-red-200 dark:border-red-500/20" title="A script in this run exceeded its configured timeout and was killed">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-red-400"></span>
-                                    <span>Timed out</span>
-                                </span>
-                            ` : ''}
-                            ${currentStep ? html`<span class="text-xs text-gray-500 dark:text-gray-400">Running: ${currentStep}</span>` : ''}
-                        </div>
-                        <${ErrorBanner} message=${error} />
+        <div class="fixed inset-0 z-50 pointer-events-none">
+            <div ref=${panelRef} class="${isOpen ? 'run-panel-in' : 'run-panel-out'} run-panel-surface pointer-events-auto absolute right-0 top-0 h-full bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700/60 shadow-2xl flex flex-col"
+                style=${{ width: width + 'px', maxWidth: '100vw' }}
+                onAnimationEnd=${(e) => { if (e.target === e.currentTarget && !isOpen) setVisible(false); }}>
+                <div class="absolute -left-1.5 top-0 flex h-full w-4 cursor-col-resize"
+                    onPointerDown=${startResize}
+                    title="Drag to resize the panel">
+                    <div class="my-auto ml-0.5 flex h-9 w-2 flex flex-col items-center justify-center gap-1 rounded-full bg-gray-200 text-gray-500 hover:bg-violet-300 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-violet-500/40 transition-colors">
+                        <span class="h-1 w-0.5 rounded-full bg-current"></span>
+                        <span class="h-1 w-0.5 rounded-full bg-current"></span>
+                        <span class="h-1 w-0.5 rounded-full bg-current"></span>
                     </div>
-                    <div class="flex-1 min-h-0 flex overflow-hidden">
-                        ${tabs.length ? html`
-                            <div class="shrink-0 w-40 border-r border-gray-200 dark:border-gray-700/60 bg-gray-50 dark:bg-gray-900/50 overflow-y-auto">
-                                <div class="flex flex-col p-2 gap-0.5">
-                                    <button onClick=${() => switchTab('workflow')}
-                                        class="px-3 py-2 text-xs font-medium rounded-lg transition text-left ${activeTab === 'workflow' ? 'bg-violet-50 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-800 dark:hover:text-gray-200'}">Workflow</button>
-                                    ${tabs.map(t => {
-                                        const dot = t.status === 'completed' ? 'bg-green-400' : t.status === 'failed' ? 'bg-red-400' : t.status === 'cancelled' ? 'bg-amber-400' : t.status === 'running' ? 'bg-sky-400 animate-pulse' : 'bg-gray-400';
-                                        return html`
-                                            <button onClick=${() => switchTab(t.name)}
-                                                class="px-3 py-2 text-xs font-medium rounded-lg transition flex items-center gap-1.5 text-left ${activeTab === t.name ? 'bg-violet-50 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-800 dark:hover:text-gray-200'}">
-                                                <span class="shrink-0 w-1.5 h-1.5 rounded-full ${dot}"></span>
-                                                <span class="truncate">${t.name}</span>
-                                            </button>`;
-                                    })}
-                                </div>
-                            </div>
-                        ` : ''}
-                        <div class="flex-1 min-w-0 flex flex-col gap-2 p-4">
-                            ${command ? html`<div class="shrink-0 bg-gray-900 rounded-lg px-3 py-2 font-mono text-xs text-gray-300 border border-gray-800 break-all"><span class="text-gray-500">Command: </span>${Array.isArray(command) ? command.join(' ') : String(command)}</div>` : ''}
-                            <div ref=${outputRef} class="flex-1 min-h-0 bg-gray-950 rounded-xl p-4 font-mono text-xs leading-relaxed overflow-y-auto text-gray-300 whitespace-pre-wrap break-all">
-                                ${renderLines(output)}
-                            </div>
-                        </div>
-                    </div>
-                    <div class="shrink-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700/60 px-6 py-3 rounded-b-2xl flex justify-between">
-                        <button onClick=${exportOutput} class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg transition flex items-center gap-1.5">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2M12 3v13m0 0 4-4m-4 4-4-4"/></svg>
-                            Export
+                </div>
+                <div class="shrink-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700/60 px-6 py-4">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100 truncate">${title || 'Run Output'}</h2>
+                        <button onClick=${onClose} class="p-1 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
                         </button>
-                        <div class="flex gap-2">
-                            ${(status === 'running' || status === 'starting') ? html`
-                                <button onClick=${() => setPendingCancel(true)}
-                                    class="px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition flex items-center gap-1.5">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M10 9.5v5a.5.5 0 0 0 .75.43l4.2-2.5a.5.5 0 0 0 0-.86l-4.2-2.5a.5.5 0 0 0-.75.43Z" fill="currentColor" stroke="none"/></svg>
-                                    Stop
-                                </button>
-                            ` : ''}
-                            <button onClick=${onClose} class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg transition">Close</button>
+                    </div>
+                    <div class="mt-3 flex items-center gap-3">
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${statusColors[status] || statusColors.starting}">
+                            <span class="w-1.5 h-1.5 rounded-full ${dotColors[status] || dotColors.starting} ${status === 'running' ? 'animate-pulse' : ''}"></span>
+                            <span>${statusLabels[status] || 'Starting...'}</span>
+                        </span>
+                        ${timedOut ? html`
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400 border-red-200 dark:border-red-500/20" title="A script in this run exceeded its configured timeout and was killed">
+                                <span class="w-1.5 h-1.5 rounded-full bg-red-400"></span>
+                                <span>Timed out</span>
+                            </span>
+                        ` : ''}
+                        ${currentStep ? html`<span class="text-xs text-gray-500 dark:text-gray-400">Running: ${currentStep}</span>` : ''}
+                    </div>
+                    <${ErrorBanner} message=${error} />
+                </div>
+                <div class="flex-1 min-h-0 flex overflow-hidden">
+                    ${tabs.length ? html`
+                        <div class="shrink-0 w-32 border-r border-gray-200 dark:border-gray-700/60 bg-gray-50 dark:bg-gray-900/50 overflow-y-auto">
+                            <div class="flex flex-col p-2 gap-0.5">
+                                <button onClick=${() => switchTab('workflow')}
+                                    class="px-3 py-2 text-xs font-medium rounded-lg transition text-left ${activeTab === 'workflow' ? 'bg-violet-50 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-800 dark:hover:text-gray-200'}">Workflow</button>
+                                ${tabs.map(t => {
+                                    const dot = t.status === 'completed' ? 'bg-green-400' : t.status === 'failed' ? 'bg-red-400' : t.status === 'cancelled' ? 'bg-amber-400' : t.status === 'running' ? 'bg-sky-400 animate-pulse' : 'bg-gray-400';
+                                    return html`
+                                        <button onClick=${() => switchTab(t.name)}
+                                            class="px-3 py-2 text-xs font-medium rounded-lg transition flex items-center gap-1.5 text-left ${activeTab === t.name ? 'bg-violet-50 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-800 dark:hover:text-gray-200'}">
+                                            <span class="shrink-0 w-1.5 h-1.5 rounded-full ${dot}"></span>
+                                            <span class="truncate">${t.name}</span>
+                                        </button>`;
+                                })}
+                            </div>
                         </div>
+                    ` : ''}
+                    <div class="flex-1 min-w-0 flex flex-col gap-2 p-4">
+                        ${command ? html`<div class="shrink-0 bg-gray-900 rounded-lg px-3 py-2 font-mono text-xs text-gray-300 border border-gray-800 break-all"><span class="text-gray-500">Command: </span>${Array.isArray(command) ? command.join(' ') : String(command)}</div>` : ''}
+                        <div ref=${outputRef} class="flex-1 min-h-0 bg-gray-950 rounded-xl p-4 font-mono text-xs leading-relaxed overflow-y-auto text-gray-300 whitespace-pre-wrap break-all">
+                            ${renderLines(output)}
+                        </div>
+                    </div>
+                </div>
+                <div class="shrink-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700/60 px-6 py-3 flex justify-between">
+                    <button onClick=${exportOutput} class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg transition flex items-center gap-1.5">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2M12 3v13m0 0 4-4m-4 4-4-4"/></svg>
+                        Export
+                    </button>
+                    <div class="flex gap-2">
+                        ${(status === 'running' || status === 'starting') ? html`
+                            <button onClick=${() => setPendingCancel(true)}
+                                class="px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition flex items-center gap-1.5">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M10 9.5v5a.5.5 0 0 0 .75.43l4.2-2.5a.5.5 0 0 0 0-.86l-4.2-2.5a.5.5 0 0 0-.75.43Z" fill="currentColor" stroke="none"/></svg>
+                                Stop
+                            </button>
+                        ` : ''}
+                        <button onClick=${onClose} class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg transition">Close</button>
                     </div>
                 </div>
             </div>

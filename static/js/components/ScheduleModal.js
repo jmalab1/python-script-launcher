@@ -105,6 +105,12 @@ export function ScheduleModal({ isOpen, onClose, schedule }) {
             if (!alive) return;
             if (res.error) { setPreview(null); setPreviewError(res.error); }
             else { setPreview(res); setPreviewError(''); }
+        }).catch(() => {
+            // A network hiccup must not leave the previous cron's preview
+            // on screen or throw an unhandled rejection.
+            if (!alive) return;
+            setPreview(null);
+            setPreviewError('');
         });
         return () => { alive = false; };
     }, [isOpen, mode, presetKind, repeatN, repeatUnit, repeatDaysTime, dailyTime, weeklyDays, weeklyTime, monthlyDay, monthlyTime, cronInput]);

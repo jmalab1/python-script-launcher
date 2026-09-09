@@ -85,3 +85,11 @@ def test_profile_and_workflow_cards_show_schedule_badge():
     assert "schedules.value.some" in wcard, "WorkflowCard ignores schedules"
     assert "target_type === 'workflow'" in wcard
     assert "Scheduled" in wcard, "WorkflowCard badge missing"
+
+
+def test_cron_preview_fetch_failure_cannot_throw_or_leave_stale_data():
+    src = (COMPONENTS / "ScheduleModal.js").read_text()
+    assert re.search(
+        r"previewCron\(c\)\.then\([\s\S]*?\}\)\.catch\(",
+        src,
+    ), "the preview fetch needs a .catch so a network hiccup cannot throw unhandled"

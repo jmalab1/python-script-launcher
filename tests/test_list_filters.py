@@ -58,3 +58,14 @@ def test_app_passes_filter_state_to_history_tables():
     src = read(JS / "app.js")
     assert "filters=${profileHistoryFilters}" in src
     assert "filters=${workflowHistoryFilters}" in src
+
+
+def test_external_filter_change_cancels_the_pending_search_commit():
+    """Clicking Clear within the 300ms debounce window used to be undone
+    by the still-pending commit, which re-applied the typed filter."""
+    src = read(COMPONENTS / "ListFilters.js")
+    assert re.search(
+        r"if \(value !== committed\.current\)\s*\{[^}]*?clearTimeout\(timer\.current\);",
+        src,
+        re.DOTALL,
+    ), "an external value change (e.g. Clear) must cancel the pending debounce"
