@@ -212,13 +212,59 @@ def handle_duplicate(schedule_id):
 
 @_locked
 def handle_delete(schedule_id):
+    """Move a schedule to the trash."""
+    schedules = load_json(COL_SCHEDULES)
+    target = next((s for s in schedules if s.get("id") == schedule_id), None)
+    if not target:
+        return {"ok": True}, None
+    before = copy.deepcopy(target)
+    target["group"] = "__trash__"
+    target["next_run_at"] = None
+    save_json(COL_SCHEDULES, schedules)
+    record_audit(
+        "deleted",
+        "schedule",
+        schedule_id,
+        _audit_name(target),
+        before=before,
+        after=copy.deepcopy(target),
+    )
+    return {"ok": True}, None
+
+
+@_locked
+def handle_restore(schedule_id):
+    """Restore a trashed schedule."""
+    schedules = load_json(COL_SCHEDULES)
+    target = next((s for s in schedules if s.get("id") == schedule_id), None)
+    if not target or target.get("group") != "__trash__":
+        return None, {"error": "Schedule not found"}
+    before = copy.deepcopy(target)
+    target["group"] = ""
+    if target.get("enabled"):
+        target["next_run_at"] = _next_run_at(target.get("cron", ""))
+    save_json(COL_SCHEDULES, schedules)
+    record_audit(
+        "restored",
+        "schedule",
+        schedule_id,
+        _audit_name(target),
+        before=before,
+        after=copy.deepcopy(target),
+    )
+    return target, None
+
+
+@_locked
+def handle_permanent_delete(schedule_id):
+    """Permanently delete a schedule."""
     schedules = load_json(COL_SCHEDULES)
     target = next((s for s in schedules if s.get("id") == schedule_id), None)
     schedules = [s for s in schedules if s.get("id") != schedule_id]
     save_json(COL_SCHEDULES, schedules)
     if target:
         record_audit(
-            "deleted",
+            "permanently_deleted",
             "schedule",
             schedule_id,
             _audit_name(target),

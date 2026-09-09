@@ -214,6 +214,13 @@ def test_run_tick_skips_disabled_schedules(store, sched_state):
     assert store.read("schedules")[0]["next_run_at"] == 1000.0
 
 
+def test_run_tick_skips_trashed_schedules(store, sched_state):
+    seed_schedule(store, group="__trash__", next_run_at=1000.0)
+    fired = run_tick(now=dt(2026, 9, 8, 10, 30), fire=lambda s: "run_1")
+    assert fired == []
+    assert store.read("schedules")[0]["next_run_at"] is None
+
+
 def test_run_tick_computes_missing_next_run_without_firing(store, sched_state):
     seed_schedule(store, next_run_at=None)
     now = dt(2026, 9, 8, 10, 30)
@@ -324,6 +331,12 @@ def test_skip_missed_ignores_disabled_and_invalid_schedules(store, sched_state):
     seed_schedule(store, enabled=False, next_run_at=1000.0)
     _skip_missed(now=dt(2026, 9, 8, 10, 30))
     assert store.read("schedules")[0]["next_run_at"] == 1000.0
+
+
+def test_skip_missed_clears_trashed_schedules_next_run(store, sched_state):
+    seed_schedule(store, group="__trash__", next_run_at=1000.0)
+    _skip_missed(now=dt(2026, 9, 8, 10, 30))
+    assert store.read("schedules")[0]["next_run_at"] is None
 
 
 # --------------------------------------------------------------- fire_schedule

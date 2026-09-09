@@ -63,6 +63,14 @@ export async function deleteSchedule(id) {
     return api('DELETE', '/api/schedules/' + id);
 }
 
+export async function restoreSchedule(id) {
+    return api('POST', `/api/schedules/${id}/restore`);
+}
+
+export async function permanentDeleteSchedule(id) {
+    return api('DELETE', `/api/schedules/${id}/permanent`);
+}
+
 export async function duplicateSchedule(id) {
     return api('POST', `/api/schedules/${id}/duplicate`);
 }

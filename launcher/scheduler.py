@@ -287,6 +287,11 @@ def run_tick(now=None, fire=None):
         fired = []
         changed = False
         for sched in schedules:
+            if sched.get("group") == "__trash__":
+                if sched.get("next_run_at") is not None:
+                    sched["next_run_at"] = None
+                    changed = True
+                continue
             if not sched.get("enabled"):
                 continue
             try:
@@ -331,6 +336,11 @@ def _skip_missed(now=None):
         schedules = load_json(COL_SCHEDULES)
         changed = False
         for sched in schedules:
+            if sched.get("group") == "__trash__":
+                if sched.get("next_run_at") is not None:
+                    sched["next_run_at"] = None
+                    changed = True
+                continue
             if not sched.get("enabled"):
                 continue
             next_run = sched.get("next_run_at")

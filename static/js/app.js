@@ -155,16 +155,16 @@ function App() {
             <${Sidebar} />
             <${MobileHeader} />
 
-            <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+            <div class="flex-1 flex flex-col min-w-0 overflow-hidden md:pt-0 pt-12">
                 <div class="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900">
                     <div class="flex flex-col px-4 sm:px-6 lg:px-8 py-6 w-full h-full overflow-hidden">
 
                         ${currentPanel.value === 'profiles' ? html`
                             <div id="panel-profiles" class="panel flex flex-col flex-1 min-h-0">
-                                <div class="flex items-center justify-between mb-6 shrink-0">
+                                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6 shrink-0">
                                     <div class="min-w-0">
-                                        <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Profiles</h1>
-                                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Reusable script presets — point one at a Python script, add its arguments, and run it anytime.</p>
+                                        <h1 class="text-xl sm:text-2xl font-bold text-gray-800 dark:text-gray-100">Profiles</h1>
+                                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 hidden sm:block">Reusable script presets — point one at a Python script, add its arguments, and run it anytime.</p>
                                     </div>
                                     <div class="flex items-center gap-2">
                                         <button onClick=${() => setTagManagerOpen(true)}
@@ -199,10 +199,10 @@ function App() {
 
                         ${currentPanel.value === 'workflows' ? html`
                             <div id="panel-workflows" class="panel flex flex-col flex-1 min-h-0">
-                                <div class="flex items-center justify-between mb-6 shrink-0">
+                                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6 shrink-0">
                                     <div class="min-w-0">
-                                        <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Workflows</h1>
-                                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Chain profiles into ordered steps or parallel groups and run them all with a single click.</p>
+                                        <h1 class="text-xl sm:text-2xl font-bold text-gray-800 dark:text-gray-100">Workflows</h1>
+                                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 hidden sm:block">Chain profiles into ordered steps or parallel groups and run them all with a single click.</p>
                                     </div>
                                     <div class="flex items-center gap-2">
                                         <button onClick=${() => setTagManagerOpen(true)}
@@ -237,13 +237,13 @@ function App() {
 
                         ${currentPanel.value === 'schedules' ? html`
                             <div id="panel-schedules" class="panel flex flex-col flex-1 min-h-0">
-                                <div class="flex items-center justify-between mb-6 shrink-0">
+                                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6 shrink-0">
                                     <div class="min-w-0">
-                                        <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Schedules</h1>
-                                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Run profiles and workflows automatically on a cron-like schedule — every hour, daily at noon, weekdays at 08:00, or any cron expression.</p>
+                                        <h1 class="text-xl sm:text-2xl font-bold text-gray-800 dark:text-gray-100">Schedules</h1>
+                                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 hidden sm:block">Run profiles and workflows automatically on a cron-like schedule — every hour, daily at noon, weekdays at 08:00, or any cron expression.</p>
                                     </div>
                                     <button onClick=${openNewScheduleModal}
-                                        class="bg-gray-900 text-gray-100 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-800 dark:hover:bg-white text-sm font-medium px-3 py-2 rounded-lg inline-flex items-center gap-1.5 transition">
+                                        class="bg-gray-900 text-gray-100 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-800 dark:hover:bg-white text-sm font-medium px-3 py-2 rounded-lg inline-flex items-center gap-1.5 transition self-start">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
                                         New Schedule
                                     </button>

@@ -71,11 +71,13 @@ export function ProfileCard({ profile, onEdit, onRun }) {
     }
 
     const scriptBadge = scriptMissing
-        ? html`<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-500/20" title="Script not found">
+        ? html`<div class="flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-500/20 w-full overflow-hidden" title="Script not found">
             <svg class="w-3 h-3 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 6a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 6zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/></svg>
-            ${p.script_path}
-        </span>`
-        : html`<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700/50 text-gray-600 dark:text-gray-400">${p.script_path}</span>`;
+            <span class="truncate min-w-0">${p.script_path}</span>
+        </div>`
+        : html`<div class="flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700/50 text-gray-600 dark:text-gray-400 w-full overflow-hidden">
+            <span class="truncate min-w-0">${p.script_path}</span>
+        </div>`;
 
     return html`
         <div class="bg-white dark:bg-gray-800 shadow-xs rounded-xl p-4 border ${scriptMissing ? 'border-red-200 dark:border-red-500/30' : 'border-gray-200 dark:border-gray-700/60'} hover:border-gray-300 dark:hover:border-gray-600 transition group">
@@ -91,7 +93,6 @@ export function ProfileCard({ profile, onEdit, onRun }) {
                         `)}
                     </div>
                     <div class="flex flex-wrap items-center gap-1.5 mt-2">
-                        ${scriptBadge}
                         ${hasSchedule ? html`
                             <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-violet-500/10 text-violet-600 dark:text-violet-400" title="Runs automatically on a schedule">
                                 <svg class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -100,51 +101,6 @@ export function ProfileCard({ profile, onEdit, onRun }) {
                         ` : ''}
                         ${sa.map(a => html`<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-violet-500/10 text-violet-600 dark:text-violet-400">${a}</span>`)}
                     </div>
-                    ${ca.length ? html`
-                        <div class="flex flex-wrap items-center gap-3 mt-3">
-                            ${ca.map((c, i) => {
-                                if (c.type === 'checkbox') return html`
-                                    <label class="inline-flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300 cursor-pointer">
-                                        <input type="checkbox" id=${`arg-${p.id}-${i}`} data-profile=${p.id} data-idx=${i}
-                                            checked=${c.value === 'true'}
-                                            onChange=${(e) => handleArgChange(e.target)}
-                                            class="w-3.5 h-3.5 rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900/30 text-violet-500 focus:ring-violet-500/50 focus:ring-offset-0" />
-                                        ${c.label || c.name}
-                                    </label>`;
-                                if (c.type === 'date') return html`
-                                    <div class="flex items-center gap-1.5">
-                                        <label class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">${c.label || c.name}</label>
-                                        <input type="date" id=${`arg-${p.id}-${i}`} data-profile=${p.id} data-idx=${i}
-                                            value=${c.value || c.default || ''}
-                                            onChange=${(e) => handleArgChange(e.target)}
-                                            class="w-36 bg-white dark:bg-gray-900/30 border border-gray-300 dark:border-gray-700/60 rounded px-2 py-1 text-xs text-gray-800 dark:text-gray-100 focus:border-violet-500 focus:ring-0 focus:ring-offset-0 transition" />
-                                    </div>`;
-                                if (c.type === 'enum') {
-                                    const cur = c.value || c.default || '';
-                                    const opts = String(c.options || '').split(',').map(s => s.trim()).filter(Boolean);
-                                    return html`
-                                        <div class="flex items-center gap-1.5">
-                                            <label class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">${c.label || c.name}</label>
-                                            <select id=${`arg-${p.id}-${i}`} data-profile=${p.id} data-idx=${i}
-                                                onChange=${(e) => handleArgChange(e.target)}
-                                                class="max-w-[14rem] bg-white dark:bg-gray-900/30 border border-gray-300 dark:border-gray-700/60 rounded px-2 py-1 text-xs text-gray-800 dark:text-gray-100 focus:border-violet-500 focus:ring-0 focus:ring-offset-0 transition">
-                                                <option value="" selected=${cur === ''}>-- select --</option>
-                                                ${opts.map(opt => html`<option value=${opt} selected=${cur === opt}>${opt}</option>`)}
-                                            </select>
-                                        </div>`;
-                                }
-                                return html`
-                                    <div class="flex items-center gap-1.5">
-                                        <label class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">${c.label || c.name}</label>
-                                        <input type="text" id=${`arg-${p.id}-${i}`} data-profile=${p.id} data-idx=${i}
-                                            value=${c.value || c.default || ''}
-                                            onChange=${(e) => handleArgChange(e.target)}
-                                            placeholder=${c.name}
-                                            class="w-32 bg-white dark:bg-gray-900/30 border border-gray-300 dark:border-gray-700/60 rounded px-2 py-1 text-xs text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-violet-500 focus:ring-0 focus:ring-offset-0 transition" />
-                                    </div>`;
-                            })}
-                        </div>
-                    ` : ''}
                     <${ErrorBanner} message=${error} />
                 </div>
                 <div class="flex items-center gap-1 shrink-0 flex-wrap">
@@ -180,6 +136,54 @@ export function ProfileCard({ profile, onEdit, onRun }) {
                     `}
                 </div>
             </div>
+            <div class="mt-3">
+                ${scriptBadge}
+            </div>
+            ${ca.length ? html`
+                <div class="grid grid-cols-2 gap-1.5 mt-2">
+                    ${ca.map((c, i) => {
+                        if (c.type === 'checkbox') return html`
+                            <label class="flex items-center gap-1.5 px-2 py-1 rounded-md bg-gray-50 dark:bg-gray-700/30 border border-gray-100 dark:border-gray-700/50 cursor-pointer">
+                                <input type="checkbox" id=${`arg-${p.id}-${i}`} data-profile=${p.id} data-idx=${i}
+                                    checked=${c.value === 'true'}
+                                    onChange=${(e) => handleArgChange(e.target)}
+                                    class="w-3.5 h-3.5 rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900/30 text-violet-500 focus:ring-violet-500/50 focus:ring-offset-0" />
+                                <span class="text-xs text-gray-700 dark:text-gray-300">${c.label || c.name}</span>
+                            </label>`;
+                        if (c.type === 'date') return html`
+                            <div class="flex items-center gap-1.5 px-2 py-1 rounded-md bg-gray-50 dark:bg-gray-700/30 border border-gray-100 dark:border-gray-700/50">
+                                <label class="text-[10px] text-gray-400 dark:text-gray-500 whitespace-nowrap shrink-0">${c.label || c.name}</label>
+                                <input type="date" id=${`arg-${p.id}-${i}`} data-profile=${p.id} data-idx=${i}
+                                    value=${c.value || c.default || ''}
+                                    onChange=${(e) => handleArgChange(e.target)}
+                                    class="min-w-0 flex-1 bg-transparent border-0 text-xs text-gray-800 dark:text-gray-100 focus:ring-0 focus:ring-offset-0" />
+                            </div>`;
+                        if (c.type === 'enum') {
+                            const cur = c.value || c.default || '';
+                            const opts = String(c.options || '').split(',').map(s => s.trim()).filter(Boolean);
+                            return html`
+                                <div class="flex items-center gap-1.5 px-2 py-1 rounded-md bg-gray-50 dark:bg-gray-700/30 border border-gray-100 dark:border-gray-700/50">
+                                    <label class="text-[10px] text-gray-400 dark:text-gray-500 whitespace-nowrap shrink-0">${c.label || c.name}</label>
+                                    <select id=${`arg-${p.id}-${i}`} data-profile=${p.id} data-idx=${i}
+                                        onChange=${(e) => handleArgChange(e.target)}
+                                        class="min-w-0 flex-1 bg-transparent border-0 text-xs text-gray-800 dark:text-gray-100 focus:ring-0 focus:ring-offset-0">
+                                        <option value="" selected=${cur === ''}>-- select --</option>
+                                        ${opts.map(opt => html`<option value=${opt} selected=${cur === opt}>${opt}</option>`)}
+                                    </select>
+                                </div>`;
+                        }
+                        return html`
+                            <div class="flex items-center gap-1.5 px-2 py-1 rounded-md bg-gray-50 dark:bg-gray-700/30 border border-gray-100 dark:border-gray-700/50">
+                                <label class="text-[10px] text-gray-400 dark:text-gray-500 whitespace-nowrap shrink-0">${c.label || c.name}</label>
+                                <input type="text" id=${`arg-${p.id}-${i}`} data-profile=${p.id} data-idx=${i}
+                                    value=${c.value || c.default || ''}
+                                    onChange=${(e) => handleArgChange(e.target)}
+                                    placeholder=${c.name}
+                                    class="min-w-0 flex-1 bg-transparent border-0 text-xs text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-0 focus:ring-offset-0" />
+                            </div>`;
+                    })}
+                </div>
+            ` : ''}
         </div>
         <${ConfirmModal}
             isOpen=${!!pendingDelete}

@@ -105,3 +105,4 @@ export function reorderTags(tagsSignal, next) {
 // Tag filter selection (null = show all, string = tag id, 'untagged' = items with no tag)
 export const selectedProfileTag = signal(null);
 export const selectedWorkflowTag = signal(null);
+export const selectedScheduleTag = signal(null);

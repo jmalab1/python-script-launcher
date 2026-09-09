@@ -199,14 +199,109 @@ def test_run_now_records_an_audit_entry(store, profile_env, new_run, sched_state
 # -------------------------------------------------------------------- delete
 
 
-def test_delete_removes_schedule_and_audits(store, profile_env):
+def test_delete_moves_schedule_to_trash(store, profile_env):
     sched, _ = schedules_api.handle_create(make_data())
     result, error = schedules_api.handle_delete(sched["id"])
     assert error is None
     assert result == {"ok": True}
-    assert store.read("schedules") == []
+    saved = store.read("schedules")
+    assert len(saved) == 1
+    assert saved[0]["group"] == "__trash__"
+    assert saved[0]["next_run_at"] is None
     actions = [a["action"] for a in load_audit()]
     assert "created" in actions and "deleted" in actions
+
+
+def test_delete_records_audit(store, profile_env):
+    sched, _ = schedules_api.handle_create(make_data())
+    schedules_api.handle_delete(sched["id"])
+    entry = load_audit()[-1]
+    assert entry["action"] == "deleted"
+    assert entry["entity_type"] == "schedule"
+    assert entry["entity_id"] == sched["id"]
+
+
+def test_delete_missing_schedule_returns_ok(store):
+    result, error = schedules_api.handle_delete("nope")
+    assert result == {"ok": True}
+    assert error is None
+
+
+# ------------------------------------------------------------------- restore
+
+
+def test_restore_moves_schedule_out_of_trash(store, profile_env):
+    sched, _ = schedules_api.handle_create(make_data())
+    schedules_api.handle_delete(sched["id"])
+    restored, error = schedules_api.handle_restore(sched["id"])
+    assert error is None
+    assert restored["group"] == ""
+    assert restored["next_run_at"] > 0
+    saved = store.read("schedules")
+    assert saved[0]["group"] == ""
+
+
+def test_restore_records_audit(store, profile_env):
+    sched, _ = schedules_api.handle_create(make_data())
+    schedules_api.handle_delete(sched["id"])
+    schedules_api.handle_restore(sched["id"])
+    entry = load_audit()[-1]
+    assert entry["action"] == "restored"
+    assert entry["entity_type"] == "schedule"
+    assert entry["entity_id"] == sched["id"]
+
+
+def test_restore_non_trashed_returns_error(store, profile_env):
+    sched, _ = schedules_api.handle_create(make_data())
+    _, error = schedules_api.handle_restore(sched["id"])
+    assert error == {"error": "Schedule not found"}
+
+
+def test_restore_missing_returns_error(store):
+    _, error = schedules_api.handle_restore("nope")
+    assert error == {"error": "Schedule not found"}
+
+
+def test_restore_disabled_schedule_has_no_next_run(store, profile_env):
+    sched, _ = schedules_api.handle_create(make_data(enabled=False))
+    schedules_api.handle_delete(sched["id"])
+    restored, _ = schedules_api.handle_restore(sched["id"])
+    assert restored["next_run_at"] is None
+
+
+# ---------------------------------------------------------- permanent delete
+
+
+def test_permanent_delete_removes_schedule(store, profile_env):
+    sched, _ = schedules_api.handle_create(make_data())
+    result, error = schedules_api.handle_permanent_delete(sched["id"])
+    assert error is None
+    assert result == {"ok": True}
+    assert store.read("schedules") == []
+
+
+def test_permanent_delete_records_audit(store, profile_env):
+    sched, _ = schedules_api.handle_create(make_data())
+    schedules_api.handle_permanent_delete(sched["id"])
+    entry = load_audit()[-1]
+    assert entry["action"] == "permanently_deleted"
+    assert entry["entity_type"] == "schedule"
+    assert entry["entity_id"] == sched["id"]
+
+
+def test_permanent_delete_missing_returns_ok(store):
+    result, error = schedules_api.handle_permanent_delete("nope")
+    assert result == {"ok": True}
+    assert error is None
+
+
+def test_permanent_delete_trashed_schedule(store, profile_env):
+    sched, _ = schedules_api.handle_create(make_data())
+    schedules_api.handle_delete(sched["id"])
+    result, error = schedules_api.handle_permanent_delete(sched["id"])
+    assert error is None
+    assert result == {"ok": True}
+    assert store.read("schedules") == []
 
 
 # ------------------------------------------------------------------- cascade

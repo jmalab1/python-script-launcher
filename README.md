@@ -163,6 +163,8 @@ minute hour day-of-month month day-of-week
 - **Duplicate** copies a schedule as `<name> (copy)` with the same cron and target; the copy starts enabled with fresh last-run info and appears in the **Audit** panel.
 - Scheduled runs use the profile's stored argument values (as shown on the card) and appear in **Run History** with a "Scheduled" badge. Profile and workflow cards show a clock badge while an enabled schedule exists.
 - Moving a profile or workflow to the trash pauses its schedule (the card shows "Target in trash"); restoring resumes it. **Permanently deleting** a target deletes its schedules.
+- Schedules can be trashed (moved to a collapsible Trash section), restored, or permanently deleted — just like profiles and workflows. Trashed schedules stop firing and are hidden from the main list and tag filter.
+- Schedules inherit the tags of their target profile/workflow. Tag filter pills on the Schedules panel let you narrow the list by inherited tag.
 
 ## Searching History and Audit
 

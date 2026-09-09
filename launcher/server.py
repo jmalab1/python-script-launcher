@@ -353,6 +353,14 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
                 else:
                     self._json_response(result)
 
+            elif path.startswith("/api/schedules/") and path.endswith("/restore"):
+                schedule_id = path[len("/api/schedules/"):-len("/restore")]
+                result, error = schedules.handle_restore(schedule_id)
+                if error:
+                    self._json_response(error, 404)
+                else:
+                    self._json_response(result)
+
             elif path == "/api/schedules":
                 result, error = schedules.handle_create(data)
                 if error:
@@ -440,6 +448,14 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
                 workflow_id = path.split("/")[-1]
                 result = workflows.handle_delete(workflow_id)
                 self._json_response(result)
+
+            elif path.startswith("/api/schedules/") and path.endswith("/permanent"):
+                schedule_id = path[len("/api/schedules/"):-len("/permanent")]
+                result, error = schedules.handle_permanent_delete(schedule_id)
+                if error:
+                    self._json_response(error, 404)
+                else:
+                    self._json_response(result)
 
             elif path.startswith("/api/schedules/"):
                 schedule_id = path.split("/")[-1]

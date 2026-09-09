@@ -64,6 +64,10 @@ tailwind.config = {
 }
 .mob-nav { transition: all 150ms ease; }
 
+/* Hide scrollbar on mobile nav tabs while keeping scroll */
+.mob-nav-scroll::-webkit-scrollbar { display: none; }
+.mob-nav-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+
 aside { width: 12rem; }
 @media (max-width: 767px) {
     aside { width: min(12rem, 65vw); }
