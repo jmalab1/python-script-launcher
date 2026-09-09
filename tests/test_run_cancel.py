@@ -210,7 +210,10 @@ def test_run_modal_has_a_stop_button_that_confirms_before_cancelling():
         r"<\$\{ConfirmModal\} isOpen=\$\{pendingCancel\}[\s\S]*?onConfirm=\$\{confirmCancel\}[\s\S]*?confirmLabel=\"Stop\"",
         src,
     ), "stopping must ask for confirmation, like other destructive actions"
-    assert "await cancelRun(runId);" in src, "confirming must call the cancel API"
+    assert re.search(
+        r"const id = liveRunIdRef\.current \|\| runId;[\s\S]*?await cancelRun\(id\);",
+        src,
+    ), "confirming must cancel by the runner's run id — the history entry id the panel may have been opened with is unknown to the runner"
 
 
 def test_run_modal_shows_cancelled_runs_as_cancelled():

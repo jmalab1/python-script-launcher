@@ -31,6 +31,10 @@ export function RunModal({ isOpen, onClose, runId, title, runType }) {
     const activeTabRef = useRef('workflow');
     const lastDataRef = useRef(null);
     const autoPolledRef = useRef(false);
+    // History rows carry their own entry id, but live polling and the
+    // Stop button must talk to the runner, which only knows the run id.
+    // It arrives with the history entry's data once that loads.
+    const liveRunIdRef = useRef(null);
     // True only while the modal is open: async work that resolves after
     // close (e.g. the first history fetch) must not start a poll timer.
     const openRef = useRef(false);
@@ -126,9 +130,10 @@ export function RunModal({ isOpen, onClose, runId, title, runType }) {
     }
 
     async function confirmCancel() {
-        if (!runId) return;
+        const id = liveRunIdRef.current || runId;
+        if (!id) return;
         try {
-            await cancelRun(runId);
+            await cancelRun(id);
         } catch (err) {
             setError('Could not stop the run.');
         }
@@ -184,6 +189,9 @@ export function RunModal({ isOpen, onClose, runId, title, runType }) {
             return;
         }
         lastDataRef.current = hist;
+        // Remember the runner's id for this run so polling and stopping
+        // work even though the panel was opened with the entry id.
+        liveRunIdRef.current = hist.run_id || rid;
         setStatus(hist.status || 'completed');
         updateTabs(hist.steps || {});
         setTimedOut(!!hist.timed_out);
@@ -191,7 +199,7 @@ export function RunModal({ isOpen, onClose, runId, title, runType }) {
         setCommand(commandFor(hist));
         if ((hist.status === 'running' || hist.status === 'starting') && !autoPolledRef.current) {
             autoPolledRef.current = true;
-            pollActiveRun(rid);
+            pollActiveRun(liveRunIdRef.current);
         }
     }
 
@@ -255,6 +263,9 @@ export function RunModal({ isOpen, onClose, runId, title, runType }) {
         if (!isOpen || !runId) return;
         lastDataRef.current = null;
         autoPolledRef.current = false;
+        // Runs started live are opened with the runner's own run id;
+        // history opens replace this once the entry data arrives.
+        liveRunIdRef.current = runId;
         openRef.current = true;
         setOutput([]);
         setStatus('starting');
@@ -281,7 +292,9 @@ export function RunModal({ isOpen, onClose, runId, title, runType }) {
 
     useEffect(() => {
         if (!isOpen || !runId) return;
-        if (runType) {
+        // While a poll timer is live it holds the fresher data, so don't
+        // clobber it with the history entry's (possibly empty) snapshot.
+        if (runType && !timerRef.current) {
             loadFromHistory(runId, runType);
         }
     }, [activeTab]);

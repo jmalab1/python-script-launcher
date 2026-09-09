@@ -63,6 +63,10 @@ export async function deleteSchedule(id) {
     return api('DELETE', '/api/schedules/' + id);
 }
 
+export async function duplicateSchedule(id) {
+    return api('POST', `/api/schedules/${id}/duplicate`);
+}
+
 export async function previewCron(cron) {
     return api('GET', '/api/schedules/preview?cron=' + encodeURIComponent(cron));
 }

@@ -23,11 +23,25 @@ def test_run_modal_switches_to_live_polling_for_history_entries_still_running():
         src,
     ), "loadFromHistory does not detect in-progress entries"
     assert re.search(
+        r"liveRunIdRef\.current = hist\.run_id \|\| rid;",
+        src,
+    ), "the history entry must reveal the runner's run id — the entry id alone cannot be polled"
+    assert re.search(
         r"if \(\(hist\.status === 'running' \|\| hist\.status === 'starting'\) && !autoPolledRef\.current\) \{\s*"
         r"autoPolledRef\.current = true;\s*"
-        r"pollActiveRun\(rid\);",
+        r"pollActiveRun\(liveRunIdRef\.current\);",
         src,
-    ), "a still-running history entry must start polling exactly once (guard against poll/error loops)"
+    ), "a still-running history entry must be polled by its run id (the runner's key), exactly once (guard against poll/error loops)"
+
+
+def test_run_modal_does_not_reload_history_over_live_data_while_polling():
+    src = run_modal_src()
+    assert re.search(
+        r"if \(runType && !timerRef\.current\) \{\s*"
+        r"loadFromHistory\(runId, runType\);\s*"
+        r"\}",
+        src,
+    ), "switching tabs must not clobber live polled output with the stale history snapshot"
 
 
 def test_run_modal_resets_its_poll_guard_each_time_it_opens():

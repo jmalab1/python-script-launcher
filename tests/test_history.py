@@ -46,6 +46,15 @@ def test_detail_by_entry_id_pulls_the_correct_run(store, legacy_history):
     assert got["output"] == ["WF NEW"], got
 
 
+def test_detail_of_a_running_entry_exposes_its_run_id(store):
+    """The run panel resolves the runner's poll id from this field, so a
+    still-running run reopened from history can switch to live polling."""
+    storage.save_history("prof_live_1", "Long Run", "profile", "running", None, [], 1.0)
+    detail = history.handle_detail("prof_live_1", "profile")
+    assert detail["status"] == "running"
+    assert detail["run_id"] == "prof_live_1"
+
+
 def test_delete_by_entry_id_removes_exactly_one_entry_and_siblings_survive(store, legacy_history):
     entries = storage.load_history()
     unstable = next(e for e in entries if e["name"] == "Unstable")

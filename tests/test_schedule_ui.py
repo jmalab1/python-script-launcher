@@ -40,6 +40,7 @@ def test_schedules_list_shows_state_and_uses_confirm_modal_for_delete():
     assert "toggleSchedule" in src, "enable/disable missing"
     assert "runScheduleNow" in src, "run-now missing"
     assert "deleteSchedule" in src, "delete missing"
+    assert "duplicateSchedule" in src, "duplicate missing"
     assert "formatRelative" in src, "next-run countdown missing"
     assert "Target missing" in src and "Target in trash" in src, "blocked-target state missing"
 
@@ -60,7 +61,7 @@ def test_state_and_api_wire_up_schedules():
     assert "'schedules'" in state, "PANELS is missing 'schedules'"
     assert "export const schedules = signal([]);" in state
     api = (JS / "api.js").read_text()
-    for fn in ("loadSchedules", "saveSchedule", "toggleSchedule", "runScheduleNow", "deleteSchedule", "previewCron"):
+    for fn in ("loadSchedules", "saveSchedule", "toggleSchedule", "runScheduleNow", "deleteSchedule", "previewCron", "duplicateSchedule"):
         assert f"export async function {fn}(" in api, f"api.js missing {fn}"
 
 

@@ -234,7 +234,7 @@ def test_soft_delete_keeps_schedule_but_flags_target_trashed(store, profile_env)
     assert listed[0]["target_name"] == "Job"
 
 
-# ------------------------------------------------------------------- preview
+# -------------------------------------------------------------------- preview
 
 
 def test_preview_returns_upcoming_runs():
@@ -251,3 +251,61 @@ def test_preview_rejects_invalid_cron():
     result, error = schedules_api.handle_preview("nope nope")
     assert result is None
     assert "Invalid cron" in error["error"]
+
+
+# ------------------------------------------------------------------- duplicate
+
+
+def test_duplicate_creates_copy_with_new_id(store, profile_env):
+    sched, _ = schedules_api.handle_create(make_data())
+    dup, error = schedules_api.handle_duplicate(sched["id"])
+    assert error is None
+    assert dup["id"] != sched["id"]
+    assert dup["id"].startswith("sched_")
+    assert dup["name"] == "Hourly job (copy)"
+    assert dup["cron"] == sched["cron"]
+    assert dup["target_type"] == "profile"
+    assert dup["target_id"] == "p1"
+    assert dup["enabled"] is True
+    assert dup["next_run_at"] > 0
+    assert dup["last_run_at"] is None
+    assert dup["last_run_id"] is None
+    assert dup["last_status"] is None
+    assert len(store.read("schedules")) == 2
+
+
+def test_duplicate_appends_copy_suffix(store, profile_env):
+    schedules_api.handle_create(make_data(name="Nightly"))
+    sched, _ = schedules_api.handle_create(make_data(name="Nightly", cron="0 0 * * *"))
+    dup, _ = schedules_api.handle_duplicate(sched["id"])
+    assert dup["name"] == "Nightly (copy)"
+
+
+def test_duplicate_increments_copy_number(store, profile_env):
+    schedules_api.handle_create(make_data(name="Nightly"))
+    sched2, _ = schedules_api.handle_create(make_data(name="Nightly", cron="0 0 * * *"))
+    schedules_api.handle_duplicate(sched2["id"])
+    sched3, _ = schedules_api.handle_create(make_data(name="Nightly", cron="30 0 * * *"))
+    dup3, _ = schedules_api.handle_duplicate(sched3["id"])
+    assert dup3["name"] == "Nightly (copy 2)"
+
+
+def test_duplicate_disabled_schedule_has_no_next_run(store, profile_env):
+    sched, _ = schedules_api.handle_create(make_data(enabled=False))
+    dup, _ = schedules_api.handle_duplicate(sched["id"])
+    assert dup["enabled"] is False
+    assert dup["next_run_at"] is None
+
+
+def test_duplicate_records_audit(store, profile_env):
+    sched, _ = schedules_api.handle_create(make_data())
+    schedules_api.handle_duplicate(sched["id"])
+    entry = load_audit()[-1]
+    assert entry["action"] == "created"
+    assert entry["entity_type"] == "schedule"
+    assert entry["details"]["duplicate_of"] == "Hourly job"
+
+
+def test_duplicate_missing_schedule_returns_error(store):
+    _, error = schedules_api.handle_duplicate("nope")
+    assert error == {"error": "Schedule not found"}

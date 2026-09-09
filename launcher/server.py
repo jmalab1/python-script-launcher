@@ -345,6 +345,14 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
                 else:
                     self._json_response({"error": "Not found"}, 404)
 
+            elif path.startswith("/api/schedules/") and path.endswith("/duplicate"):
+                schedule_id = path[len("/api/schedules/"):-len("/duplicate")]
+                result, error = schedules.handle_duplicate(schedule_id)
+                if error:
+                    self._json_response(error, 404)
+                else:
+                    self._json_response(result)
+
             elif path == "/api/schedules":
                 result, error = schedules.handle_create(data)
                 if error:

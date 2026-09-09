@@ -174,6 +174,43 @@ def handle_run_now(schedule_id):
 
 
 @_locked
+def handle_duplicate(schedule_id):
+    schedules = load_json(COL_SCHEDULES)
+    source = next((s for s in schedules if s.get("id") == schedule_id), None)
+    if not source:
+        return None, {"error": "Schedule not found"}
+    duplicate = copy.deepcopy(source)
+    duplicate["id"] = f"sched_{uuid.uuid4().hex[:12]}"
+    duplicate["created_at"] = time.time()
+    duplicate["last_run_at"] = None
+    duplicate["last_run_id"] = None
+    duplicate["last_status"] = None
+    base = source.get("name") or "Schedule"
+    existing_names = {s.get("name") for s in schedules}
+    name = f"{base} (copy)"
+    n = 2
+    while name in existing_names:
+        name = f"{base} (copy {n})"
+        n += 1
+    duplicate["name"] = name
+    if duplicate.get("enabled"):
+        duplicate["next_run_at"] = _next_run_at(duplicate.get("cron", ""))
+    else:
+        duplicate["next_run_at"] = None
+    schedules.append(duplicate)
+    save_json(COL_SCHEDULES, schedules)
+    record_audit(
+        "created",
+        "schedule",
+        duplicate["id"],
+        duplicate.get("name"),
+        after=copy.deepcopy(duplicate),
+        details={"duplicate_of": _audit_name(source)},
+    )
+    return duplicate, None
+
+
+@_locked
 def handle_delete(schedule_id):
     schedules = load_json(COL_SCHEDULES)
     target = next((s for s in schedules if s.get("id") == schedule_id), None)

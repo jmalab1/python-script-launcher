@@ -17,7 +17,7 @@ Launch Control is a local, zero-dependency web tool for managing and running Pyt
 - **Script Timeout**: Per-profile time limit that kills runaway scripts and marks the run failed.
 - **Stop Runs**: Kill a running script or workflow from the run panel; the run is recorded as cancelled with its output so far kept.
 - **Output Export**: Download a run's output as a text file from the run panel.
-- **Run Panel**: Run output opens in a panel docked to the right side of the screen, sliding in on open and sliding back out on close. Drag the grip pill on its left edge to resize it — the chosen width is remembered for next time. Clicking outside the panel closes it, but clicking another history row just swaps in that run's output.
+- **Run Panel**: Run output opens in a panel docked to the right side of the screen, sliding in on open and sliding back out on close. Drag the grip pill on its left edge to resize it — the chosen width is remembered for next time. Clicking outside the panel closes it, but clicking another history row just swaps in that run's output. Reopening a still-running run from history switches the panel to live output, so it keeps updating (and its Stop button works) even though the panel was closed meanwhile.
 - **Modern UI**: Dark/light theme, drag-to-reorder (editing or re-saving an item keeps its place in the list), responsive layout, terminal-style output viewer. If a run fails to start (for example the script was deleted after the page loaded), the card shows an inline error banner instead of failing silently.
 
 ## Quick Start
@@ -160,6 +160,7 @@ minute hour day-of-month month day-of-week
 - **Missed runs are skipped**: if Launch Control is not running when a run is due, the next run happens at the next normal occurrence.
 - **No overlap**: a schedule will not start a new run while its previous run is still active; the run starts on the next tick once the previous one finishes (ticks are every `SCHEDULER_TICK_SECONDS`).
 - **Run now** fires a schedule immediately without changing its cadence; the firing is recorded in the **Audit** panel.
+- **Duplicate** copies a schedule as `<name> (copy)` with the same cron and target; the copy starts enabled with fresh last-run info and appears in the **Audit** panel.
 - Scheduled runs use the profile's stored argument values (as shown on the card) and appear in **Run History** with a "Scheduled" badge. Profile and workflow cards show a clock badge while an enabled schedule exists.
 - Moving a profile or workflow to the trash pauses its schedule (the card shows "Target in trash"); restoring resumes it. **Permanently deleting** a target deletes its schedules.
 
