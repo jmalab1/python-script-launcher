@@ -1,0 +1,2312 @@
+[
+ {
+  "cron": "* * * * *",
+  "now": "2026-03-08 01:30",
+  "describe": "Every minute",
+  "next": "2026-03-08 01:31"
+ },
+ {
+  "cron": "* * * * *",
+  "now": "2026-11-01 01:30",
+  "describe": "Every minute",
+  "next": "2026-11-01 01:31"
+ },
+ {
+  "cron": "* * * * *",
+  "now": "2026-06-15 10:07",
+  "describe": "Every minute",
+  "next": "2026-06-15 10:08"
+ },
+ {
+  "cron": "* * * * *",
+  "now": "2026-12-31 23:59",
+  "describe": "Every minute",
+  "next": "2027-01-01 00:00"
+ },
+ {
+  "cron": "* * * * *",
+  "now": "2026-01-01 00:00",
+  "describe": "Every minute",
+  "next": "2026-01-01 00:01"
+ },
+ {
+  "cron": "* * * * *",
+  "now": "2028-02-28 12:00",
+  "describe": "Every minute",
+  "next": "2028-02-28 12:01"
+ },
+ {
+  "cron": "* * * * *",
+  "now": "2026-02-28 23:30",
+  "describe": "Every minute",
+  "next": "2026-02-28 23:31"
+ },
+ {
+  "cron": "*/7 * * * *",
+  "now": "2026-03-08 01:30",
+  "describe": "Every 7 minutes",
+  "next": "2026-03-08 01:35"
+ },
+ {
+  "cron": "*/7 * * * *",
+  "now": "2026-11-01 01:30",
+  "describe": "Every 7 minutes",
+  "next": "2026-11-01 01:35"
+ },
+ {
+  "cron": "*/7 * * * *",
+  "now": "2026-06-15 10:07",
+  "describe": "Every 7 minutes",
+  "next": "2026-06-15 10:14"
+ },
+ {
+  "cron": "*/7 * * * *",
+  "now": "2026-12-31 23:59",
+  "describe": "Every 7 minutes",
+  "next": "2027-01-01 00:00"
+ },
+ {
+  "cron": "*/7 * * * *",
+  "now": "2026-01-01 00:00",
+  "describe": "Every 7 minutes",
+  "next": "2026-01-01 00:07"
+ },
+ {
+  "cron": "*/7 * * * *",
+  "now": "2028-02-28 12:00",
+  "describe": "Every 7 minutes",
+  "next": "2028-02-28 12:07"
+ },
+ {
+  "cron": "*/7 * * * *",
+  "now": "2026-02-28 23:30",
+  "describe": "Every 7 minutes",
+  "next": "2026-02-28 23:35"
+ },
+ {
+  "cron": "*/7/2 * * * *",
+  "now": "2026-03-08 01:30",
+  "describe": "*/7/2 * * * *",
+  "error": "invalid number '7/2' in minute field"
+ },
+ {
+  "cron": "*/7/2 * * * *",
+  "now": "2026-11-01 01:30",
+  "describe": "*/7/2 * * * *",
+  "error": "invalid number '7/2' in minute field"
+ },
+ {
+  "cron": "*/7/2 * * * *",
+  "now": "2026-06-15 10:07",
+  "describe": "*/7/2 * * * *",
+  "error": "invalid number '7/2' in minute field"
+ },
+ {
+  "cron": "*/7/2 * * * *",
+  "now": "2026-12-31 23:59",
+  "describe": "*/7/2 * * * *",
+  "error": "invalid number '7/2' in minute field"
+ },
+ {
+  "cron": "*/7/2 * * * *",
+  "now": "2026-01-01 00:00",
+  "describe": "*/7/2 * * * *",
+  "error": "invalid number '7/2' in minute field"
+ },
+ {
+  "cron": "*/7/2 * * * *",
+  "now": "2028-02-28 12:00",
+  "describe": "*/7/2 * * * *",
+  "error": "invalid number '7/2' in minute field"
+ },
+ {
+  "cron": "*/7/2 * * * *",
+  "now": "2026-02-28 23:30",
+  "describe": "*/7/2 * * * *",
+  "error": "invalid number '7/2' in minute field"
+ },
+ {
+  "cron": "5/10 * * * *",
+  "now": "2026-03-08 01:30",
+  "describe": "5/10 * * * *",
+  "next": "2026-03-08 01:35"
+ },
+ {
+  "cron": "5/10 * * * *",
+  "now": "2026-11-01 01:30",
+  "describe": "5/10 * * * *",
+  "next": "2026-11-01 01:35"
+ },
+ {
+  "cron": "5/10 * * * *",
+  "now": "2026-06-15 10:07",
+  "describe": "5/10 * * * *",
+  "next": "2026-06-15 10:15"
+ },
+ {
+  "cron": "5/10 * * * *",
+  "now": "2026-12-31 23:59",
+  "describe": "5/10 * * * *",
+  "next": "2027-01-01 00:05"
+ },
+ {
+  "cron": "5/10 * * * *",
+  "now": "2026-01-01 00:00",
+  "describe": "5/10 * * * *",
+  "next": "2026-01-01 00:05"
+ },
+ {
+  "cron": "5/10 * * * *",
+  "now": "2028-02-28 12:00",
+  "describe": "5/10 * * * *",
+  "next": "2028-02-28 12:05"
+ },
+ {
+  "cron": "5/10 * * * *",
+  "now": "2026-02-28 23:30",
+  "describe": "5/10 * * * *",
+  "next": "2026-02-28 23:35"
+ },
+ {
+  "cron": "1-5,10-12/2 * * * *",
+  "now": "2026-03-08 01:30",
+  "describe": "1-5,10-12/2 * * * *",
+  "next": "2026-03-08 02:01"
+ },
+ {
+  "cron": "1-5,10-12/2 * * * *",
+  "now": "2026-11-01 01:30",
+  "describe": "1-5,10-12/2 * * * *",
+  "next": "2026-11-01 02:01"
+ },
+ {
+  "cron": "1-5,10-12/2 * * * *",
+  "now": "2026-06-15 10:07",
+  "describe": "1-5,10-12/2 * * * *",
+  "next": "2026-06-15 10:10"
+ },
+ {
+  "cron": "1-5,10-12/2 * * * *",
+  "now": "2026-12-31 23:59",
+  "describe": "1-5,10-12/2 * * * *",
+  "next": "2027-01-01 00:01"
+ },
+ {
+  "cron": "1-5,10-12/2 * * * *",
+  "now": "2026-01-01 00:00",
+  "describe": "1-5,10-12/2 * * * *",
+  "next": "2026-01-01 00:01"
+ },
+ {
+  "cron": "1-5,10-12/2 * * * *",
+  "now": "2028-02-28 12:00",
+  "describe": "1-5,10-12/2 * * * *",
+  "next": "2028-02-28 12:01"
+ },
+ {
+  "cron": "1-5,10-12/2 * * * *",
+  "now": "2026-02-28 23:30",
+  "describe": "1-5,10-12/2 * * * *",
+  "next": "2026-03-01 00:01"
+ },
+ {
+  "cron": "0 0 * * *",
+  "now": "2026-03-08 01:30",
+  "describe": "Daily at 00:00",
+  "next": "2026-03-09 00:00"
+ },
+ {
+  "cron": "0 0 * * *",
+  "now": "2026-11-01 01:30",
+  "describe": "Daily at 00:00",
+  "next": "2026-11-02 00:00"
+ },
+ {
+  "cron": "0 0 * * *",
+  "now": "2026-06-15 10:07",
+  "describe": "Daily at 00:00",
+  "next": "2026-06-16 00:00"
+ },
+ {
+  "cron": "0 0 * * *",
+  "now": "2026-12-31 23:59",
+  "describe": "Daily at 00:00",
+  "next": "2027-01-01 00:00"
+ },
+ {
+  "cron": "0 0 * * *",
+  "now": "2026-01-01 00:00",
+  "describe": "Daily at 00:00",
+  "next": "2026-01-02 00:00"
+ },
+ {
+  "cron": "0 0 * * *",
+  "now": "2028-02-28 12:00",
+  "describe": "Daily at 00:00",
+  "next": "2028-02-29 00:00"
+ },
+ {
+  "cron": "0 0 * * *",
+  "now": "2026-02-28 23:30",
+  "describe": "Daily at 00:00",
+  "next": "2026-03-01 00:00"
+ },
+ {
+  "cron": "30 2 * * *",
+  "now": "2026-03-08 01:30",
+  "describe": "Daily at 02:30",
+  "next": "2026-03-08 02:30"
+ },
+ {
+  "cron": "30 2 * * *",
+  "now": "2026-11-01 01:30",
+  "describe": "Daily at 02:30",
+  "next": "2026-11-01 02:30"
+ },
+ {
+  "cron": "30 2 * * *",
+  "now": "2026-06-15 10:07",
+  "describe": "Daily at 02:30",
+  "next": "2026-06-16 02:30"
+ },
+ {
+  "cron": "30 2 * * *",
+  "now": "2026-12-31 23:59",
+  "describe": "Daily at 02:30",
+  "next": "2027-01-01 02:30"
+ },
+ {
+  "cron": "30 2 * * *",
+  "now": "2026-01-01 00:00",
+  "describe": "Daily at 02:30",
+  "next": "2026-01-01 02:30"
+ },
+ {
+  "cron": "30 2 * * *",
+  "now": "2028-02-28 12:00",
+  "describe": "Daily at 02:30",
+  "next": "2028-02-29 02:30"
+ },
+ {
+  "cron": "30 2 * * *",
+  "now": "2026-02-28 23:30",
+  "describe": "Daily at 02:30",
+  "next": "2026-03-01 02:30"
+ },
+ {
+  "cron": "0 9 * * 1-5",
+  "now": "2026-03-08 01:30",
+  "describe": "Weekdays at 09:00",
+  "next": "2026-03-09 09:00"
+ },
+ {
+  "cron": "0 9 * * 1-5",
+  "now": "2026-11-01 01:30",
+  "describe": "Weekdays at 09:00",
+  "next": "2026-11-02 09:00"
+ },
+ {
+  "cron": "0 9 * * 1-5",
+  "now": "2026-06-15 10:07",
+  "describe": "Weekdays at 09:00",
+  "next": "2026-06-16 09:00"
+ },
+ {
+  "cron": "0 9 * * 1-5",
+  "now": "2026-12-31 23:59",
+  "describe": "Weekdays at 09:00",
+  "next": "2027-01-01 09:00"
+ },
+ {
+  "cron": "0 9 * * 1-5",
+  "now": "2026-01-01 00:00",
+  "describe": "Weekdays at 09:00",
+  "next": "2026-01-01 09:00"
+ },
+ {
+  "cron": "0 9 * * 1-5",
+  "now": "2028-02-28 12:00",
+  "describe": "Weekdays at 09:00",
+  "next": "2028-02-29 09:00"
+ },
+ {
+  "cron": "0 9 * * 1-5",
+  "now": "2026-02-28 23:30",
+  "describe": "Weekdays at 09:00",
+  "next": "2026-03-02 09:00"
+ },
+ {
+  "cron": "0 9 * * 0,7",
+  "now": "2026-03-08 01:30",
+  "describe": "Weekly on Sunday at 09:00",
+  "next": "2026-03-08 09:00"
+ },
+ {
+  "cron": "0 9 * * 0,7",
+  "now": "2026-11-01 01:30",
+  "describe": "Weekly on Sunday at 09:00",
+  "next": "2026-11-01 09:00"
+ },
+ {
+  "cron": "0 9 * * 0,7",
+  "now": "2026-06-15 10:07",
+  "describe": "Weekly on Sunday at 09:00",
+  "next": "2026-06-21 09:00"
+ },
+ {
+  "cron": "0 9 * * 0,7",
+  "now": "2026-12-31 23:59",
+  "describe": "Weekly on Sunday at 09:00",
+  "next": "2027-01-03 09:00"
+ },
+ {
+  "cron": "0 9 * * 0,7",
+  "now": "2026-01-01 00:00",
+  "describe": "Weekly on Sunday at 09:00",
+  "next": "2026-01-04 09:00"
+ },
+ {
+  "cron": "0 9 * * 0,7",
+  "now": "2028-02-28 12:00",
+  "describe": "Weekly on Sunday at 09:00",
+  "next": "2028-03-05 09:00"
+ },
+ {
+  "cron": "0 9 * * 0,7",
+  "now": "2026-02-28 23:30",
+  "describe": "Weekly on Sunday at 09:00",
+  "next": "2026-03-01 09:00"
+ },
+ {
+  "cron": "0 9 * * 7",
+  "now": "2026-03-08 01:30",
+  "describe": "Weekly on Sunday at 09:00",
+  "next": "2026-03-08 09:00"
+ },
+ {
+  "cron": "0 9 * * 7",
+  "now": "2026-11-01 01:30",
+  "describe": "Weekly on Sunday at 09:00",
+  "next": "2026-11-01 09:00"
+ },
+ {
+  "cron": "0 9 * * 7",
+  "now": "2026-06-15 10:07",
+  "describe": "Weekly on Sunday at 09:00",
+  "next": "2026-06-21 09:00"
+ },
+ {
+  "cron": "0 9 * * 7",
+  "now": "2026-12-31 23:59",
+  "describe": "Weekly on Sunday at 09:00",
+  "next": "2027-01-03 09:00"
+ },
+ {
+  "cron": "0 9 * * 7",
+  "now": "2026-01-01 00:00",
+  "describe": "Weekly on Sunday at 09:00",
+  "next": "2026-01-04 09:00"
+ },
+ {
+  "cron": "0 9 * * 7",
+  "now": "2028-02-28 12:00",
+  "describe": "Weekly on Sunday at 09:00",
+  "next": "2028-03-05 09:00"
+ },
+ {
+  "cron": "0 9 * * 7",
+  "now": "2026-02-28 23:30",
+  "describe": "Weekly on Sunday at 09:00",
+  "next": "2026-03-01 09:00"
+ },
+ {
+  "cron": "30 8 15 * *",
+  "now": "2026-03-08 01:30",
+  "describe": "Monthly on day 15 at 08:30",
+  "next": "2026-03-15 08:30"
+ },
+ {
+  "cron": "30 8 15 * *",
+  "now": "2026-11-01 01:30",
+  "describe": "Monthly on day 15 at 08:30",
+  "next": "2026-11-15 08:30"
+ },
+ {
+  "cron": "30 8 15 * *",
+  "now": "2026-06-15 10:07",
+  "describe": "Monthly on day 15 at 08:30",
+  "next": "2026-07-15 08:30"
+ },
+ {
+  "cron": "30 8 15 * *",
+  "now": "2026-12-31 23:59",
+  "describe": "Monthly on day 15 at 08:30",
+  "next": "2027-01-15 08:30"
+ },
+ {
+  "cron": "30 8 15 * *",
+  "now": "2026-01-01 00:00",
+  "describe": "Monthly on day 15 at 08:30",
+  "next": "2026-01-15 08:30"
+ },
+ {
+  "cron": "30 8 15 * *",
+  "now": "2028-02-28 12:00",
+  "describe": "Monthly on day 15 at 08:30",
+  "next": "2028-03-15 08:30"
+ },
+ {
+  "cron": "30 8 15 * *",
+  "now": "2026-02-28 23:30",
+  "describe": "Monthly on day 15 at 08:30",
+  "next": "2026-03-15 08:30"
+ },
+ {
+  "cron": "0 0 29 2 *",
+  "now": "2026-03-08 01:30",
+  "describe": "0 0 29 2 *",
+  "next": "2028-02-29 00:00"
+ },
+ {
+  "cron": "0 0 29 2 *",
+  "now": "2026-11-01 01:30",
+  "describe": "0 0 29 2 *",
+  "next": "2028-02-29 00:00"
+ },
+ {
+  "cron": "0 0 29 2 *",
+  "now": "2026-06-15 10:07",
+  "describe": "0 0 29 2 *",
+  "next": "2028-02-29 00:00"
+ },
+ {
+  "cron": "0 0 29 2 *",
+  "now": "2026-12-31 23:59",
+  "describe": "0 0 29 2 *",
+  "next": "2028-02-29 00:00"
+ },
+ {
+  "cron": "0 0 29 2 *",
+  "now": "2026-01-01 00:00",
+  "describe": "0 0 29 2 *",
+  "next": "2028-02-29 00:00"
+ },
+ {
+  "cron": "0 0 29 2 *",
+  "now": "2028-02-28 12:00",
+  "describe": "0 0 29 2 *",
+  "next": "2028-02-29 00:00"
+ },
+ {
+  "cron": "0 0 29 2 *",
+  "now": "2026-02-28 23:30",
+  "describe": "0 0 29 2 *",
+  "next": "2028-02-29 00:00"
+ },
+ {
+  "cron": "0 12 */3 * *",
+  "now": "2026-03-08 01:30",
+  "describe": "Every 3 days at 12:00",
+  "next": "2026-03-10 12:00"
+ },
+ {
+  "cron": "0 12 */3 * *",
+  "now": "2026-11-01 01:30",
+  "describe": "Every 3 days at 12:00",
+  "next": "2026-11-01 12:00"
+ },
+ {
+  "cron": "0 12 */3 * *",
+  "now": "2026-06-15 10:07",
+  "describe": "Every 3 days at 12:00",
+  "next": "2026-06-16 12:00"
+ },
+ {
+  "cron": "0 12 */3 * *",
+  "now": "2026-12-31 23:59",
+  "describe": "Every 3 days at 12:00",
+  "next": "2027-01-01 12:00"
+ },
+ {
+  "cron": "0 12 */3 * *",
+  "now": "2026-01-01 00:00",
+  "describe": "Every 3 days at 12:00",
+  "next": "2026-01-01 12:00"
+ },
+ {
+  "cron": "0 12 */3 * *",
+  "now": "2028-02-28 12:00",
+  "describe": "Every 3 days at 12:00",
+  "next": "2028-03-01 12:00"
+ },
+ {
+  "cron": "0 12 */3 * *",
+  "now": "2026-02-28 23:30",
+  "describe": "Every 3 days at 12:00",
+  "next": "2026-03-01 12:00"
+ },
+ {
+  "cron": "59 23 31 12 *",
+  "now": "2026-03-08 01:30",
+  "describe": "59 23 31 12 *",
+  "next": "2026-12-31 23:59"
+ },
+ {
+  "cron": "59 23 31 12 *",
+  "now": "2026-11-01 01:30",
+  "describe": "59 23 31 12 *",
+  "next": "2026-12-31 23:59"
+ },
+ {
+  "cron": "59 23 31 12 *",
+  "now": "2026-06-15 10:07",
+  "describe": "59 23 31 12 *",
+  "next": "2026-12-31 23:59"
+ },
+ {
+  "cron": "59 23 31 12 *",
+  "now": "2026-12-31 23:59",
+  "describe": "59 23 31 12 *",
+  "next": "2027-12-31 23:59"
+ },
+ {
+  "cron": "59 23 31 12 *",
+  "now": "2026-01-01 00:00",
+  "describe": "59 23 31 12 *",
+  "next": "2026-12-31 23:59"
+ },
+ {
+  "cron": "59 23 31 12 *",
+  "now": "2028-02-28 12:00",
+  "describe": "59 23 31 12 *",
+  "next": "2028-12-31 23:59"
+ },
+ {
+  "cron": "59 23 31 12 *",
+  "now": "2026-02-28 23:30",
+  "describe": "59 23 31 12 *",
+  "next": "2026-12-31 23:59"
+ },
+ {
+  "cron": "0 0 * * 6",
+  "now": "2026-03-08 01:30",
+  "describe": "Weekly on Saturday at 00:00",
+  "next": "2026-03-14 00:00"
+ },
+ {
+  "cron": "0 0 * * 6",
+  "now": "2026-11-01 01:30",
+  "describe": "Weekly on Saturday at 00:00",
+  "next": "2026-11-07 00:00"
+ },
+ {
+  "cron": "0 0 * * 6",
+  "now": "2026-06-15 10:07",
+  "describe": "Weekly on Saturday at 00:00",
+  "next": "2026-06-20 00:00"
+ },
+ {
+  "cron": "0 0 * * 6",
+  "now": "2026-12-31 23:59",
+  "describe": "Weekly on Saturday at 00:00",
+  "next": "2027-01-02 00:00"
+ },
+ {
+  "cron": "0 0 * * 6",
+  "now": "2026-01-01 00:00",
+  "describe": "Weekly on Saturday at 00:00",
+  "next": "2026-01-03 00:00"
+ },
+ {
+  "cron": "0 0 * * 6",
+  "now": "2028-02-28 12:00",
+  "describe": "Weekly on Saturday at 00:00",
+  "next": "2028-03-04 00:00"
+ },
+ {
+  "cron": "0 0 * * 6",
+  "now": "2026-02-28 23:30",
+  "describe": "Weekly on Saturday at 00:00",
+  "next": "2026-03-07 00:00"
+ },
+ {
+  "cron": "15,45 */2 1,15 1-12 1",
+  "now": "2026-03-08 01:30",
+  "describe": "15,45 */2 1,15 1-12 1",
+  "next": "2026-03-09 00:15"
+ },
+ {
+  "cron": "15,45 */2 1,15 1-12 1",
+  "now": "2026-11-01 01:30",
+  "describe": "15,45 */2 1,15 1-12 1",
+  "next": "2026-11-01 02:15"
+ },
+ {
+  "cron": "15,45 */2 1,15 1-12 1",
+  "now": "2026-06-15 10:07",
+  "describe": "15,45 */2 1,15 1-12 1",
+  "next": "2026-06-15 10:15"
+ },
+ {
+  "cron": "15,45 */2 1,15 1-12 1",
+  "now": "2026-12-31 23:59",
+  "describe": "15,45 */2 1,15 1-12 1",
+  "next": "2027-01-01 00:15"
+ },
+ {
+  "cron": "15,45 */2 1,15 1-12 1",
+  "now": "2026-01-01 00:00",
+  "describe": "15,45 */2 1,15 1-12 1",
+  "next": "2026-01-01 00:15"
+ },
+ {
+  "cron": "15,45 */2 1,15 1-12 1",
+  "now": "2028-02-28 12:00",
+  "describe": "15,45 */2 1,15 1-12 1",
+  "next": "2028-02-28 12:15"
+ },
+ {
+  "cron": "15,45 */2 1,15 1-12 1",
+  "now": "2026-02-28 23:30",
+  "describe": "15,45 */2 1,15 1-12 1",
+  "next": "2026-03-01 00:15"
+ },
+ {
+  "cron": "10/5 * * * *",
+  "now": "2026-03-08 01:30",
+  "describe": "10/5 * * * *",
+  "next": "2026-03-08 01:35"
+ },
+ {
+  "cron": "10/5 * * * *",
+  "now": "2026-11-01 01:30",
+  "describe": "10/5 * * * *",
+  "next": "2026-11-01 01:35"
+ },
+ {
+  "cron": "10/5 * * * *",
+  "now": "2026-06-15 10:07",
+  "describe": "10/5 * * * *",
+  "next": "2026-06-15 10:10"
+ },
+ {
+  "cron": "10/5 * * * *",
+  "now": "2026-12-31 23:59",
+  "describe": "10/5 * * * *",
+  "next": "2027-01-01 00:10"
+ },
+ {
+  "cron": "10/5 * * * *",
+  "now": "2026-01-01 00:00",
+  "describe": "10/5 * * * *",
+  "next": "2026-01-01 00:10"
+ },
+ {
+  "cron": "10/5 * * * *",
+  "now": "2028-02-28 12:00",
+  "describe": "10/5 * * * *",
+  "next": "2028-02-28 12:10"
+ },
+ {
+  "cron": "10/5 * * * *",
+  "now": "2026-02-28 23:30",
+  "describe": "10/5 * * * *",
+  "next": "2026-02-28 23:35"
+ },
+ {
+  "cron": "8-18/2 * * * *",
+  "now": "2026-03-08 01:30",
+  "describe": "8-18/2 * * * *",
+  "next": "2026-03-08 02:08"
+ },
+ {
+  "cron": "8-18/2 * * * *",
+  "now": "2026-11-01 01:30",
+  "describe": "8-18/2 * * * *",
+  "next": "2026-11-01 02:08"
+ },
+ {
+  "cron": "8-18/2 * * * *",
+  "now": "2026-06-15 10:07",
+  "describe": "8-18/2 * * * *",
+  "next": "2026-06-15 10:08"
+ },
+ {
+  "cron": "8-18/2 * * * *",
+  "now": "2026-12-31 23:59",
+  "describe": "8-18/2 * * * *",
+  "next": "2027-01-01 00:08"
+ },
+ {
+  "cron": "8-18/2 * * * *",
+  "now": "2026-01-01 00:00",
+  "describe": "8-18/2 * * * *",
+  "next": "2026-01-01 00:08"
+ },
+ {
+  "cron": "8-18/2 * * * *",
+  "now": "2028-02-28 12:00",
+  "describe": "8-18/2 * * * *",
+  "next": "2028-02-28 12:08"
+ },
+ {
+  "cron": "8-18/2 * * * *",
+  "now": "2026-02-28 23:30",
+  "describe": "8-18/2 * * * *",
+  "next": "2026-03-01 00:08"
+ },
+ {
+  "cron": "0 0 */10 * *",
+  "now": "2026-03-08 01:30",
+  "describe": "Every 10 days",
+  "next": "2026-03-11 00:00"
+ },
+ {
+  "cron": "0 0 */10 * *",
+  "now": "2026-11-01 01:30",
+  "describe": "Every 10 days",
+  "next": "2026-11-11 00:00"
+ },
+ {
+  "cron": "0 0 */10 * *",
+  "now": "2026-06-15 10:07",
+  "describe": "Every 10 days",
+  "next": "2026-06-21 00:00"
+ },
+ {
+  "cron": "0 0 */10 * *",
+  "now": "2026-12-31 23:59",
+  "describe": "Every 10 days",
+  "next": "2027-01-01 00:00"
+ },
+ {
+  "cron": "0 0 */10 * *",
+  "now": "2026-01-01 00:00",
+  "describe": "Every 10 days",
+  "next": "2026-01-11 00:00"
+ },
+ {
+  "cron": "0 0 */10 * *",
+  "now": "2028-02-28 12:00",
+  "describe": "Every 10 days",
+  "next": "2028-03-01 00:00"
+ },
+ {
+  "cron": "0 0 */10 * *",
+  "now": "2026-02-28 23:30",
+  "describe": "Every 10 days",
+  "next": "2026-03-01 00:00"
+ },
+ {
+  "cron": "* 6-18 * * *",
+  "now": "2026-03-08 01:30",
+  "describe": "* 6-18 * * *",
+  "next": "2026-03-08 06:00"
+ },
+ {
+  "cron": "* 6-18 * * *",
+  "now": "2026-11-01 01:30",
+  "describe": "* 6-18 * * *",
+  "next": "2026-11-01 06:00"
+ },
+ {
+  "cron": "* 6-18 * * *",
+  "now": "2026-06-15 10:07",
+  "describe": "* 6-18 * * *",
+  "next": "2026-06-15 10:08"
+ },
+ {
+  "cron": "* 6-18 * * *",
+  "now": "2026-12-31 23:59",
+  "describe": "* 6-18 * * *",
+  "next": "2027-01-01 06:00"
+ },
+ {
+  "cron": "* 6-18 * * *",
+  "now": "2026-01-01 00:00",
+  "describe": "* 6-18 * * *",
+  "next": "2026-01-01 06:00"
+ },
+ {
+  "cron": "* 6-18 * * *",
+  "now": "2028-02-28 12:00",
+  "describe": "* 6-18 * * *",
+  "next": "2028-02-28 12:01"
+ },
+ {
+  "cron": "* 6-18 * * *",
+  "now": "2026-02-28 23:30",
+  "describe": "* 6-18 * * *",
+  "next": "2026-03-01 06:00"
+ },
+ {
+  "cron": "0 22 * * 1-5",
+  "now": "2026-03-08 01:30",
+  "describe": "Weekdays at 22:00",
+  "next": "2026-03-09 22:00"
+ },
+ {
+  "cron": "0 22 * * 1-5",
+  "now": "2026-11-01 01:30",
+  "describe": "Weekdays at 22:00",
+  "next": "2026-11-02 22:00"
+ },
+ {
+  "cron": "0 22 * * 1-5",
+  "now": "2026-06-15 10:07",
+  "describe": "Weekdays at 22:00",
+  "next": "2026-06-15 22:00"
+ },
+ {
+  "cron": "0 22 * * 1-5",
+  "now": "2026-12-31 23:59",
+  "describe": "Weekdays at 22:00",
+  "next": "2027-01-01 22:00"
+ },
+ {
+  "cron": "0 22 * * 1-5",
+  "now": "2026-01-01 00:00",
+  "describe": "Weekdays at 22:00",
+  "next": "2026-01-01 22:00"
+ },
+ {
+  "cron": "0 22 * * 1-5",
+  "now": "2028-02-28 12:00",
+  "describe": "Weekdays at 22:00",
+  "next": "2028-02-28 22:00"
+ },
+ {
+  "cron": "0 22 * * 1-5",
+  "now": "2026-02-28 23:30",
+  "describe": "Weekdays at 22:00",
+  "next": "2026-03-02 22:00"
+ },
+ {
+  "cron": "5 4 * * 0",
+  "now": "2026-03-08 01:30",
+  "describe": "Weekly on Sunday at 04:05",
+  "next": "2026-03-08 04:05"
+ },
+ {
+  "cron": "5 4 * * 0",
+  "now": "2026-11-01 01:30",
+  "describe": "Weekly on Sunday at 04:05",
+  "next": "2026-11-01 04:05"
+ },
+ {
+  "cron": "5 4 * * 0",
+  "now": "2026-06-15 10:07",
+  "describe": "Weekly on Sunday at 04:05",
+  "next": "2026-06-21 04:05"
+ },
+ {
+  "cron": "5 4 * * 0",
+  "now": "2026-12-31 23:59",
+  "describe": "Weekly on Sunday at 04:05",
+  "next": "2027-01-03 04:05"
+ },
+ {
+  "cron": "5 4 * * 0",
+  "now": "2026-01-01 00:00",
+  "describe": "Weekly on Sunday at 04:05",
+  "next": "2026-01-04 04:05"
+ },
+ {
+  "cron": "5 4 * * 0",
+  "now": "2028-02-28 12:00",
+  "describe": "Weekly on Sunday at 04:05",
+  "next": "2028-03-05 04:05"
+ },
+ {
+  "cron": "5 4 * * 0",
+  "now": "2026-02-28 23:30",
+  "describe": "Weekly on Sunday at 04:05",
+  "next": "2026-03-01 04:05"
+ },
+ {
+  "cron": "1 0 1 1 *",
+  "now": "2026-03-08 01:30",
+  "describe": "1 0 1 1 *",
+  "next": "2027-01-01 00:01"
+ },
+ {
+  "cron": "1 0 1 1 *",
+  "now": "2026-11-01 01:30",
+  "describe": "1 0 1 1 *",
+  "next": "2027-01-01 00:01"
+ },
+ {
+  "cron": "1 0 1 1 *",
+  "now": "2026-06-15 10:07",
+  "describe": "1 0 1 1 *",
+  "next": "2027-01-01 00:01"
+ },
+ {
+  "cron": "1 0 1 1 *",
+  "now": "2026-12-31 23:59",
+  "describe": "1 0 1 1 *",
+  "next": "2027-01-01 00:01"
+ },
+ {
+  "cron": "1 0 1 1 *",
+  "now": "2026-01-01 00:00",
+  "describe": "1 0 1 1 *",
+  "next": "2026-01-01 00:01"
+ },
+ {
+  "cron": "1 0 1 1 *",
+  "now": "2028-02-28 12:00",
+  "describe": "1 0 1 1 *",
+  "next": "2029-01-01 00:01"
+ },
+ {
+  "cron": "1 0 1 1 *",
+  "now": "2026-02-28 23:30",
+  "describe": "1 0 1 1 *",
+  "next": "2027-01-01 00:01"
+ },
+ {
+  "cron": "0 */6 */2 * *",
+  "now": "2026-03-08 01:30",
+  "describe": "Every 6 hours",
+  "next": "2026-03-09 00:00"
+ },
+ {
+  "cron": "0 */6 */2 * *",
+  "now": "2026-11-01 01:30",
+  "describe": "Every 6 hours",
+  "next": "2026-11-01 06:00"
+ },
+ {
+  "cron": "0 */6 */2 * *",
+  "now": "2026-06-15 10:07",
+  "describe": "Every 6 hours",
+  "next": "2026-06-15 12:00"
+ },
+ {
+  "cron": "0 */6 */2 * *",
+  "now": "2026-12-31 23:59",
+  "describe": "Every 6 hours",
+  "next": "2027-01-01 00:00"
+ },
+ {
+  "cron": "0 */6 */2 * *",
+  "now": "2026-01-01 00:00",
+  "describe": "Every 6 hours",
+  "next": "2026-01-01 06:00"
+ },
+ {
+  "cron": "0 */6 */2 * *",
+  "now": "2028-02-28 12:00",
+  "describe": "Every 6 hours",
+  "next": "2028-02-29 00:00"
+ },
+ {
+  "cron": "0 */6 */2 * *",
+  "now": "2026-02-28 23:30",
+  "describe": "Every 6 hours",
+  "next": "2026-03-01 00:00"
+ },
+ {
+  "cron": "0 0 1,15 * *",
+  "now": "2026-03-08 01:30",
+  "describe": "0 0 1,15 * *",
+  "next": "2026-03-15 00:00"
+ },
+ {
+  "cron": "0 0 1,15 * *",
+  "now": "2026-11-01 01:30",
+  "describe": "0 0 1,15 * *",
+  "next": "2026-11-15 00:00"
+ },
+ {
+  "cron": "0 0 1,15 * *",
+  "now": "2026-06-15 10:07",
+  "describe": "0 0 1,15 * *",
+  "next": "2026-07-01 00:00"
+ },
+ {
+  "cron": "0 0 1,15 * *",
+  "now": "2026-12-31 23:59",
+  "describe": "0 0 1,15 * *",
+  "next": "2027-01-01 00:00"
+ },
+ {
+  "cron": "0 0 1,15 * *",
+  "now": "2026-01-01 00:00",
+  "describe": "0 0 1,15 * *",
+  "next": "2026-01-15 00:00"
+ },
+ {
+  "cron": "0 0 1,15 * *",
+  "now": "2028-02-28 12:00",
+  "describe": "0 0 1,15 * *",
+  "next": "2028-03-01 00:00"
+ },
+ {
+  "cron": "0 0 1,15 * *",
+  "now": "2026-02-28 23:30",
+  "describe": "0 0 1,15 * *",
+  "next": "2026-03-01 00:00"
+ },
+ {
+  "cron": "30 4 1,8,15,22 * *",
+  "now": "2026-03-08 01:30",
+  "describe": "30 4 1,8,15,22 * *",
+  "next": "2026-03-08 04:30"
+ },
+ {
+  "cron": "30 4 1,8,15,22 * *",
+  "now": "2026-11-01 01:30",
+  "describe": "30 4 1,8,15,22 * *",
+  "next": "2026-11-01 04:30"
+ },
+ {
+  "cron": "30 4 1,8,15,22 * *",
+  "now": "2026-06-15 10:07",
+  "describe": "30 4 1,8,15,22 * *",
+  "next": "2026-06-22 04:30"
+ },
+ {
+  "cron": "30 4 1,8,15,22 * *",
+  "now": "2026-12-31 23:59",
+  "describe": "30 4 1,8,15,22 * *",
+  "next": "2027-01-01 04:30"
+ },
+ {
+  "cron": "30 4 1,8,15,22 * *",
+  "now": "2026-01-01 00:00",
+  "describe": "30 4 1,8,15,22 * *",
+  "next": "2026-01-01 04:30"
+ },
+ {
+  "cron": "30 4 1,8,15,22 * *",
+  "now": "2028-02-28 12:00",
+  "describe": "30 4 1,8,15,22 * *",
+  "next": "2028-03-01 04:30"
+ },
+ {
+  "cron": "30 4 1,8,15,22 * *",
+  "now": "2026-02-28 23:30",
+  "describe": "30 4 1,8,15,22 * *",
+  "next": "2026-03-01 04:30"
+ },
+ {
+  "cron": "0 0 2-30/7 * *",
+  "now": "2026-03-08 01:30",
+  "describe": "0 0 2-30/7 * *",
+  "next": "2026-03-09 00:00"
+ },
+ {
+  "cron": "0 0 2-30/7 * *",
+  "now": "2026-11-01 01:30",
+  "describe": "0 0 2-30/7 * *",
+  "next": "2026-11-02 00:00"
+ },
+ {
+  "cron": "0 0 2-30/7 * *",
+  "now": "2026-06-15 10:07",
+  "describe": "0 0 2-30/7 * *",
+  "next": "2026-06-16 00:00"
+ },
+ {
+  "cron": "0 0 2-30/7 * *",
+  "now": "2026-12-31 23:59",
+  "describe": "0 0 2-30/7 * *",
+  "next": "2027-01-02 00:00"
+ },
+ {
+  "cron": "0 0 2-30/7 * *",
+  "now": "2026-01-01 00:00",
+  "describe": "0 0 2-30/7 * *",
+  "next": "2026-01-02 00:00"
+ },
+ {
+  "cron": "0 0 2-30/7 * *",
+  "now": "2028-02-28 12:00",
+  "describe": "0 0 2-30/7 * *",
+  "next": "2028-03-02 00:00"
+ },
+ {
+  "cron": "0 0 2-30/7 * *",
+  "now": "2026-02-28 23:30",
+  "describe": "0 0 2-30/7 * *",
+  "next": "2026-03-02 00:00"
+ },
+ {
+  "cron": "23 0-20/2 * * *",
+  "now": "2026-03-08 01:30",
+  "describe": "23 0-20/2 * * *",
+  "next": "2026-03-08 02:23"
+ },
+ {
+  "cron": "23 0-20/2 * * *",
+  "now": "2026-11-01 01:30",
+  "describe": "23 0-20/2 * * *",
+  "next": "2026-11-01 02:23"
+ },
+ {
+  "cron": "23 0-20/2 * * *",
+  "now": "2026-06-15 10:07",
+  "describe": "23 0-20/2 * * *",
+  "next": "2026-06-15 10:23"
+ },
+ {
+  "cron": "23 0-20/2 * * *",
+  "now": "2026-12-31 23:59",
+  "describe": "23 0-20/2 * * *",
+  "next": "2027-01-01 00:23"
+ },
+ {
+  "cron": "23 0-20/2 * * *",
+  "now": "2026-01-01 00:00",
+  "describe": "23 0-20/2 * * *",
+  "next": "2026-01-01 00:23"
+ },
+ {
+  "cron": "23 0-20/2 * * *",
+  "now": "2028-02-28 12:00",
+  "describe": "23 0-20/2 * * *",
+  "next": "2028-02-28 12:23"
+ },
+ {
+  "cron": "23 0-20/2 * * *",
+  "now": "2026-02-28 23:30",
+  "describe": "23 0-20/2 * * *",
+  "next": "2026-03-01 00:23"
+ },
+ {
+  "cron": "0 0 1 1 0",
+  "now": "2026-03-08 01:30",
+  "describe": "0 0 1 1 0",
+  "next": "2027-01-01 00:00"
+ },
+ {
+  "cron": "0 0 1 1 0",
+  "now": "2026-11-01 01:30",
+  "describe": "0 0 1 1 0",
+  "next": "2027-01-01 00:00"
+ },
+ {
+  "cron": "0 0 1 1 0",
+  "now": "2026-06-15 10:07",
+  "describe": "0 0 1 1 0",
+  "next": "2027-01-01 00:00"
+ },
+ {
+  "cron": "0 0 1 1 0",
+  "now": "2026-12-31 23:59",
+  "describe": "0 0 1 1 0",
+  "next": "2027-01-01 00:00"
+ },
+ {
+  "cron": "0 0 1 1 0",
+  "now": "2026-01-01 00:00",
+  "describe": "0 0 1 1 0",
+  "next": "2026-01-04 00:00"
+ },
+ {
+  "cron": "0 0 1 1 0",
+  "now": "2028-02-28 12:00",
+  "describe": "0 0 1 1 0",
+  "next": "2029-01-01 00:00"
+ },
+ {
+  "cron": "0 0 1 1 0",
+  "now": "2026-02-28 23:30",
+  "describe": "0 0 1 1 0",
+  "next": "2027-01-01 00:00"
+ },
+ {
+  "cron": "0 0 31 1 *",
+  "now": "2026-03-08 01:30",
+  "describe": "0 0 31 1 *",
+  "next": "2027-01-31 00:00"
+ },
+ {
+  "cron": "0 0 31 1 *",
+  "now": "2026-11-01 01:30",
+  "describe": "0 0 31 1 *",
+  "next": "2027-01-31 00:00"
+ },
+ {
+  "cron": "0 0 31 1 *",
+  "now": "2026-06-15 10:07",
+  "describe": "0 0 31 1 *",
+  "next": "2027-01-31 00:00"
+ },
+ {
+  "cron": "0 0 31 1 *",
+  "now": "2026-12-31 23:59",
+  "describe": "0 0 31 1 *",
+  "next": "2027-01-31 00:00"
+ },
+ {
+  "cron": "0 0 31 1 *",
+  "now": "2026-01-01 00:00",
+  "describe": "0 0 31 1 *",
+  "next": "2026-01-31 00:00"
+ },
+ {
+  "cron": "0 0 31 1 *",
+  "now": "2028-02-28 12:00",
+  "describe": "0 0 31 1 *",
+  "next": "2029-01-31 00:00"
+ },
+ {
+  "cron": "0 0 31 1 *",
+  "now": "2026-02-28 23:30",
+  "describe": "0 0 31 1 *",
+  "next": "2027-01-31 00:00"
+ },
+ {
+  "cron": "45 23 * * 5",
+  "now": "2026-03-08 01:30",
+  "describe": "Weekly on Friday at 23:45",
+  "next": "2026-03-13 23:45"
+ },
+ {
+  "cron": "45 23 * * 5",
+  "now": "2026-11-01 01:30",
+  "describe": "Weekly on Friday at 23:45",
+  "next": "2026-11-06 23:45"
+ },
+ {
+  "cron": "45 23 * * 5",
+  "now": "2026-06-15 10:07",
+  "describe": "Weekly on Friday at 23:45",
+  "next": "2026-06-19 23:45"
+ },
+ {
+  "cron": "45 23 * * 5",
+  "now": "2026-12-31 23:59",
+  "describe": "Weekly on Friday at 23:45",
+  "next": "2027-01-01 23:45"
+ },
+ {
+  "cron": "45 23 * * 5",
+  "now": "2026-01-01 00:00",
+  "describe": "Weekly on Friday at 23:45",
+  "next": "2026-01-02 23:45"
+ },
+ {
+  "cron": "45 23 * * 5",
+  "now": "2028-02-28 12:00",
+  "describe": "Weekly on Friday at 23:45",
+  "next": "2028-03-03 23:45"
+ },
+ {
+  "cron": "45 23 * * 5",
+  "now": "2026-02-28 23:30",
+  "describe": "Weekly on Friday at 23:45",
+  "next": "2026-03-06 23:45"
+ },
+ {
+  "cron": "",
+  "now": "2026-03-08 01:30",
+  "describe": "",
+  "error": "cron expression must be a non-empty string"
+ },
+ {
+  "cron": "",
+  "now": "2026-11-01 01:30",
+  "describe": "",
+  "error": "cron expression must be a non-empty string"
+ },
+ {
+  "cron": "",
+  "now": "2026-06-15 10:07",
+  "describe": "",
+  "error": "cron expression must be a non-empty string"
+ },
+ {
+  "cron": "",
+  "now": "2026-12-31 23:59",
+  "describe": "",
+  "error": "cron expression must be a non-empty string"
+ },
+ {
+  "cron": "",
+  "now": "2026-01-01 00:00",
+  "describe": "",
+  "error": "cron expression must be a non-empty string"
+ },
+ {
+  "cron": "",
+  "now": "2028-02-28 12:00",
+  "describe": "",
+  "error": "cron expression must be a non-empty string"
+ },
+ {
+  "cron": "",
+  "now": "2026-02-28 23:30",
+  "describe": "",
+  "error": "cron expression must be a non-empty string"
+ },
+ {
+  "cron": "  ",
+  "now": "2026-03-08 01:30",
+  "describe": "  ",
+  "error": "cron expression must be a non-empty string"
+ },
+ {
+  "cron": "  ",
+  "now": "2026-11-01 01:30",
+  "describe": "  ",
+  "error": "cron expression must be a non-empty string"
+ },
+ {
+  "cron": "  ",
+  "now": "2026-06-15 10:07",
+  "describe": "  ",
+  "error": "cron expression must be a non-empty string"
+ },
+ {
+  "cron": "  ",
+  "now": "2026-12-31 23:59",
+  "describe": "  ",
+  "error": "cron expression must be a non-empty string"
+ },
+ {
+  "cron": "  ",
+  "now": "2026-01-01 00:00",
+  "describe": "  ",
+  "error": "cron expression must be a non-empty string"
+ },
+ {
+  "cron": "  ",
+  "now": "2028-02-28 12:00",
+  "describe": "  ",
+  "error": "cron expression must be a non-empty string"
+ },
+ {
+  "cron": "  ",
+  "now": "2026-02-28 23:30",
+  "describe": "  ",
+  "error": "cron expression must be a non-empty string"
+ },
+ {
+  "cron": "0 0",
+  "now": "2026-03-08 01:30",
+  "describe": "0 0",
+  "error": "cron expression must have 5 fields, got 2"
+ },
+ {
+  "cron": "0 0",
+  "now": "2026-11-01 01:30",
+  "describe": "0 0",
+  "error": "cron expression must have 5 fields, got 2"
+ },
+ {
+  "cron": "0 0",
+  "now": "2026-06-15 10:07",
+  "describe": "0 0",
+  "error": "cron expression must have 5 fields, got 2"
+ },
+ {
+  "cron": "0 0",
+  "now": "2026-12-31 23:59",
+  "describe": "0 0",
+  "error": "cron expression must have 5 fields, got 2"
+ },
+ {
+  "cron": "0 0",
+  "now": "2026-01-01 00:00",
+  "describe": "0 0",
+  "error": "cron expression must have 5 fields, got 2"
+ },
+ {
+  "cron": "0 0",
+  "now": "2028-02-28 12:00",
+  "describe": "0 0",
+  "error": "cron expression must have 5 fields, got 2"
+ },
+ {
+  "cron": "0 0",
+  "now": "2026-02-28 23:30",
+  "describe": "0 0",
+  "error": "cron expression must have 5 fields, got 2"
+ },
+ {
+  "cron": "0 0 0",
+  "now": "2026-03-08 01:30",
+  "describe": "0 0 0",
+  "error": "cron expression must have 5 fields, got 3"
+ },
+ {
+  "cron": "0 0 0",
+  "now": "2026-11-01 01:30",
+  "describe": "0 0 0",
+  "error": "cron expression must have 5 fields, got 3"
+ },
+ {
+  "cron": "0 0 0",
+  "now": "2026-06-15 10:07",
+  "describe": "0 0 0",
+  "error": "cron expression must have 5 fields, got 3"
+ },
+ {
+  "cron": "0 0 0",
+  "now": "2026-12-31 23:59",
+  "describe": "0 0 0",
+  "error": "cron expression must have 5 fields, got 3"
+ },
+ {
+  "cron": "0 0 0",
+  "now": "2026-01-01 00:00",
+  "describe": "0 0 0",
+  "error": "cron expression must have 5 fields, got 3"
+ },
+ {
+  "cron": "0 0 0",
+  "now": "2028-02-28 12:00",
+  "describe": "0 0 0",
+  "error": "cron expression must have 5 fields, got 3"
+ },
+ {
+  "cron": "0 0 0",
+  "now": "2026-02-28 23:30",
+  "describe": "0 0 0",
+  "error": "cron expression must have 5 fields, got 3"
+ },
+ {
+  "cron": "x y",
+  "now": "2026-03-08 01:30",
+  "describe": "x y",
+  "error": "cron expression must have 5 fields, got 2"
+ },
+ {
+  "cron": "x y",
+  "now": "2026-11-01 01:30",
+  "describe": "x y",
+  "error": "cron expression must have 5 fields, got 2"
+ },
+ {
+  "cron": "x y",
+  "now": "2026-06-15 10:07",
+  "describe": "x y",
+  "error": "cron expression must have 5 fields, got 2"
+ },
+ {
+  "cron": "x y",
+  "now": "2026-12-31 23:59",
+  "describe": "x y",
+  "error": "cron expression must have 5 fields, got 2"
+ },
+ {
+  "cron": "x y",
+  "now": "2026-01-01 00:00",
+  "describe": "x y",
+  "error": "cron expression must have 5 fields, got 2"
+ },
+ {
+  "cron": "x y",
+  "now": "2028-02-28 12:00",
+  "describe": "x y",
+  "error": "cron expression must have 5 fields, got 2"
+ },
+ {
+  "cron": "x y",
+  "now": "2026-02-28 23:30",
+  "describe": "x y",
+  "error": "cron expression must have 5 fields, got 2"
+ },
+ {
+  "cron": "a b c d e",
+  "now": "2026-03-08 01:30",
+  "describe": "a b c d e",
+  "error": "invalid number 'a' in minute field"
+ },
+ {
+  "cron": "a b c d e",
+  "now": "2026-11-01 01:30",
+  "describe": "a b c d e",
+  "error": "invalid number 'a' in minute field"
+ },
+ {
+  "cron": "a b c d e",
+  "now": "2026-06-15 10:07",
+  "describe": "a b c d e",
+  "error": "invalid number 'a' in minute field"
+ },
+ {
+  "cron": "a b c d e",
+  "now": "2026-12-31 23:59",
+  "describe": "a b c d e",
+  "error": "invalid number 'a' in minute field"
+ },
+ {
+  "cron": "a b c d e",
+  "now": "2026-01-01 00:00",
+  "describe": "a b c d e",
+  "error": "invalid number 'a' in minute field"
+ },
+ {
+  "cron": "a b c d e",
+  "now": "2028-02-28 12:00",
+  "describe": "a b c d e",
+  "error": "invalid number 'a' in minute field"
+ },
+ {
+  "cron": "a b c d e",
+  "now": "2026-02-28 23:30",
+  "describe": "a b c d e",
+  "error": "invalid number 'a' in minute field"
+ },
+ {
+  "cron": "60 * * * *",
+  "now": "2026-03-08 01:30",
+  "describe": "60 * * * *",
+  "error": "value '60' out of range for minute field"
+ },
+ {
+  "cron": "60 * * * *",
+  "now": "2026-11-01 01:30",
+  "describe": "60 * * * *",
+  "error": "value '60' out of range for minute field"
+ },
+ {
+  "cron": "60 * * * *",
+  "now": "2026-06-15 10:07",
+  "describe": "60 * * * *",
+  "error": "value '60' out of range for minute field"
+ },
+ {
+  "cron": "60 * * * *",
+  "now": "2026-12-31 23:59",
+  "describe": "60 * * * *",
+  "error": "value '60' out of range for minute field"
+ },
+ {
+  "cron": "60 * * * *",
+  "now": "2026-01-01 00:00",
+  "describe": "60 * * * *",
+  "error": "value '60' out of range for minute field"
+ },
+ {
+  "cron": "60 * * * *",
+  "now": "2028-02-28 12:00",
+  "describe": "60 * * * *",
+  "error": "value '60' out of range for minute field"
+ },
+ {
+  "cron": "60 * * * *",
+  "now": "2026-02-28 23:30",
+  "describe": "60 * * * *",
+  "error": "value '60' out of range for minute field"
+ },
+ {
+  "cron": "0 24 * * *",
+  "now": "2026-03-08 01:30",
+  "describe": "0 24 * * *",
+  "error": "value '24' out of range for hour field"
+ },
+ {
+  "cron": "0 24 * * *",
+  "now": "2026-11-01 01:30",
+  "describe": "0 24 * * *",
+  "error": "value '24' out of range for hour field"
+ },
+ {
+  "cron": "0 24 * * *",
+  "now": "2026-06-15 10:07",
+  "describe": "0 24 * * *",
+  "error": "value '24' out of range for hour field"
+ },
+ {
+  "cron": "0 24 * * *",
+  "now": "2026-12-31 23:59",
+  "describe": "0 24 * * *",
+  "error": "value '24' out of range for hour field"
+ },
+ {
+  "cron": "0 24 * * *",
+  "now": "2026-01-01 00:00",
+  "describe": "0 24 * * *",
+  "error": "value '24' out of range for hour field"
+ },
+ {
+  "cron": "0 24 * * *",
+  "now": "2028-02-28 12:00",
+  "describe": "0 24 * * *",
+  "error": "value '24' out of range for hour field"
+ },
+ {
+  "cron": "0 24 * * *",
+  "now": "2026-02-28 23:30",
+  "describe": "0 24 * * *",
+  "error": "value '24' out of range for hour field"
+ },
+ {
+  "cron": "0 0 32 * *",
+  "now": "2026-03-08 01:30",
+  "describe": "0 0 32 * *",
+  "error": "value '32' out of range for dom field"
+ },
+ {
+  "cron": "0 0 32 * *",
+  "now": "2026-11-01 01:30",
+  "describe": "0 0 32 * *",
+  "error": "value '32' out of range for dom field"
+ },
+ {
+  "cron": "0 0 32 * *",
+  "now": "2026-06-15 10:07",
+  "describe": "0 0 32 * *",
+  "error": "value '32' out of range for dom field"
+ },
+ {
+  "cron": "0 0 32 * *",
+  "now": "2026-12-31 23:59",
+  "describe": "0 0 32 * *",
+  "error": "value '32' out of range for dom field"
+ },
+ {
+  "cron": "0 0 32 * *",
+  "now": "2026-01-01 00:00",
+  "describe": "0 0 32 * *",
+  "error": "value '32' out of range for dom field"
+ },
+ {
+  "cron": "0 0 32 * *",
+  "now": "2028-02-28 12:00",
+  "describe": "0 0 32 * *",
+  "error": "value '32' out of range for dom field"
+ },
+ {
+  "cron": "0 0 32 * *",
+  "now": "2026-02-28 23:30",
+  "describe": "0 0 32 * *",
+  "error": "value '32' out of range for dom field"
+ },
+ {
+  "cron": "0 0 * 13 *",
+  "now": "2026-03-08 01:30",
+  "describe": "0 0 * 13 *",
+  "error": "value '13' out of range for month field"
+ },
+ {
+  "cron": "0 0 * 13 *",
+  "now": "2026-11-01 01:30",
+  "describe": "0 0 * 13 *",
+  "error": "value '13' out of range for month field"
+ },
+ {
+  "cron": "0 0 * 13 *",
+  "now": "2026-06-15 10:07",
+  "describe": "0 0 * 13 *",
+  "error": "value '13' out of range for month field"
+ },
+ {
+  "cron": "0 0 * 13 *",
+  "now": "2026-12-31 23:59",
+  "describe": "0 0 * 13 *",
+  "error": "value '13' out of range for month field"
+ },
+ {
+  "cron": "0 0 * 13 *",
+  "now": "2026-01-01 00:00",
+  "describe": "0 0 * 13 *",
+  "error": "value '13' out of range for month field"
+ },
+ {
+  "cron": "0 0 * 13 *",
+  "now": "2028-02-28 12:00",
+  "describe": "0 0 * 13 *",
+  "error": "value '13' out of range for month field"
+ },
+ {
+  "cron": "0 0 * 13 *",
+  "now": "2026-02-28 23:30",
+  "describe": "0 0 * 13 *",
+  "error": "value '13' out of range for month field"
+ },
+ {
+  "cron": "0 0 * * 8",
+  "now": "2026-03-08 01:30",
+  "describe": "0 0 * * 8",
+  "error": "value '8' out of range for dow field"
+ },
+ {
+  "cron": "0 0 * * 8",
+  "now": "2026-11-01 01:30",
+  "describe": "0 0 * * 8",
+  "error": "value '8' out of range for dow field"
+ },
+ {
+  "cron": "0 0 * * 8",
+  "now": "2026-06-15 10:07",
+  "describe": "0 0 * * 8",
+  "error": "value '8' out of range for dow field"
+ },
+ {
+  "cron": "0 0 * * 8",
+  "now": "2026-12-31 23:59",
+  "describe": "0 0 * * 8",
+  "error": "value '8' out of range for dow field"
+ },
+ {
+  "cron": "0 0 * * 8",
+  "now": "2026-01-01 00:00",
+  "describe": "0 0 * * 8",
+  "error": "value '8' out of range for dow field"
+ },
+ {
+  "cron": "0 0 * * 8",
+  "now": "2028-02-28 12:00",
+  "describe": "0 0 * * 8",
+  "error": "value '8' out of range for dow field"
+ },
+ {
+  "cron": "0 0 * * 8",
+  "now": "2026-02-28 23:30",
+  "describe": "0 0 * * 8",
+  "error": "value '8' out of range for dow field"
+ },
+ {
+  "cron": "*/0 * * * *",
+  "now": "2026-03-08 01:30",
+  "describe": "*/0 * * * *",
+  "error": "step must be >= 1 in minute field"
+ },
+ {
+  "cron": "*/0 * * * *",
+  "now": "2026-11-01 01:30",
+  "describe": "*/0 * * * *",
+  "error": "step must be >= 1 in minute field"
+ },
+ {
+  "cron": "*/0 * * * *",
+  "now": "2026-06-15 10:07",
+  "describe": "*/0 * * * *",
+  "error": "step must be >= 1 in minute field"
+ },
+ {
+  "cron": "*/0 * * * *",
+  "now": "2026-12-31 23:59",
+  "describe": "*/0 * * * *",
+  "error": "step must be >= 1 in minute field"
+ },
+ {
+  "cron": "*/0 * * * *",
+  "now": "2026-01-01 00:00",
+  "describe": "*/0 * * * *",
+  "error": "step must be >= 1 in minute field"
+ },
+ {
+  "cron": "*/0 * * * *",
+  "now": "2028-02-28 12:00",
+  "describe": "*/0 * * * *",
+  "error": "step must be >= 1 in minute field"
+ },
+ {
+  "cron": "*/0 * * * *",
+  "now": "2026-02-28 23:30",
+  "describe": "*/0 * * * *",
+  "error": "step must be >= 1 in minute field"
+ },
+ {
+  "cron": "*/-2 * * * *",
+  "now": "2026-03-08 01:30",
+  "describe": "*/-2 * * * *",
+  "error": "step must be >= 1 in minute field"
+ },
+ {
+  "cron": "*/-2 * * * *",
+  "now": "2026-11-01 01:30",
+  "describe": "*/-2 * * * *",
+  "error": "step must be >= 1 in minute field"
+ },
+ {
+  "cron": "*/-2 * * * *",
+  "now": "2026-06-15 10:07",
+  "describe": "*/-2 * * * *",
+  "error": "step must be >= 1 in minute field"
+ },
+ {
+  "cron": "*/-2 * * * *",
+  "now": "2026-12-31 23:59",
+  "describe": "*/-2 * * * *",
+  "error": "step must be >= 1 in minute field"
+ },
+ {
+  "cron": "*/-2 * * * *",
+  "now": "2026-01-01 00:00",
+  "describe": "*/-2 * * * *",
+  "error": "step must be >= 1 in minute field"
+ },
+ {
+  "cron": "*/-2 * * * *",
+  "now": "2028-02-28 12:00",
+  "describe": "*/-2 * * * *",
+  "error": "step must be >= 1 in minute field"
+ },
+ {
+  "cron": "*/-2 * * * *",
+  "now": "2026-02-28 23:30",
+  "describe": "*/-2 * * * *",
+  "error": "step must be >= 1 in minute field"
+ },
+ {
+  "cron": "1-0 * * * *",
+  "now": "2026-03-08 01:30",
+  "describe": "1-0 * * * *",
+  "error": "value '1-0' out of range for minute field"
+ },
+ {
+  "cron": "1-0 * * * *",
+  "now": "2026-11-01 01:30",
+  "describe": "1-0 * * * *",
+  "error": "value '1-0' out of range for minute field"
+ },
+ {
+  "cron": "1-0 * * * *",
+  "now": "2026-06-15 10:07",
+  "describe": "1-0 * * * *",
+  "error": "value '1-0' out of range for minute field"
+ },
+ {
+  "cron": "1-0 * * * *",
+  "now": "2026-12-31 23:59",
+  "describe": "1-0 * * * *",
+  "error": "value '1-0' out of range for minute field"
+ },
+ {
+  "cron": "1-0 * * * *",
+  "now": "2026-01-01 00:00",
+  "describe": "1-0 * * * *",
+  "error": "value '1-0' out of range for minute field"
+ },
+ {
+  "cron": "1-0 * * * *",
+  "now": "2028-02-28 12:00",
+  "describe": "1-0 * * * *",
+  "error": "value '1-0' out of range for minute field"
+ },
+ {
+  "cron": "1-0 * * * *",
+  "now": "2026-02-28 23:30",
+  "describe": "1-0 * * * *",
+  "error": "value '1-0' out of range for minute field"
+ },
+ {
+  "cron": "5-3 * * * *",
+  "now": "2026-03-08 01:30",
+  "describe": "5-3 * * * *",
+  "error": "value '5-3' out of range for minute field"
+ },
+ {
+  "cron": "5-3 * * * *",
+  "now": "2026-11-01 01:30",
+  "describe": "5-3 * * * *",
+  "error": "value '5-3' out of range for minute field"
+ },
+ {
+  "cron": "5-3 * * * *",
+  "now": "2026-06-15 10:07",
+  "describe": "5-3 * * * *",
+  "error": "value '5-3' out of range for minute field"
+ },
+ {
+  "cron": "5-3 * * * *",
+  "now": "2026-12-31 23:59",
+  "describe": "5-3 * * * *",
+  "error": "value '5-3' out of range for minute field"
+ },
+ {
+  "cron": "5-3 * * * *",
+  "now": "2026-01-01 00:00",
+  "describe": "5-3 * * * *",
+  "error": "value '5-3' out of range for minute field"
+ },
+ {
+  "cron": "5-3 * * * *",
+  "now": "2028-02-28 12:00",
+  "describe": "5-3 * * * *",
+  "error": "value '5-3' out of range for minute field"
+ },
+ {
+  "cron": "5-3 * * * *",
+  "now": "2026-02-28 23:30",
+  "describe": "5-3 * * * *",
+  "error": "value '5-3' out of range for minute field"
+ },
+ {
+  "cron": "60-70 * * * *",
+  "now": "2026-03-08 01:30",
+  "describe": "60-70 * * * *",
+  "error": "value '60-70' out of range for minute field"
+ },
+ {
+  "cron": "60-70 * * * *",
+  "now": "2026-11-01 01:30",
+  "describe": "60-70 * * * *",
+  "error": "value '60-70' out of range for minute field"
+ },
+ {
+  "cron": "60-70 * * * *",
+  "now": "2026-06-15 10:07",
+  "describe": "60-70 * * * *",
+  "error": "value '60-70' out of range for minute field"
+ },
+ {
+  "cron": "60-70 * * * *",
+  "now": "2026-12-31 23:59",
+  "describe": "60-70 * * * *",
+  "error": "value '60-70' out of range for minute field"
+ },
+ {
+  "cron": "60-70 * * * *",
+  "now": "2026-01-01 00:00",
+  "describe": "60-70 * * * *",
+  "error": "value '60-70' out of range for minute field"
+ },
+ {
+  "cron": "60-70 * * * *",
+  "now": "2028-02-28 12:00",
+  "describe": "60-70 * * * *",
+  "error": "value '60-70' out of range for minute field"
+ },
+ {
+  "cron": "60-70 * * * *",
+  "now": "2026-02-28 23:30",
+  "describe": "60-70 * * * *",
+  "error": "value '60-70' out of range for minute field"
+ },
+ {
+  "cron": "0 0 31 2 *",
+  "now": "2026-03-08 01:30",
+  "describe": "0 0 31 2 *",
+  "next": null
+ },
+ {
+  "cron": "0 0 31 2 *",
+  "now": "2026-11-01 01:30",
+  "describe": "0 0 31 2 *",
+  "next": null
+ },
+ {
+  "cron": "0 0 31 2 *",
+  "now": "2026-06-15 10:07",
+  "describe": "0 0 31 2 *",
+  "next": null
+ },
+ {
+  "cron": "0 0 31 2 *",
+  "now": "2026-12-31 23:59",
+  "describe": "0 0 31 2 *",
+  "next": null
+ },
+ {
+  "cron": "0 0 31 2 *",
+  "now": "2026-01-01 00:00",
+  "describe": "0 0 31 2 *",
+  "next": null
+ },
+ {
+  "cron": "0 0 31 2 *",
+  "now": "2028-02-28 12:00",
+  "describe": "0 0 31 2 *",
+  "next": null
+ },
+ {
+  "cron": "0 0 31 2 *",
+  "now": "2026-02-28 23:30",
+  "describe": "0 0 31 2 *",
+  "next": null
+ },
+ {
+  "cron": "1,,2 * * * *",
+  "now": "2026-03-08 01:30",
+  "describe": "1,,2 * * * *",
+  "error": "empty list item in minute field"
+ },
+ {
+  "cron": "1,,2 * * * *",
+  "now": "2026-11-01 01:30",
+  "describe": "1,,2 * * * *",
+  "error": "empty list item in minute field"
+ },
+ {
+  "cron": "1,,2 * * * *",
+  "now": "2026-06-15 10:07",
+  "describe": "1,,2 * * * *",
+  "error": "empty list item in minute field"
+ },
+ {
+  "cron": "1,,2 * * * *",
+  "now": "2026-12-31 23:59",
+  "describe": "1,,2 * * * *",
+  "error": "empty list item in minute field"
+ },
+ {
+  "cron": "1,,2 * * * *",
+  "now": "2026-01-01 00:00",
+  "describe": "1,,2 * * * *",
+  "error": "empty list item in minute field"
+ },
+ {
+  "cron": "1,,2 * * * *",
+  "now": "2028-02-28 12:00",
+  "describe": "1,,2 * * * *",
+  "error": "empty list item in minute field"
+ },
+ {
+  "cron": "1,,2 * * * *",
+  "now": "2026-02-28 23:30",
+  "describe": "1,,2 * * * *",
+  "error": "empty list item in minute field"
+ },
+ {
+  "cron": ", * * * *",
+  "now": "2026-03-08 01:30",
+  "describe": ", * * * *",
+  "error": "empty list item in minute field"
+ },
+ {
+  "cron": ", * * * *",
+  "now": "2026-11-01 01:30",
+  "describe": ", * * * *",
+  "error": "empty list item in minute field"
+ },
+ {
+  "cron": ", * * * *",
+  "now": "2026-06-15 10:07",
+  "describe": ", * * * *",
+  "error": "empty list item in minute field"
+ },
+ {
+  "cron": ", * * * *",
+  "now": "2026-12-31 23:59",
+  "describe": ", * * * *",
+  "error": "empty list item in minute field"
+ },
+ {
+  "cron": ", * * * *",
+  "now": "2026-01-01 00:00",
+  "describe": ", * * * *",
+  "error": "empty list item in minute field"
+ },
+ {
+  "cron": ", * * * *",
+  "now": "2028-02-28 12:00",
+  "describe": ", * * * *",
+  "error": "empty list item in minute field"
+ },
+ {
+  "cron": ", * * * *",
+  "now": "2026-02-28 23:30",
+  "describe": ", * * * *",
+  "error": "empty list item in minute field"
+ },
+ {
+  "cron": "* * * *",
+  "now": "2026-03-08 01:30",
+  "describe": "* * * *",
+  "error": "cron expression must have 5 fields, got 4"
+ },
+ {
+  "cron": "* * * *",
+  "now": "2026-11-01 01:30",
+  "describe": "* * * *",
+  "error": "cron expression must have 5 fields, got 4"
+ },
+ {
+  "cron": "* * * *",
+  "now": "2026-06-15 10:07",
+  "describe": "* * * *",
+  "error": "cron expression must have 5 fields, got 4"
+ },
+ {
+  "cron": "* * * *",
+  "now": "2026-12-31 23:59",
+  "describe": "* * * *",
+  "error": "cron expression must have 5 fields, got 4"
+ },
+ {
+  "cron": "* * * *",
+  "now": "2026-01-01 00:00",
+  "describe": "* * * *",
+  "error": "cron expression must have 5 fields, got 4"
+ },
+ {
+  "cron": "* * * *",
+  "now": "2028-02-28 12:00",
+  "describe": "* * * *",
+  "error": "cron expression must have 5 fields, got 4"
+ },
+ {
+  "cron": "* * * *",
+  "now": "2026-02-28 23:30",
+  "describe": "* * * *",
+  "error": "cron expression must have 5 fields, got 4"
+ },
+ {
+  "cron": "5/ * * * *",
+  "now": "2026-03-08 01:30",
+  "describe": "5/ * * * *",
+  "error": "invalid number '' in minute field"
+ },
+ {
+  "cron": "5/ * * * *",
+  "now": "2026-11-01 01:30",
+  "describe": "5/ * * * *",
+  "error": "invalid number '' in minute field"
+ },
+ {
+  "cron": "5/ * * * *",
+  "now": "2026-06-15 10:07",
+  "describe": "5/ * * * *",
+  "error": "invalid number '' in minute field"
+ },
+ {
+  "cron": "5/ * * * *",
+  "now": "2026-12-31 23:59",
+  "describe": "5/ * * * *",
+  "error": "invalid number '' in minute field"
+ },
+ {
+  "cron": "5/ * * * *",
+  "now": "2026-01-01 00:00",
+  "describe": "5/ * * * *",
+  "error": "invalid number '' in minute field"
+ },
+ {
+  "cron": "5/ * * * *",
+  "now": "2028-02-28 12:00",
+  "describe": "5/ * * * *",
+  "error": "invalid number '' in minute field"
+ },
+ {
+  "cron": "5/ * * * *",
+  "now": "2026-02-28 23:30",
+  "describe": "5/ * * * *",
+  "error": "invalid number '' in minute field"
+ },
+ {
+  "cron": "0- * * * *",
+  "now": "2026-03-08 01:30",
+  "describe": "0- * * * *",
+  "error": "invalid number '' in minute field"
+ },
+ {
+  "cron": "0- * * * *",
+  "now": "2026-11-01 01:30",
+  "describe": "0- * * * *",
+  "error": "invalid number '' in minute field"
+ },
+ {
+  "cron": "0- * * * *",
+  "now": "2026-06-15 10:07",
+  "describe": "0- * * * *",
+  "error": "invalid number '' in minute field"
+ },
+ {
+  "cron": "0- * * * *",
+  "now": "2026-12-31 23:59",
+  "describe": "0- * * * *",
+  "error": "invalid number '' in minute field"
+ },
+ {
+  "cron": "0- * * * *",
+  "now": "2026-01-01 00:00",
+  "describe": "0- * * * *",
+  "error": "invalid number '' in minute field"
+ },
+ {
+  "cron": "0- * * * *",
+  "now": "2028-02-28 12:00",
+  "describe": "0- * * * *",
+  "error": "invalid number '' in minute field"
+ },
+ {
+  "cron": "0- * * * *",
+  "now": "2026-02-28 23:30",
+  "describe": "0- * * * *",
+  "error": "invalid number '' in minute field"
+ },
+ {
+  "cron": "-5 * * * *",
+  "now": "2026-03-08 01:30",
+  "describe": "-5 * * * *",
+  "error": "invalid number '' in minute field"
+ },
+ {
+  "cron": "-5 * * * *",
+  "now": "2026-11-01 01:30",
+  "describe": "-5 * * * *",
+  "error": "invalid number '' in minute field"
+ },
+ {
+  "cron": "-5 * * * *",
+  "now": "2026-06-15 10:07",
+  "describe": "-5 * * * *",
+  "error": "invalid number '' in minute field"
+ },
+ {
+  "cron": "-5 * * * *",
+  "now": "2026-12-31 23:59",
+  "describe": "-5 * * * *",
+  "error": "invalid number '' in minute field"
+ },
+ {
+  "cron": "-5 * * * *",
+  "now": "2026-01-01 00:00",
+  "describe": "-5 * * * *",
+  "error": "invalid number '' in minute field"
+ },
+ {
+  "cron": "-5 * * * *",
+  "now": "2028-02-28 12:00",
+  "describe": "-5 * * * *",
+  "error": "invalid number '' in minute field"
+ },
+ {
+  "cron": "-5 * * * *",
+  "now": "2026-02-28 23:30",
+  "describe": "-5 * * * *",
+  "error": "invalid number '' in minute field"
+ },
+ {
+  "cron": "0 0 * * 07/9",
+  "now": "2026-03-08 01:30",
+  "describe": "0 0 * * 07/9",
+  "error": "step 9 too large for dow field"
+ },
+ {
+  "cron": "0 0 * * 07/9",
+  "now": "2026-11-01 01:30",
+  "describe": "0 0 * * 07/9",
+  "error": "step 9 too large for dow field"
+ },
+ {
+  "cron": "0 0 * * 07/9",
+  "now": "2026-06-15 10:07",
+  "describe": "0 0 * * 07/9",
+  "error": "step 9 too large for dow field"
+ },
+ {
+  "cron": "0 0 * * 07/9",
+  "now": "2026-12-31 23:59",
+  "describe": "0 0 * * 07/9",
+  "error": "step 9 too large for dow field"
+ },
+ {
+  "cron": "0 0 * * 07/9",
+  "now": "2026-01-01 00:00",
+  "describe": "0 0 * * 07/9",
+  "error": "step 9 too large for dow field"
+ },
+ {
+  "cron": "0 0 * * 07/9",
+  "now": "2028-02-28 12:00",
+  "describe": "0 0 * * 07/9",
+  "error": "step 9 too large for dow field"
+ },
+ {
+  "cron": "0 0 * * 07/9",
+  "now": "2026-02-28 23:30",
+  "describe": "0 0 * * 07/9",
+  "error": "step 9 too large for dow field"
+ }
+]

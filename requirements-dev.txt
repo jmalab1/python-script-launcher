@@ -1,9 +1,4 @@
-# Development-only dependencies. The app itself must stay stdlib-only.
-pytest>=7.0
-
-# End-to-end browser tests (tests/e2e).
-# After installing, fetch a browser: python3 -m playwright install chromium
-pytest-playwright>=0.5
-
-# Animated-GIF output for the screencast demo (scripts/dev/make_screencast.py --gif)
-pillow>=10.0
+# Development-only dependencies. The app itself (and all of its dev
+# tooling) is pure Go — this file only installs the git pre-commit gate
+# runner set up by `make hooks`.
+pre-commit>=3.0

@@ -1,0 +1,283 @@
+package store
+
+import (
+	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+	"sync"
+	"testing"
+
+	"launchcontrol/internal/ordjson"
+)
+
+// openTestDB opens a database rooted in a throwaway data dir.
+func openTestDB(t *testing.T) (*DB, string) {
+	t.Helper()
+	dir := t.TempDir()
+	db, err := Open(filepath.Join(dir, "launcher.db"), dir)
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	t.Cleanup(func() { db.Close() })
+	return db, dir
+}
+
+func rec(pairs ...any) *ordjson.OMap {
+	m := ordjson.New()
+	for i := 0; i+1 < len(pairs); i += 2 {
+		m.Set(pairs[i].(string), pairs[i+1])
+	}
+	return m
+}
+
+// TestAuditHashCompat verifies Go recomputes the exact hashes the
+// archived Python implementation produced. The fixture file is a frozen
+// snapshot generated against launcher.storage before the cutover; do
+// not edit it by hand.
+func TestAuditHashCompat(t *testing.T) {
+	raw, err := os.ReadFile("testdata/audit_hash_fixtures.json")
+	if err != nil {
+		t.Fatalf("read fixtures: %v", err)
+	}
+	parsed, err := ordjson.Parse(raw)
+	if err != nil {
+		t.Fatalf("decode fixtures: %v", err)
+	}
+	for _, item := range parsed.([]any) {
+		entry := item.(*ordjson.OMap)
+		want := ordjson.GetStr(entry, "_hash")
+		if got := HashEntry(entry); got != want {
+			t.Errorf("hash mismatch for id %v:\n got  %s\n want %s", entry.Get("id"), got, want)
+		}
+	}
+}
+
+// TestHashStableAcrossRoundTrip checks that hashing an entry, storing it
+// and re-reading it produces the same hash: numbers must survive the
+// round trip without being reformatted.
+func TestHashStableAcrossRoundTrip(t *testing.T) {
+	entry := rec(
+		"id", "x1",
+		"timestamp", ordjson.Number(1759234567.89),
+		"action", "updated",
+		"count", json.Number("3"),
+		"ratio", ordjson.Number(0.5),
+		"big", ordjson.Number(1234567890123.456),
+		"unicode", "héllo",
+	)
+	first := HashEntry(entry)
+	roundTripped := Normalize(entry).(*ordjson.OMap)
+	second := HashEntry(roundTripped)
+	if first != second {
+		t.Errorf("hash changed across round trip:\n first  %s\n second %s", first, second)
+	}
+}
+
+// TestCanonicalMatchesPython asserts the canonical serializer's output
+// for tricky values, byte-for-byte against what json.dumps produces
+// (verified by the fixture generator's hash behaviour and spot checks
+// here).
+func TestCanonicalMatchesPython(t *testing.T) {
+	v := Normalize(rec(
+		"name", "Backup <script> & run",
+		"unicode", "héllo 日本語 🎉",
+		"escapes", "line\nbreak\ttab\"quote\\back",
+		"nested", rec("list", []any{"a", json.Number("1"), ordjson.Number(2.5), nil, true}),
+		"empty", ordjson.New(),
+		"empty_list", []any{},
+	)).(*ordjson.OMap)
+	want := `{"empty": {}, "empty_list": [], "escapes": "line\nbreak\ttab\"quote\\back", ` +
+		`"name": "Backup <script> & run", "nested": {"list": ["a", 1, 2.5, null, true]}, ` +
+		`"unicode": "héllo 日本語 🎉"}`
+	if got := canonicalJSON(v); got != want {
+		t.Errorf("canonical mismatch:\n got  %s\n want %s", got, want)
+	}
+}
+
+func TestLoadSaveRoundTrip(t *testing.T) {
+	db, _ := openTestDB(t)
+	in := []*ordjson.OMap{
+		rec("id", "p1", "name", "First", "timeout", json.Number("2.5"), "args", []any{"--x", "1"}),
+		rec("id", "p2", "name", "Sécond", "enabled", true, "nested", rec("deep", []any{json.Number("1"), json.Number("2")})),
+	}
+	if err := db.Save("profiles", in); err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+	out, err := db.Load("profiles")
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if len(out) != 2 {
+		t.Fatalf("got %d items, want 2", len(out))
+	}
+	if out[0].Get("name") != "First" || out[1].Get("name") != "Sécond" {
+		t.Errorf("order not preserved: %v %v", out[0].Get("name"), out[1].Get("name"))
+	}
+	if fmt.Sprint(out[0].Get("timeout")) != "2.5" {
+		t.Errorf("number literal not preserved: %v (%T)", out[0].Get("timeout"), out[0].Get("timeout"))
+	}
+	// Key order must survive the round trip (the run panel renders
+	// workflow steps via Object.entries).
+	if strings.Join(out[1].Keys(), ",") != "id,name,enabled,nested" {
+		t.Errorf("key order not preserved: %v", out[1].Keys())
+	}
+}
+
+// TestSavePreservesInsertOrderOnReload is the ordering contract the
+// drag-to-reorder UI relies on: the last Save order is the Load order.
+func TestSavePreservesInsertOrderOnReload(t *testing.T) {
+	db, _ := openTestDB(t)
+	items := []*ordjson.OMap{}
+	for i := 0; i < 5; i++ {
+		items = append(items, rec("id", fmt.Sprintf("p%d", i), "name", fmt.Sprintf("Item %d", i)))
+	}
+	if err := db.Save("profiles", items); err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+	// Reorder: move the last item to the front.
+	reordered := []*ordjson.OMap{items[4], items[0], items[1], items[2], items[3]}
+	if err := db.Save("profiles", reordered); err != nil {
+		t.Fatalf("Save reorder: %v", err)
+	}
+	out, _ := db.Load("profiles")
+	for i, want := range []string{"p4", "p0", "p1", "p2", "p3"} {
+		if out[i].Get("id") != want {
+			t.Errorf("position %d: got %v want %s", i, out[i].Get("id"), want)
+		}
+	}
+}
+
+// TestSaveAssignsMissingIDs covers save_json's behaviour of giving new
+// random hex ids to items that lack one.
+func TestSaveAssignsMissingIDs(t *testing.T) {
+	db, _ := openTestDB(t)
+	if err := db.Save("profiles", []*ordjson.OMap{rec("name", "No id")}); err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+	out, _ := db.Load("profiles")
+	if len(out) != 1 || out[0].Get("id") == "" {
+		t.Fatalf("expected an assigned id, got %v", out)
+	}
+	if len(out[0].Get("id").(string)) != 32 {
+		t.Errorf("id should be 32 hex chars, got %q", out[0].Get("id"))
+	}
+}
+
+// TestLegacyJSONMigration mirrors the Python behaviour: on first open,
+// a profiles.json left by an old version is imported into the table.
+func TestLegacyJSONMigration(t *testing.T) {
+	dir := t.TempDir()
+	legacy := `[{"id": "old1", "name": "Legacy"}, {"name": "No id legacy"}]`
+	if err := os.WriteFile(filepath.Join(dir, "profiles.json"), []byte(legacy), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	db, err := Open(filepath.Join(dir, "launcher.db"), dir)
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	defer db.Close()
+	out, err := db.Load("profiles")
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if len(out) != 2 {
+		t.Fatalf("got %d records, want 2", len(out))
+	}
+	if out[0].Get("id") != "old1" || out[1].Get("id") == "" {
+		t.Errorf("migration content wrong: %v", out)
+	}
+}
+
+// TestRecordAuditAndVerify runs the write-then-verify path end to end.
+func TestRecordAuditAndVerify(t *testing.T) {
+	db, _ := openTestDB(t)
+	db.RecordAudit("created", "profile", "p1", "Test", nil,
+		rec("name", "Test"), rec("duplicate_of", "orig"))
+	ok, tampered := db.VerifyAuditIntegrity()
+	if !ok || len(tampered) != 0 {
+		t.Fatalf("fresh audit trail should verify: ok=%v tampered=%v", ok, tampered)
+	}
+
+	// Tamper with the stored entry, then reload: verification must fail
+	// for exactly that entry.
+	entries, _ := db.Load("audit")
+	entries[0].Set("action", "tampered")
+	if err := db.Save("audit", entries); err != nil {
+		t.Fatal(err)
+	}
+	ok, tampered = db.VerifyAuditIntegrity()
+	if ok || len(tampered) != 1 || tampered[0] != ordjson.GetStr(entries[0], "id") {
+		t.Fatalf("tampering should be detected: ok=%v tampered=%v", ok, tampered)
+	}
+}
+
+// TestAuditTrimToMax checks the 1000-entry cap.
+func TestAuditTrimToMax(t *testing.T) {
+	db, _ := openTestDB(t)
+	for i := 0; i < AuditMax+3; i++ {
+		db.RecordAudit("updated", "profile", "p", fmt.Sprintf("n%d", i), nil, nil, nil)
+	}
+	entries, _ := db.Load("audit")
+	if len(entries) != AuditMax {
+		t.Fatalf("got %d audit entries, want %d", len(entries), AuditMax)
+	}
+	if entries[len(entries)-1].Get("name") != "n1002" {
+		t.Errorf("oldest entries should have been trimmed")
+	}
+}
+
+// TestChangedFields mirrors storage.changed_fields: sorted names of the
+// top-level fields that differ, nil when there is no before state.
+func TestChangedFields(t *testing.T) {
+	before := rec("a", json.Number("1"), "b", "x", "c", true)
+	after := rec("a", json.Number("1"), "b", "y", "d", nil)
+	got := ChangedFields(before, after)
+	if len(got) != 2 || got[0] != "b" || got[1] != "c" {
+		t.Errorf("got %v, want [b c]", got)
+	}
+	if ChangedFields(nil, after) != nil {
+		t.Errorf("no before state should yield nil")
+	}
+	if got := ChangedFields(before, before.Clone()); len(got) != 0 {
+		t.Errorf("identical states should yield empty, got %v", got)
+	}
+}
+
+// TestUnknownCollectionIsRejected guards against typos mapping to
+// surprise tables.
+func TestUnknownCollectionIsRejected(t *testing.T) {
+	db, _ := openTestDB(t)
+	if _, err := db.Load("nope"); err == nil {
+		t.Fatal("Load of unknown collection should fail")
+	}
+	if err := db.Save("nope", nil); err == nil {
+		t.Fatal("Save of unknown collection should fail")
+	}
+}
+
+// TestConcurrentSavesDoNotLoseData exercises the collection lock: two
+// goroutines appending different items under the lock must both land.
+func TestConcurrentSavesDoNotLoseData(t *testing.T) {
+	db, _ := openTestDB(t)
+	var wg sync.WaitGroup
+	for i := 0; i < 2; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			for j := 0; j < 10; j++ {
+				db.WithCollection("profiles", func() {
+					items, _ := db.Load("profiles")
+					items = append(items, rec("name", fmt.Sprintf("g%d-%d", i, j)))
+					db.Save("profiles", items)
+				})
+			}
+		}(i)
+	}
+	wg.Wait()
+	out, _ := db.Load("profiles")
+	if len(out) != 20 {
+		t.Fatalf("got %d items, want 20 (lost writes?)", len(out))
+	}
+}

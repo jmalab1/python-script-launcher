@@ -62,12 +62,21 @@ export function ProfileCard({ profile, onEdit, onRun }) {
         await loadProfiles();
     }
 
+    // Debounced profile save so typing does not fire a POST per
+    // keystroke (the card's snapshot `p` is updated first, so a run can
+    // always read fresh values from the DOM).
+    let saveTimer = null;
+    function scheduleSave() {
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(() => apiSaveProfile(p), 400);
+    }
+
     function handleArgChange(el) {
         const idx = parseInt(el.dataset.idx);
         const ca = p.custom_args[idx];
         if (!ca) return;
         ca.value = ca.type === 'checkbox' ? (el.checked ? 'true' : 'false') : el.value;
-        apiSaveProfile(p);
+        scheduleSave();
     }
 
     const scriptBadge = scriptMissing
@@ -177,7 +186,7 @@ export function ProfileCard({ profile, onEdit, onRun }) {
                                 <label class="text-[10px] text-gray-400 dark:text-gray-500 whitespace-nowrap shrink-0">${c.label || c.name}</label>
                                 <input type="text" id=${`arg-${p.id}-${i}`} data-profile=${p.id} data-idx=${i}
                                     value=${c.value || c.default || ''}
-                                    onChange=${(e) => handleArgChange(e.target)}
+                                    onInput=${(e) => handleArgChange(e.target)}
                                     placeholder=${c.name}
                                     class="min-w-0 flex-1 bg-transparent border-0 text-xs text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-0 focus:ring-offset-0" />
                             </div>`;

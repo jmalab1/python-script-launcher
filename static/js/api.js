@@ -214,8 +214,9 @@ export async function deleteHistoryEntries(ids) {
     await loadWorkflowHistory();
 }
 
-export async function openNativeFileDialog() {
-    return api('GET', '/api/filedialog');
+export async function browseDirectory(path) {
+    const params = new URLSearchParams({ path: path || '' });
+    return api('GET', '/api/browse?' + params.toString());
 }
 
 export async function loadAudit() {
