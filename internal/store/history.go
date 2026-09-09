@@ -1,6 +1,7 @@
 package store
 
 import (
+	"log/slog"
 	"strings"
 
 	"launchcontrol/internal/ordjson"
@@ -87,7 +88,11 @@ func (db *DB) SaveHistory(runID, name, runType, status string, returnCode any, o
 			return
 		}
 		history = append(history, entry)
-		db.Save("history", history)
+		// A failed save is logged, not fatal: the Python server also
+		// kept serving if history bookkeeping did not stick.
+		if err := db.Save("history", history); err != nil {
+			slog.Warn("Cannot save history", "err", err)
+		}
 	})
 }
 
@@ -142,7 +147,9 @@ func (db *DB) UpdateHistory(runID string, upd HistoryUpdate) bool {
 			target.Set("timed_out", true)
 		}
 		target.Set("timestamp", ordjson.Number(nowSeconds()))
-		db.Save("history", history)
+		if err := db.Save("history", history); err != nil {
+			slog.Warn("Cannot save history", "err", err)
+		}
 		updated = true
 	})
 	return updated
@@ -168,7 +175,9 @@ func (db *DB) RemoveHistory(pred func(*ordjson.OMap) bool) int {
 			}
 		}
 		if removed > 0 {
-			db.Save("history", remaining)
+			if err := db.Save("history", remaining); err != nil {
+				slog.Warn("Cannot save history", "err", err)
+			}
 		}
 	})
 	return removed
@@ -177,7 +186,9 @@ func (db *DB) RemoveHistory(pred func(*ordjson.OMap) bool) int {
 // ReplaceHistory atomically replaces the whole history collection.
 func (db *DB) ReplaceHistory(entries []*ordjson.OMap) {
 	db.WithCollection("history", func() {
-		db.Save("history", entries)
+		if err := db.Save("history", entries); err != nil {
+			slog.Warn("Cannot save history", "err", err)
+		}
 	})
 }
 

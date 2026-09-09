@@ -44,7 +44,7 @@ func RecordPID(port, pid int) error { return writePID(port, pid) }
 
 // writePID records the pid.
 func writePID(port, pid int) error {
-	return os.WriteFile(PIDFile(port), []byte(strconv.Itoa(pid)), 0o644)
+	return os.WriteFile(PIDFile(port), []byte(strconv.Itoa(pid)), 0o600)
 }
 
 // alive reports whether a process still exists (does not distinguish
@@ -70,7 +70,9 @@ func IsRunning(port int) (int, bool) {
 		return 0, false
 	}
 	if !alive(pid) {
-		os.Remove(PIDFile(port))
+		// A stale PID file is best-effort cleanup; nothing useful can
+		// be done if the remove fails.
+		_ = os.Remove(PIDFile(port))
 		return 0, false
 	}
 	return pid, true
@@ -82,7 +84,7 @@ func PortOpen(port int) bool {
 	if err != nil {
 		return false
 	}
-	conn.Close()
+	_ = conn.Close()
 	return true
 }
 
@@ -90,6 +92,8 @@ func PortOpen(port int) bool {
 // and waits until ready() reports success (or the timeout elapses).
 // Returns the child PID.
 func StartDetached(exe string, args []string, env []string, timeout time.Duration, ready func() bool) (int, error) {
+	// #nosec G204 -- exe is this binary's own path (os.Executable) and
+	// args are the fixed -port/-_child flags built by main().
 	cmd := exec.Command(exe, args...)
 	cmd.Env = env
 	// The child must not die with the parent's session/terminal.
@@ -126,7 +130,7 @@ func Stop(port int) (bool, error) {
 	}
 	proc, err := os.FindProcess(pid)
 	if err != nil {
-		os.Remove(PIDFile(port))
+		_ = os.Remove(PIDFile(port))
 		return false, nil
 	}
 
@@ -146,6 +150,6 @@ func Stop(port int) (bool, error) {
 	} else {
 		_ = proc.Kill()
 	}
-	os.Remove(PIDFile(port))
+	_ = os.Remove(PIDFile(port))
 	return true, nil
 }

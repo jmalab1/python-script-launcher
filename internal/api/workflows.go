@@ -86,7 +86,7 @@ func (a *API) WorkflowCreate(data *ordjson.OMap) *ordjson.OMap {
 		} else {
 			workflows = append(workflows, workflow)
 		}
-		a.DB.Save(store.ColWorkflows, workflows)
+		a.saveCollection(store.ColWorkflows, workflows)
 
 		action := "updated"
 		details := (*ordjson.OMap)(nil)
@@ -116,7 +116,7 @@ func (a *API) WorkflowDelete(workflowID string) *ordjson.OMap {
 			}
 			before := wf.Clone()
 			wf.Set("group", "__trash__")
-			a.DB.Save(store.ColWorkflows, workflows)
+			a.saveCollection(store.ColWorkflows, workflows)
 			a.DB.RecordAudit("deleted", "workflow", workflowID,
 				ordjson.GetStr(wf, "name"), before, wf.Clone(), nil)
 			return
@@ -140,7 +140,7 @@ func (a *API) WorkflowRestore(workflowID string) (*ordjson.OMap, bool) {
 			}
 			before := wf.Clone()
 			wf.Set("group", "")
-			a.DB.Save(store.ColWorkflows, workflows)
+			a.saveCollection(store.ColWorkflows, workflows)
 			a.DB.RecordAudit("restored", "workflow", workflowID,
 				ordjson.GetStr(wf, "name"), before, wf.Clone(), nil)
 			restored = wf
@@ -170,7 +170,7 @@ func (a *API) WorkflowPermanentDelete(workflowID string) *ordjson.OMap {
 				remaining = append(remaining, wf)
 			}
 		}
-		a.DB.Save(store.ColWorkflows, remaining)
+		a.saveCollection(store.ColWorkflows, remaining)
 
 		if target != nil {
 			var removedSchedules []any
@@ -191,7 +191,7 @@ func (a *API) WorkflowPermanentDelete(workflowID string) *ordjson.OMap {
 							kept = append(kept, s)
 						}
 					}
-					a.DB.Save(store.ColSchedules, kept)
+					a.saveCollection(store.ColSchedules, kept)
 				}
 			})
 
@@ -247,7 +247,7 @@ func (a *API) WorkflowDuplicate(workflowID string) (*ordjson.OMap, bool) {
 		workflows = append(workflows, nil)
 		copy(workflows[index+2:], workflows[index+1:])
 		workflows[index+1] = duplicate
-		a.DB.Save(store.ColWorkflows, workflows)
+		a.saveCollection(store.ColWorkflows, workflows)
 
 		a.DB.RecordAudit("created", "workflow", ordjson.GetStr(duplicate, "id"),
 			ordjson.GetStr(duplicate, "name"), nil, duplicate.Clone(),
@@ -297,7 +297,7 @@ func (a *API) WorkflowReorder(data *ordjson.OMap) *ordjson.OMap {
 		for i, wf := range ordered {
 			current[i] = ordjson.GetStr(wf, "id")
 		}
-		a.DB.Save(store.ColWorkflows, ordered)
+		a.saveCollection(store.ColWorkflows, ordered)
 
 		if joinStrings(current, ",") != joinStrings(previous, ",") {
 			a.DB.RecordAudit("reordered", "workflows", "", "Workflow order", nil, nil,

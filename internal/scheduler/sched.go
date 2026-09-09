@@ -271,7 +271,9 @@ func (s *Scheduler) SkipMissed(now time.Time) {
 			}
 		}
 		if changed {
-			s.db.Save(store.ColSchedules, schedules)
+			if err := s.db.Save(store.ColSchedules, schedules); err != nil {
+				slog.Warn("Cannot save schedules", "err", err)
+			}
 		}
 	})
 }

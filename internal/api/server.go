@@ -380,7 +380,10 @@ func (a *API) writeJSON(w http.ResponseWriter, r *http.Request, v any, status in
 	}
 	w.Header().Set("Content-Length", strconv.Itoa(len(body)))
 	w.WriteHeader(status)
-	w.Write(body)
+	// Response-body write errors mean the client hung up; nothing to do.
+	// #nosec G705 -- body is ordjson.Marshal output served with
+	// Content-Type application/json, not injected HTML.
+	_, _ = w.Write(body)
 }
 
 func (a *API) writeJSONRecords(w http.ResponseWriter, r *http.Request, records []*ordjson.OMap) {
@@ -389,6 +392,15 @@ func (a *API) writeJSONRecords(w http.ResponseWriter, r *http.Request, records [
 		arr[i] = rec
 	}
 	a.writeJSON(w, r, arr, http.StatusOK)
+}
+
+// saveCollection persists a collection and logs on failure without
+// aborting the handler, matching the Python server's tolerant saves: the
+// UI keeps running on its in-memory state if a disk write fails.
+func (a *API) saveCollection(collection string, items []*ordjson.OMap) {
+	if err := a.DB.Save(collection, items); err != nil {
+		slog.Error("Cannot save collection", "collection", collection, "err", err)
+	}
 }
 
 // --- small shared helpers ---

@@ -12,8 +12,12 @@ import (
 func openBrowser(url string) {
 	switch runtime.GOOS {
 	case "darwin":
-		exec.Command("open", url).Start()
+		// #nosec G204 -- the command is the fixed platform opener and
+		// url is the app's own http://127.0.0.1:<port> address.
+		_ = exec.Command("open", url).Start()
 	default:
-		exec.Command("xdg-open", url).Start()
+		// #nosec G204 -- the command is the fixed platform opener and
+		// url is the app's own http://127.0.0.1:<port> address.
+		_ = exec.Command("xdg-open", url).Start()
 	}
 }

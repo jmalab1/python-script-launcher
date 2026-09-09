@@ -41,7 +41,7 @@ func (a *API) ProfileCreate(data *ordjson.OMap) *ordjson.OMap {
 		} else {
 			profiles = append(profiles, profile)
 		}
-		a.DB.Save(store.ColProfiles, profiles)
+		a.saveCollection(store.ColProfiles, profiles)
 
 		action := "updated"
 		details := (*ordjson.OMap)(nil)
@@ -71,7 +71,7 @@ func (a *API) ProfileDelete(profileID string) *ordjson.OMap {
 			}
 			before := p.Clone()
 			p.Set("group", "__trash__")
-			a.DB.Save(store.ColProfiles, profiles)
+			a.saveCollection(store.ColProfiles, profiles)
 			a.DB.RecordAudit("deleted", "profile", profileID,
 				ordjson.GetStr(p, "name"), before, p.Clone(), nil)
 			return
@@ -95,7 +95,7 @@ func (a *API) ProfileRestore(profileID string) (*ordjson.OMap, bool) {
 			}
 			before := p.Clone()
 			p.Set("group", "")
-			a.DB.Save(store.ColProfiles, profiles)
+			a.saveCollection(store.ColProfiles, profiles)
 			a.DB.RecordAudit("restored", "profile", profileID,
 				ordjson.GetStr(p, "name"), before, p.Clone(), nil)
 			restored = p
@@ -149,7 +149,7 @@ func (a *API) ProfilePermanentDelete(profileID string) *ordjson.OMap {
 							kept = append(kept, s)
 						}
 					}
-					a.DB.Save(store.ColSchedules, kept)
+					a.saveCollection(store.ColSchedules, kept)
 				}
 			})
 
@@ -205,7 +205,7 @@ func (a *API) ProfileDuplicate(profileID string) (*ordjson.OMap, bool) {
 		profiles = append(profiles, nil)
 		copy(profiles[index+2:], profiles[index+1:])
 		profiles[index+1] = duplicate
-		a.DB.Save(store.ColProfiles, profiles)
+		a.saveCollection(store.ColProfiles, profiles)
 
 		a.DB.RecordAudit("created", "profile", ordjson.GetStr(duplicate, "id"),
 			ordjson.GetStr(duplicate, "name"), nil, duplicate.Clone(),
@@ -256,7 +256,7 @@ func (a *API) ProfileReorder(data *ordjson.OMap) *ordjson.OMap {
 		for i, p := range ordered {
 			current[i] = ordjson.GetStr(p, "id")
 		}
-		a.DB.Save(store.ColProfiles, ordered)
+		a.saveCollection(store.ColProfiles, ordered)
 
 		if joinStrings(current, ",") != joinStrings(previous, ",") {
 			orderAny := make([]any, len(current))

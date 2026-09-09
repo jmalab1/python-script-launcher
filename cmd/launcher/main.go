@@ -133,7 +133,7 @@ func serve(port int, _ string) {
 		defer rotator.Close()
 	}
 
-	if err := os.MkdirAll(dataDir, 0o755); err != nil {
+	if err := os.MkdirAll(dataDir, 0o750); err != nil {
 		slog.Error("Cannot create data directory", "dir", dataDir, "err", err)
 		shutdown(1)
 	}
@@ -158,14 +158,14 @@ func serve(port int, _ string) {
 		// read the error without a pause (Python did the same).
 		if runtime.GOOS == "windows" {
 			fmt.Println("Press Enter to exit...")
-			fmt.Scanln()
+			_, _ = fmt.Scanln()
 		}
 		shutdown(1)
 	}
 	defer listener.Close()
 	portNum := listener.Addr().(*net.TCPAddr).Port
 
-	server := &http.Server{Handler: api.New(db, runs, sched, dataDir, config.LogFile())}
+	server := newServer(api.New(db, runs, sched, dataDir, config.LogFile()))
 
 	// The scheduler starts only once the server is bound, mirroring the
 	// Python main().
@@ -192,7 +192,9 @@ func serve(port int, _ string) {
 		slog.Info("Shutting down.")
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
-		server.Shutdown(ctx)
+		// Shutdown's error (e.g. the 5s timeout expiring) does not change
+		// the exit path, so the error is deliberately dropped.
+		_ = server.Shutdown(ctx)
 	}()
 	if err := server.Serve(listener); err != nil && err != http.ErrServerClosed {
 		slog.Error("Server error", "err", err)
@@ -203,4 +205,13 @@ func serve(port int, _ string) {
 // shutdown exits without leaving the Windows console reader hanging.
 func shutdown(code int) {
 	os.Exit(code)
+}
+
+// newServer builds the HTTP server with a header read timeout so slow
+// clients cannot tie up connections forever (Slowloris-style).
+func newServer(handler http.Handler) *http.Server {
+	return &http.Server{
+		Handler:           handler,
+		ReadHeaderTimeout: 10 * time.Second,
+	}
 }

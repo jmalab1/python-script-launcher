@@ -182,7 +182,7 @@ func (a *API) ScheduleCreate(data *ordjson.OMap) (*ordjson.OMap, *ordjson.OMap) 
 			}
 		}
 		kept = append(kept, schedule)
-		a.DB.Save(store.ColSchedules, kept)
+		a.saveCollection(store.ColSchedules, kept)
 
 		action := "updated"
 		details := (*ordjson.OMap)(nil)
@@ -228,7 +228,7 @@ func (a *API) ScheduleToggle(scheduleID string) (*ordjson.OMap, *ordjson.OMap) {
 		} else {
 			target.Set("next_run_at", nil)
 		}
-		a.DB.Save(store.ColSchedules, schedules)
+		a.saveCollection(store.ColSchedules, schedules)
 
 		a.DB.RecordAudit("updated", "schedule", scheduleID, a.auditName(target),
 			before, target.Clone(),
@@ -270,7 +270,7 @@ func (a *API) ScheduleRunNow(scheduleID string) (*ordjson.OMap, *ordjson.OMap) {
 
 		sched.Set("last_run_at", ordjson.Number(nowSeconds()))
 		sched.Set("last_run_id", runID)
-		a.DB.Save(store.ColSchedules, schedules)
+		a.saveCollection(store.ColSchedules, schedules)
 
 		a.DB.RecordAudit("run_now", "schedule", scheduleID, a.auditName(sched),
 			nil, sched.Clone(), ordjson.New().Set("run_id", runID))
@@ -328,7 +328,7 @@ func (a *API) ScheduleDuplicate(scheduleID string) (*ordjson.OMap, *ordjson.OMap
 		}
 
 		schedules = append(schedules, duplicate)
-		a.DB.Save(store.ColSchedules, schedules)
+		a.saveCollection(store.ColSchedules, schedules)
 
 		a.DB.RecordAudit("created", "schedule", ordjson.GetStr(duplicate, "id"),
 			ordjson.GetStr(duplicate, "name"), nil, duplicate.Clone(),
@@ -353,7 +353,7 @@ func (a *API) ScheduleDelete(scheduleID string) (*ordjson.OMap, *ordjson.OMap) {
 			before := s.Clone()
 			s.Set("group", "__trash__")
 			s.Set("next_run_at", nil)
-			a.DB.Save(store.ColSchedules, schedules)
+			a.saveCollection(store.ColSchedules, schedules)
 			a.DB.RecordAudit("deleted", "schedule", scheduleID, a.auditName(s),
 				before, s.Clone(), nil)
 			return
@@ -391,7 +391,7 @@ func (a *API) ScheduleRestore(scheduleID string) (*ordjson.OMap, *ordjson.OMap) 
 		if ordjson.GetBool(target, "enabled") {
 			target.Set("next_run_at", nextRunAt(ordjson.GetStr(target, "cron")))
 		}
-		a.DB.Save(store.ColSchedules, schedules)
+		a.saveCollection(store.ColSchedules, schedules)
 
 		a.DB.RecordAudit("restored", "schedule", scheduleID, a.auditName(target),
 			before, target.Clone(), nil)
@@ -417,7 +417,7 @@ func (a *API) SchedulePermanentDelete(scheduleID string) (*ordjson.OMap, *ordjso
 				remaining = append(remaining, s)
 			}
 		}
-		a.DB.Save(store.ColSchedules, remaining)
+		a.saveCollection(store.ColSchedules, remaining)
 
 		if target != nil {
 			a.DB.RecordAudit("permanently_deleted", "schedule", scheduleID,

@@ -68,7 +68,7 @@ func NewID() string {
 // Open opens (and creates if needed) the database, initialising the
 // schema and running the legacy JSON-file migration.
 func Open(dbPath, dataDir string) (*DB, error) {
-	if err := os.MkdirAll(dataDir, 0o755); err != nil {
+	if err := os.MkdirAll(dataDir, 0o750); err != nil {
 		return nil, err
 	}
 
@@ -86,7 +86,7 @@ func Open(dbPath, dataDir string) (*DB, error) {
 
 	db := &DB{sql: sqlDB, dataDir: dataDir, locks: map[string]*sync.Mutex{}}
 	if err := db.initSchema(); err != nil {
-		sqlDB.Close()
+		_ = sqlDB.Close()
 		return nil, err
 	}
 	db.migrateLegacy()
@@ -161,7 +161,9 @@ func (db *DB) migrateLegacy() {
 		if err != nil || len(items) > 0 {
 			continue
 		}
-		raw, err := os.ReadFile(filepath.Join(db.dataDir, filename))
+		// The filename is one of the fixed legacyFiles names joined
+		// under the data dir, never user input.
+		raw, err := os.ReadFile(filepath.Join(db.dataDir, filename)) // #nosec G304 -- fixed map key
 		if err != nil {
 			continue
 		}
@@ -221,6 +223,8 @@ func (db *DB) Load(collection string) ([]*ordjson.OMap, error) {
 	if err != nil {
 		return nil, err
 	}
+	// #nosec G202 -- table is a whitelisted collection name (tableFor),
+	// never user input.
 	rows, err := db.sql.Query(`SELECT json FROM "` + table + `" ORDER BY rowid`)
 	if err != nil {
 		return nil, err
@@ -260,6 +264,8 @@ func (db *DB) Save(collection string, items []*ordjson.OMap) error {
 		return err
 	}
 	defer tx.Rollback()
+	// #nosec G202 -- table is a whitelisted collection name (tableFor),
+	// never user input.
 	if _, err := tx.Exec(`DELETE FROM "` + table + `"`); err != nil {
 		return err
 	}
@@ -278,6 +284,8 @@ func (db *DB) Save(collection string, items []*ordjson.OMap) error {
 				GetString(item, "id"), GetString(item, "run_id"), GetString(item, "type"), string(blob),
 			)
 		} else {
+			// #nosec G202 -- table is a whitelisted collection name
+			// (tableFor), never user input.
 			_, err = tx.Exec(
 				`INSERT INTO "`+table+`" (id, json) VALUES (?, ?)`,
 				GetString(item, "id"), string(blob),

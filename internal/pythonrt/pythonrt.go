@@ -97,17 +97,35 @@ func ensureExtracted(data []byte) (string, error) {
 	}
 
 	// First run extracts ~60MB; a marker file avoids redoing it.
-	if err := os.WriteFile(marker, []byte(runtimeIdentifier()), 0o644); err != nil {
+	if err := os.WriteFile(marker, []byte(runtimeIdentifier()), 0o600); err != nil {
 		return "", err
 	}
 	return targetDir, nil
 }
 
+// maxExtractedBytes caps the total unpacked size so a corrupted or
+// malicious archive cannot fill the disk (decompression-bomb guard).
+// The real runtime unpacks to a few hundred megabytes, so 4 GiB leaves
+// a wide margin. A var so tests can shrink the cap and exercise it.
+var maxExtractedBytes int64 = 4 << 30
+
 // extractTar unpacks a python-build-standalone install_only archive. It
 // guards against path traversal in the archive (no ".." elements) and
 // makes the interpreter binaries executable.
 func extractTar(gz *gzip.Reader, targetDir string) error {
+	// os.Root scopes every write to the extraction directory: even a
+	// crafted archive entry cannot escape it or follow a symlink out.
+	if err := os.MkdirAll(targetDir, 0o750); err != nil {
+		return err
+	}
+	root, err := os.OpenRoot(targetDir)
+	if err != nil {
+		return err
+	}
+	defer root.Close()
+
 	tr := tar.NewReader(gz)
+	unpacked := int64(0)
 	for {
 		header, err := tr.Next()
 		if err == io.EOF {
@@ -128,29 +146,32 @@ func extractTar(gz *gzip.Reader, targetDir string) error {
 		if strings.HasPrefix(clean, "..") || filepath.IsAbs(clean) {
 			continue
 		}
-		dest := filepath.Join(targetDir, clean)
+
 		switch header.Typeflag {
 		case tar.TypeDir:
-			if err := os.MkdirAll(dest, 0o755); err != nil {
+			if err := root.MkdirAll(clean, 0o750); err != nil {
 				return err
 			}
 		case tar.TypeReg:
-			if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
+			if err := root.MkdirAll(filepath.Dir(clean), 0o750); err != nil {
 				return err
 			}
-			// Bound file size so a malformed archive cannot fill a disk.
-			if header.Size > 512<<20 {
-				return fmt.Errorf("archive entry %s too large", name)
+
+			// Cap the whole archive's unpacked size and copy at most
+			// the entry's declared size, so an archive cannot unpack
+			// unbounded data.
+			unpacked += header.Size
+			if unpacked > maxExtractedBytes {
+				return fmt.Errorf("archive unpacks more than %d bytes", maxExtractedBytes)
 			}
-			out, err := os.OpenFile(dest, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, fileMode(header.Mode))
-			if err == nil {
-				if _, err := io.Copy(out, tr); err != nil {
-					out.Close()
-					return err
-				}
-				out.Close()
-			} else {
+			out, err := root.OpenFile(clean, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, fileMode(header.Mode))
+			if err != nil {
 				return err
+			}
+			_, copyErr := io.Copy(out, io.LimitReader(tr, header.Size))
+			_ = out.Close()
+			if copyErr != nil {
+				return copyErr
 			}
 		case tar.TypeSymlink:
 			// entries like bin/python3 -> python3.12 keep interpreter
@@ -161,11 +182,11 @@ func extractTar(gz *gzip.Reader, targetDir string) error {
 			if filepath.IsAbs(target) || strings.HasPrefix(target, ".") {
 				continue
 			}
-			if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
+			if err := root.MkdirAll(filepath.Dir(clean), 0o750); err != nil {
 				return err
 			}
-			os.Remove(dest)
-			if err := os.Symlink(target, dest); err != nil {
+			_ = root.Remove(clean)
+			if err := root.Symlink(target, clean); err != nil {
 				return err
 			}
 		}

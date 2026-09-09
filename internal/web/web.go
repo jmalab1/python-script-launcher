@@ -81,5 +81,8 @@ func writeMaybeGzipped(w http.ResponseWriter, r *http.Request, key, contentType 
 	}
 
 	w.Header().Set("Content-Length", strconv.Itoa(len(body)))
-	w.Write(body)
+	// Response-body write errors mean the client hung up; nothing to do.
+	// #nosec G705 -- body is embedded asset content, served with a fixed
+	// Content-Type, and the requested rel path was cleaned above.
+	_, _ = w.Write(body)
 }

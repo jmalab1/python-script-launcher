@@ -32,11 +32,13 @@ var backupSuffix = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}(-\d+
 
 // New opens (or creates) the log file.
 func New(path string, maxSize int64, backupCount int) (*RotatingWriter, error) {
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil {
 		return nil, err
 	}
 
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+	// path is the caller-provided server log file (config.LogFile()),
+	// not request input.
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o600) // #nosec G304 -- internal log path
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +78,7 @@ func (w *RotatingWriter) Close() error {
 // backups. Because timestamped names accumulate, pruning runs after
 // every rollover.
 func (w *RotatingWriter) rotateLocked() error {
-	w.file.Close()
+	_ = w.file.Close()
 	stamp := time.Now().Format("2006-01-02_15-04-05")
 	candidate := w.path + "." + stamp
 	for n := 1; fileExists(candidate); n++ {
@@ -85,7 +87,7 @@ func (w *RotatingWriter) rotateLocked() error {
 
 	if err := os.Rename(w.path, candidate); err != nil {
 		// Keep writing to the same file if the rename failed.
-		f, err2 := os.OpenFile(w.path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+		f, err2 := os.OpenFile(w.path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o600) // #nosec G304 -- internal log path
 		if err2 != nil {
 			return err
 		}
@@ -93,7 +95,7 @@ func (w *RotatingWriter) rotateLocked() error {
 		return nil
 	}
 
-	f, err := os.OpenFile(w.path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+	f, err := os.OpenFile(w.path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o600) // #nosec G304 -- internal log path
 	if err != nil {
 		return err
 	}
@@ -121,7 +123,9 @@ func (w *RotatingWriter) pruneLocked() {
 	sort.Strings(backups)
 	excess := len(backups) - w.backupCount
 	for i := 0; i < excess; i++ {
-		os.Remove(filepath.Join(dir, backups[i]))
+		// Old backups are best-effort pruned; a failed delete keeps a
+		// file around but harms nothing.
+		_ = os.Remove(filepath.Join(dir, backups[i]))
 	}
 }
 
@@ -149,7 +153,7 @@ func levelText(l slog.Level) string {
 // the Python server's line format, and returns the file writer (nil
 // when no file could be opened).
 func Setup(path string, maxSize int64, backupCount int) *RotatingWriter {
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil {
 		slog.Warn("Could not create data dir for logging", "err", err)
 		return nil
 	}

@@ -42,8 +42,10 @@ func ShouldCompress(contentType string, size int) bool {
 func GzipBytes(body []byte) []byte {
 	var buf bytes.Buffer
 	w, _ := gzip.NewWriterLevel(&buf, level)
-	w.Write(body)
-	w.Close()
+	// The gzip writer writes into an in-memory buffer: neither the
+	// writes nor the close can fail in a way that changes the result.
+	_, _ = w.Write(body)
+	_ = w.Close()
 	return buf.Bytes()
 }
 
@@ -62,7 +64,8 @@ var (
 // the fingerprint is a content hash, so the cache stays valid forever.
 func GzipCached(key string, body []byte) []byte {
 	h := fnv.New64a()
-	h.Write(body)
+	// A hash writer over an in-memory hash state cannot fail.
+	_, _ = h.Write(body)
 	stamp := h.Sum64()
 	cacheLock.Lock()
 	cached, ok := cache[key]

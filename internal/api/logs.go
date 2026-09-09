@@ -79,7 +79,8 @@ func readLogBytes(path string, start, length int64) []byte {
 		return nil
 	}
 
-	f, err := os.Open(path)
+	// path is a.LogPath, the server's own log file, never request input.
+	f, err := os.Open(path) // #nosec G304 -- internal log path
 	if err != nil {
 		return nil
 	}

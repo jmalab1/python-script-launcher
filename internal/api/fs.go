@@ -39,6 +39,12 @@ func isPythonScript(path string) bool {
 // BrowseDirectory is the /api/browse explorer: it lists a directory's
 // contents (with a ".." row, or drives at a filesystem root) and can
 // verify a selected Python script. Port of filesystem.browse_directory.
+//
+// The path comes from the request and is intentionally unrestricted: the
+// explorer's job is to let the local user browse the whole filesystem to
+// pick their scripts (the app serves 127.0.0.1 only), matching the
+// Python original. So gosec's path-traversal taint findings here are a
+// design choice, not a bug — see the G703 markers below.
 func (a *API) BrowseDirectory(dirPath string) *ordjson.OMap {
 	expanded := dirPath
 	if expanded == "~" || strings.HasPrefix(expanded, "~/") {
@@ -51,6 +57,7 @@ func (a *API) BrowseDirectory(dirPath string) *ordjson.OMap {
 		}
 	}
 
+	// #nosec G703 -- Root-browsing is the explorer's documented purpose.
 	info, err := os.Stat(abs)
 	if err != nil {
 		return ordjson.New().Set("error", "Path does not exist: "+abs)
@@ -93,6 +100,7 @@ func (a *API) BrowseDirectory(dirPath string) *ordjson.OMap {
 	for _, name := range names {
 		itemPath := filepath.Join(abs, name)
 		isDir := false
+		// #nosec G703 -- Root-browsing is the explorer's documented purpose.
 		if st, err := os.Stat(itemPath); err == nil {
 			isDir = st.IsDir()
 		}
@@ -104,10 +112,12 @@ func (a *API) BrowseDirectory(dirPath string) *ordjson.OMap {
 	return ordjson.New().Set("path", abs).Set("entries", entries)
 }
 
-// ScriptExists backs the profile editor's live path validation.
+// ScriptExists backs the profile editor's live path validation. Like
+// BrowseDirectory, the path is intentionally user-supplied.
 func (a *API) ScriptExists(scriptPath string) *ordjson.OMap {
 	exists := false
 	if scriptPath != "" {
+		// #nosec G703 -- Root-browsing is the explorer's documented purpose.
 		if info, err := os.Stat(scriptPath); err == nil && !info.IsDir() {
 			exists = true
 		}

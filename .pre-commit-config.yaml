@@ -1,0 +1,22 @@
+# Pre-commit checks runnable by the pre-commit.com framework.
+# Setup once: make hooks  (installs pre-commit if needed via requirements-dev.txt)
+#
+# The Go hooks are "local" and shell out to the Makefile targets: that keeps
+# a single place (the Makefile) that knows where the Go toolchain lives, and
+# avoids building external mirror images.
+repos:
+  - repo: local
+    hooks:
+      - id: gofmt-check
+        name: gofmt (check; fix with make go-fmt)
+        entry: scripts/dev/gofmt_check.sh
+        language: system
+        types: [go]
+        pass_filenames: false
+
+      - id: gosec
+        name: gosec security scan (make go-sec)
+        entry: make go-sec
+        language: system
+        types: [go]
+        pass_filenames: false

@@ -282,7 +282,11 @@ func spawnEnv() []string {
 // the run is reported as timed out; *result receives the return code
 // (-1 on spawn failure).
 func (m *Manager) runScript(r *Run, scriptPath string, args []string, result *int, timeout float64, stepOutput *[]string) {
+	// Launching user-configured scripts (and the interpreter chosen for
+	// them) is this app's whole purpose; the same thing the Python
+	// server did.
 	argv := m.BuildCommand(scriptPath, args)
+	// #nosec G204 -- see the comment above: scripts come from the user's profiles.
 	cmd := exec.Command(argv[0], argv[1:]...)
 	cmd.Env = spawnEnv()
 	setSysProcAttr(cmd)
@@ -298,14 +302,15 @@ func (m *Manager) runScript(r *Run, scriptPath string, args []string, result *in
 	cmd.Stderr = pw
 
 	if err := cmd.Start(); err != nil {
-		pw.Close()
-		pr.Close()
+		_ = pw.Close()
+		_ = pr.Close()
 		m.recordSpawnError(r, result, err, stepOutput)
 		return
 	}
 	// The parent's copy of the write end must close or EOF never
-	// arrives; the child kept its own descriptor.
-	pw.Close()
+	// arrives; the child kept its own descriptor. A close error here
+	// cannot be acted on (the read side reports any real problem).
+	_ = pw.Close()
 
 	m.mu.Lock()
 	// A list, not a single slot: parallel workflow steps share the run
@@ -355,7 +360,7 @@ func (m *Manager) runScript(r *Run, scriptPath string, args []string, result *in
 		}
 	}
 	close(done)
-	pr.Close()
+	_ = pr.Close()
 	waitErr := cmd.Wait()
 
 	rc := exitCode(waitErr)

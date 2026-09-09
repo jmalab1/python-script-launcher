@@ -213,6 +213,7 @@ The server reads a few settings as flags and environment variables:
 | `-port` flag | `8765` | Server listen port (bound to 127.0.0.1; `-stop`/`-foreground` also built in) |
 | `LAUNCHER_DATA_DIR` | `launchctl-data/` in the OS user-data dir | Where the database, logs, and extracted Python runtime live |
 | log rotation | 2 MB, 3 backups | `launchctl-data/server.log` rotates automatically; the **Logs** panel tails it |
+| file permissions | `0600` files, `0750` dirs | Newly created data files/dirs (log, PID file, runtime) are owner-only; existing files keep their old permissions |
 
 Override the data directory for tests, shared locations, or a portable stick:
 
@@ -271,6 +272,8 @@ the e2e suite/demorecorder (Python) live in `requirements-dev.txt`.
 | `make go-build` | Dev binary (uses a system `python3` for scripts) |
 | `make go-test` | Go unit test suite |
 | `make go-fmt` | Format all Go code with gofmt |
+| `make go-sec` | Security scan with gosec (needs `go install github.com/securego/gosec/v2/cmd/gosec@latest` once) |
+| `make hooks` | Activate the pre-commit gate (gofmt + gosec on Go changes) — needs `pip install -r requirements-dev.txt` |
 | `make test-e2e` | Playwright suite against the built binary |
 | `make go-release-local` | Release binary with embedded CPython for this machine |
 | `make go-release` | Release binaries for linux, windows, macos (amd64 + arm64) |

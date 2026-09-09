@@ -2,6 +2,9 @@
 # app itself is pure Go and needs none of these.
 pytest>=7.0
 
+# Git pre-commit gate (gofmt/gosec/pytest) set up by `make hooks`.
+pre-commit>=3.0
+
 # End-to-end browser tests (tests/e2e).
 # After installing, fetch a browser: python3 -m playwright install chromium
 pytest-playwright>=0.5

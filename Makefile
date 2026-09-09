@@ -1,10 +1,14 @@
-.PHONY: start stop restart go-build go-test go-fmt test test-e2e demo fetch-runtimes go-release go-release-local go-clean
+.PHONY: start stop restart go-build go-test go-fmt go-sec hooks test test-e2e demo fetch-runtimes go-release go-release-local go-clean
 
 # Find the Go toolchain: the user's PATH if it has one, otherwise the
 # well-known install locations this repo uses (~/.local/go from the
 # official tarball). Keeps make working in shells that never sourced
 # .bashrc.
 GO := $(shell command -v go 2>/dev/null || echo $(HOME)/.local/go/bin/go)
+
+# Same trick as GO: use gosec from PATH, else the well-known ~/go/bin
+# spot that `go install` puts it in.
+GOSEC := $(shell command -v gosec 2>/dev/null || echo $(HOME)/go/bin/gosec)
 GOOS_TARGETS := linux-amd64 linux-arm64 windows-amd64 macos-amd64 macos-arm64
 
 # start/stop go through the binary's built-in detach mode: it starts
@@ -31,6 +35,26 @@ go-test:
 # same way the other targets do.
 go-fmt:
 	$(GO) fmt ./...
+
+# Security scan with gosec (see GOSEC above for where it is found). The
+# `! -x` guard fails with a friendly message instead of make complaining
+# about a missing command. gosec shells out to `go list`, so the Go
+# toolchain found by GO must be on PATH too — otherwise gosec silently
+# scans zero packages.
+go-sec:
+	@if [ ! -x "$(GOSEC)" ]; then \
+		echo "gosec not found - install with:"; \
+		echo "  go install github.com/securego/gosec/v2/cmd/gosec@latest"; \
+		exit 1; \
+	fi
+	PATH="$$(dirname "$(GO)"):$${PATH}" $(GOSEC) -quiet ./...
+
+# The pre-commit framework runs gofmt, gosec and pytest before every
+# commit (see .pre-commit-config.yaml). Installs the tool first if pip
+# can reach it; `pre-commit install` wires git to run it.
+hooks:
+	python3 -m pip install --user --break-system-packages -q -r requirements-dev.txt
+	python3 -m pre_commit install
 
 # Alias so the old habit still works.
 test: go-test

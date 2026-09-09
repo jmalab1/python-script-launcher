@@ -4,8 +4,10 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
+	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 )
@@ -109,5 +111,89 @@ func TestInterpreterFallsBackToSystemPython(t *testing.T) {
 	path2, _ := Interpreter()
 	if path2 != path {
 		t.Errorf("Interpreter not cached: %q vs %q", path2, path)
+	}
+}
+
+// makeGzipTar packs a list of (name, data) entries into a gzip'd tar,
+// like a miniature install_only archive.
+func makeGzipTar(t *testing.T, entries map[string]string) *gzip.Reader {
+	t.Helper()
+	var buf bytes.Buffer
+	gzw := gzip.NewWriter(&buf)
+	tw := tar.NewWriter(gzw)
+	for _, name := range sortedKeys(entries) {
+		data := entries[name]
+		if err := tw.WriteHeader(&tar.Header{Name: name, Mode: 0o644, Size: int64(len(data))}); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := tw.Write([]byte(data)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	tw.Close()
+	gzw.Close()
+	gz, err := gzip.NewReader(&buf)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return gz
+}
+
+func sortedKeys(m map[string]string) []string {
+	out := make([]string, 0, len(m))
+	for k := range m {
+		out = append(out, k)
+	}
+	sort.Strings(out)
+	return out
+}
+
+// TestExtractTarRejectsOverrideContract verifies the sum-of-entries cap
+// stops an archive that unpacks more than allowed (decompression bomb).
+func TestExtractTarRejectsBomb(t *testing.T) {
+	oldCap := maxExtractedBytes
+	maxExtractedBytes = 2048
+	defer func() { maxExtractedBytes = oldCap }()
+
+	entries := map[string]string{}
+	for i := 0; i < 3; i++ {
+		entries[fmt.Sprintf("python/lib/file%d.bin", i)] = strings.Repeat("x", 1024)
+	}
+	dir := t.TempDir()
+	gz := makeGzipTar(t, entries)
+	if err := extractTar(gz, dir); err == nil {
+		t.Fatal("expected the total-size cap to reject oversized archives")
+	}
+	deep, err := os.ReadDir(filepath.Join(dir, "lib"))
+	if err != nil {
+		t.Fatalf("lib dir missing: %v", err)
+	}
+	if len(deep) == 3 {
+		t.Error("cap did not stop the extraction early")
+	}
+}
+
+// TestExtractTarSymlinkEscape verifies an archive cannot use a symlink
+// to point outside the extraction dir.
+func TestExtractTarSymlinkEscape(t *testing.T) {
+	dir := t.TempDir()
+	var buf bytes.Buffer
+	gzw := gzip.NewWriter(&buf)
+	tw := tar.NewWriter(gzw)
+	if err := tw.WriteHeader(&tar.Header{Name: "python/bin/evil", Typeflag: tar.TypeSymlink, Linkname: "/etc/passwd"}); err != nil {
+		t.Fatal(err)
+	}
+	tw.Close()
+	gzw.Close()
+	gz, err := gzip.NewReader(&buf)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := extractTar(gz, dir); err != nil {
+		t.Fatalf("extraction returned an error, expected silent skip: %v", err)
+	}
+	if _, err := os.Lstat(filepath.Join(dir, "bin/evil")); err == nil {
+		t.Error("absolute symlink target was created inside the dir")
 	}
 }

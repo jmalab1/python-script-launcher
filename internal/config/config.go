@@ -112,7 +112,7 @@ func adoptLegacyDataDir() {
 			continue
 		}
 		if info, err := os.Stat(legacyPath); err == nil && info.IsDir() {
-			if err := os.MkdirAll(filepath.Dir(datadir), 0o755); err != nil {
+			if err := os.MkdirAll(filepath.Dir(datadir), 0o750); err != nil {
 				return
 			}
 			if err := os.Rename(legacyPath, datadir); err == nil {
