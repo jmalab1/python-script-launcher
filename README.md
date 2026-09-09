@@ -297,7 +297,9 @@ Every push to `main` triggers a GitHub Actions workflow
 five platform binaries via `make go-release`, tags the commit, and
 publishes a GitHub release with the binaries attached. The version runs
 as `v0.1.0`, `v0.1.1`, ... — the patch number goes up by one on every
-push, based on the highest existing `v*` tag.
+push, based on the highest existing `v*` tag. After publishing, the
+workflow prunes older releases so only the newest 3 remain (their tags
+are deleted too).
 
 ## Building From Source
 

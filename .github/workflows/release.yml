@@ -71,5 +71,18 @@ jobs:
             --title "$VERSION" \
             --generate-notes
 
+      # Keep the releases page small: delete everything past the
+      # newest 3. Deleting the release also removes its tag, so old
+      # tags don't pile up and confuse the next-version step above.
+      - name: Prune old releases (keep newest 3)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release list --json tagName --limit 100 \
+            --jq '.[].tagName' | tail -n +4 | while read -r TAG; do
+            gh release delete "$TAG" --yes --cleanup-tag
+            echo "Deleted old release $TAG"
+          done
+
       - name: Show result in the run summary
         run: echo "Released ${{ steps.version.outputs.version }}" >> "$GITHUB_STEP_SUMMARY"
