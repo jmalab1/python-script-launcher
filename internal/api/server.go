@@ -5,6 +5,7 @@ package api
 
 import (
 	"io"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -43,7 +44,32 @@ func (a *API) Handler() http.Handler {
 
 // ServeHTTP implements http.Handler by delegating to the router.
 func (a *API) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	a.route(w, r)
+	// Log each request the way Python's ThreadingHTTPServer log_message
+	// did ("GET /api/profiles HTTP/1.1" 200 -), since the Logs panel
+	// highlights request lines.
+	rec := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
+	a.route(rec, r)
+	slog.Info(fmt.Sprintf("\"%s\" %d -", methodPath(r), rec.status))
+}
+
+// methodPath renders "METHOD /path HTTP/1.1" like the Python request line.
+func methodPath(r *http.Request) string {
+	return r.Method + " " + r.URL.Path + " HTTP/1.1"
+}
+
+// statusRecorder captures the status code for the request log.
+type statusRecorder struct {
+	http.ResponseWriter
+	status int
+	wrote  bool
+}
+
+func (r *statusRecorder) WriteHeader(code int) {
+	if !r.wrote {
+		r.wrote = true
+		r.status = code
+	}
+	r.ResponseWriter.WriteHeader(code)
 }
 
 func (a *API) route(w http.ResponseWriter, r *http.Request) {

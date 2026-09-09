@@ -10,6 +10,8 @@ not installed, so `python3 -m pytest tests/` still passes everywhere.
 """
 
 import json
+import os
+import shlex
 import socket
 import subprocess
 import sys
@@ -86,12 +88,24 @@ def launcher_server(tmp_path_factory):
     base_url = f"http://127.0.0.1:{port}"
     log_path = data_dir / "server.log"
 
+    # LAUNCHER_SERVER_CMD lets the same suite run against the Go port's
+    # binary ("./dist/launchctl"); the data dir is passed through
+    # LAUNCHER_DATA_DIR, which the Go server honours.
+    server_cmd = os.environ.get("LAUNCHER_SERVER_CMD")
+    server_env = {**os.environ, "LAUNCHER_DATA_DIR": str(data_dir)}
+    if server_cmd:
+        argv = shlex.split(server_cmd) + [str(port)]
+    else:
+        argv = [sys.executable, str(E2E_DIR / "server_main.py"), str(data_dir), str(port)]
+        server_env = None  # inherit, like before
+
     with log_path.open("w") as log_file:
         proc = subprocess.Popen(
-            [sys.executable, str(E2E_DIR / "server_main.py"), str(data_dir), str(port)],
+            argv,
             cwd=str(ROOT),
             stdout=log_file,
             stderr=subprocess.STDOUT,
+            env=server_env,
         )
         try:
             deadline = time.time() + 15

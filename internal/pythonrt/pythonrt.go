@@ -15,6 +15,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"log/slog"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -50,6 +51,8 @@ func doResolve() {
 		if dir, err := ensureExtracted(data); err == nil {
 			exePath = pythonExecutable(dir)
 			return
+		} else {
+			slog.Warn("Embedded Python runtime could not be extracted - falling back to a system interpreter", "err", err)
 		}
 	}
 	// Fallback (and the dev-build path): a system interpreter.
@@ -145,8 +148,21 @@ func extractTar(gz *gzip.Reader, targetDir string) error {
 				return err
 			}
 		case tar.TypeSymlink:
-			// The CPython distribution ships no symlinks we need to
-			// preserve for running scripts; skip them safely.
+			// entries like bin/python3 -> python3.12 keep interpreter
+			// paths stable. Recreate them, but only when the target
+			// stays inside the extraction directory. (Symlink entries
+			// may also arrive before their parent directory.)
+			target := filepath.Clean(header.Linkname)
+			if filepath.IsAbs(target) || strings.HasPrefix(target, ".") {
+				continue
+			}
+			if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
+				return err
+			}
+			os.Remove(dest)
+			if err := os.Symlink(target, dest); err != nil {
+				return err
+			}
 		}
 	}
 }
