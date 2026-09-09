@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -70,5 +71,192 @@ func TestAdoptLegacyDataDirName(t *testing.T) {
 		if os.Getenv("LAUNCHER_DATA_DIR") != "" {
 			t.Log("canonical dir present; adoption should be a no-op")
 		}
+	}
+}
+
+// TestLogFileAndRuntimeDir checks the file layout inside the data dir.
+func TestLogFileAndRuntimeDir(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("LAUNCHER_DATA_DIR", dir)
+
+	if got, want := LogFile(), filepath.Join(dir, "server.log"); got != want {
+		t.Errorf("LogFile = %q, want %q", got, want)
+	}
+	if got, want := RuntimeDir(), filepath.Join(dir, "runtime"); got != want {
+		t.Errorf("RuntimeDir = %q, want %q", got, want)
+	}
+}
+
+// exeDir returns the directory holding the test binary; the adoption
+// helper looks for legacy data dirs there.
+func exeDir(t *testing.T) string {
+	t.Helper()
+	exe, err := os.Executable()
+	if err != nil {
+		t.Fatalf("os.Executable: %v", err)
+	}
+	return filepath.Dir(exe)
+}
+
+// createLegacyDir makes an earlier-build data dir next to the test
+// binary. It refuses to touch a dir it did not create, and cleans up
+// whichever side the dir ends up on (adoption renames it away).
+func createLegacyDir(t *testing.T, name string) string {
+	t.Helper()
+	dir := filepath.Join(exeDir(t), name)
+	if _, err := os.Stat(dir); err == nil {
+		t.Skipf("%s already exists next to the test binary; not touching it", dir)
+	}
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { os.RemoveAll(dir) })
+	return dir
+}
+
+// TestAdoptLegacyDataDirMovesData checks the rename: a "data" folder
+// left next to the executable by an earlier build becomes the canonical
+// data dir, contents intact.
+func TestAdoptLegacyDataDirMovesData(t *testing.T) {
+	base := t.TempDir()
+	datadir := filepath.Join(base, "user-state", AppDataDirName)
+	t.Setenv("LAUNCHER_DATA_DIR", datadir)
+
+	legacy := createLegacyDir(t, "data")
+	if err := os.MkdirAll(filepath.Join(legacy, "nested"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(legacy, "nested", "launcher.db"), []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	adoptLegacyDataDir()
+
+	if _, err := os.Stat(filepath.Join(datadir, "nested", "launcher.db")); err != nil {
+		t.Errorf("legacy data did not move onto the canonical location: %v", err)
+	}
+	if _, err := os.Stat(legacy); !os.IsNotExist(err) {
+		t.Errorf("legacy dir should be gone after adoption: %v", err)
+	}
+}
+
+// TestAdoptLegacyDataDirFallsBackToSecondName covers the second legacy
+// layout name ("launchctl-data") when no "data" folder exists.
+func TestAdoptLegacyDataDirFallsBackToSecondName(t *testing.T) {
+	if _, err := os.Stat(filepath.Join(exeDir(t), "data")); err == nil {
+		t.Skip("a data dir also exists next to the test binary; adoption would pick that one")
+	}
+	base := t.TempDir()
+	datadir := filepath.Join(base, AppDataDirName)
+	t.Setenv("LAUNCHER_DATA_DIR", datadir)
+
+	legacy := createLegacyDir(t, AppDataDirName)
+	if err := os.WriteFile(filepath.Join(legacy, "launcher.db"), []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	adoptLegacyDataDir()
+
+	if _, err := os.Stat(filepath.Join(datadir, "launcher.db")); err != nil {
+		t.Errorf("legacy launchctl-data dir was not adopted: %v", err)
+	}
+	if _, err := os.Stat(legacy); !os.IsNotExist(err) {
+		t.Errorf("legacy dir should be gone after adoption: %v", err)
+	}
+}
+
+// TestAdoptLegacyDataDirKeepsExistingDataDir: when the canonical dir is
+// already there, adoption must do nothing (live data is never
+// clobbered or merged).
+func TestAdoptLegacyDataDirKeepsExistingDataDir(t *testing.T) {
+	base := t.TempDir()
+	datadir := filepath.Join(base, AppDataDirName)
+	t.Setenv("LAUNCHER_DATA_DIR", datadir)
+
+	if err := os.MkdirAll(datadir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(datadir, "launcher.db"), []byte("live"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	legacy := createLegacyDir(t, "data")
+	if err := os.WriteFile(filepath.Join(legacy, "old.db"), []byte("old"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	adoptLegacyDataDir()
+
+	if _, err := os.Stat(filepath.Join(datadir, "launcher.db")); err != nil {
+		t.Errorf("existing data dir was disturbed: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(datadir, "old.db")); !os.IsNotExist(err) {
+		t.Error("legacy files must not be merged into the live data dir")
+	}
+	if _, err := os.Stat(filepath.Join(legacy, "old.db")); err != nil {
+		t.Errorf("legacy dir should stay in place when the data dir exists: %v", err)
+	}
+}
+
+// TestAdoptLegacyDataDirNoLegacyNoop: with no legacy folder anywhere,
+// the canonical dir is simply never created.
+func TestAdoptLegacyDataDirNoLegacyNoop(t *testing.T) {
+	base := t.TempDir()
+	datadir := filepath.Join(base, "user-state", AppDataDirName)
+	t.Setenv("LAUNCHER_DATA_DIR", datadir)
+
+	// A leftover legacy dir next to the test binary (from a failed
+	// earlier test) would be adopted and break this assertion.
+	for _, name := range legacyDataDirNames {
+		if _, err := os.Stat(filepath.Join(exeDir(t), name)); err == nil {
+			t.Skipf("legacy dir %q exists next to the test binary", name)
+		}
+	}
+
+	adoptLegacyDataDir()
+
+	if _, err := os.Stat(datadir); !os.IsNotExist(err) {
+		t.Errorf("no legacy dir, so the data dir must not be created: %v", err)
+	}
+}
+
+// TestAdoptLegacyDataDirUnwritableParent: when the parent of the data
+// dir cannot be created, adoption gives up and leaves the legacy dir
+// untouched.
+func TestAdoptLegacyDataDirUnwritableParent(t *testing.T) {
+	base := t.TempDir()
+	blocker := filepath.Join(base, "blocker")
+	if err := os.WriteFile(blocker, []byte("a file, not a dir"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("LAUNCHER_DATA_DIR", filepath.Join(blocker, AppDataDirName))
+
+	legacy := createLegacyDir(t, "data")
+	adoptLegacyDataDir()
+
+	if _, err := os.Stat(legacy); err != nil {
+		t.Errorf("legacy dir should be untouched when the target parent is missing: %v", err)
+	}
+}
+
+// TestAdoptLegacyDataDirOnce covers the exported entry point: with the
+// data dir already in place it must be a harmless no-op.
+func TestAdoptLegacyDataDirOnce(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("LAUNCHER_DATA_DIR", dir)
+
+	AdoptLegacyDataDir()
+
+	if _, err := os.Stat(dir); err != nil {
+		t.Errorf("existing data dir should be left alone: %v", err)
+	}
+}
+
+// TestOnWindowsMatchesOS pins the helper to the real platform: the
+// auto-browser-open and port-conflict pause in main.go key off this
+// value, so it must match runtime.GOOS everywhere.
+func TestOnWindowsMatchesOS(t *testing.T) {
+	if OnWindows() != (runtime.GOOS == "windows") {
+		t.Fatal("OnWindows must report the real GOOS")
 	}
 }
