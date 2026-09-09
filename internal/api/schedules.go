@@ -19,6 +19,7 @@ func (a *API) findTarget(targetType, targetID string) *ordjson.OMap {
 	if targetType == "workflow" {
 		column = store.ColWorkflows
 	}
+
 	items, err := a.DB.Load(column)
 	if err != nil {
 		return nil
@@ -68,6 +69,7 @@ func (a *API) enrichSchedule(schedule *ordjson.OMap) *ordjson.OMap {
 		out.Set("target_name", nil)
 		out.Set("target_trashed", false)
 	}
+
 	cron := ordjson.GetStr(schedule, "cron")
 	if cron == "" {
 		out.Set("description", "")
@@ -129,6 +131,7 @@ func (a *API) ScheduleCreate(data *ordjson.OMap) (*ordjson.OMap, *ordjson.OMap) 
 			apiErr = ordjson.New().Set("error", "Cannot load schedules")
 			return
 		}
+
 		var existing *ordjson.OMap
 		for _, s := range schedules {
 			if ordjson.GetStr(s, "id") == ordjson.GetStr(data, "id") {
@@ -136,6 +139,7 @@ func (a *API) ScheduleCreate(data *ordjson.OMap) (*ordjson.OMap, *ordjson.OMap) 
 				break
 			}
 		}
+
 		var schedule *ordjson.OMap
 		if existing != nil {
 			schedule = existing.Clone()
@@ -148,6 +152,7 @@ func (a *API) ScheduleCreate(data *ordjson.OMap) (*ordjson.OMap, *ordjson.OMap) 
 				Set("last_status", nil).
 				Set("next_run_at", nil)
 		}
+
 		schedule.Set("name", strings.TrimSpace(ordjson.GetStr(data, "name")))
 		targetType := orDefaultStr(ordjson.GetStr(data, "target_type"), "profile")
 		schedule.Set("target_type", targetType)
@@ -178,6 +183,7 @@ func (a *API) ScheduleCreate(data *ordjson.OMap) (*ordjson.OMap, *ordjson.OMap) 
 		}
 		kept = append(kept, schedule)
 		a.DB.Save(store.ColSchedules, kept)
+
 		action := "updated"
 		details := (*ordjson.OMap)(nil)
 		if existing == nil {
@@ -202,6 +208,7 @@ func (a *API) ScheduleToggle(scheduleID string) (*ordjson.OMap, *ordjson.OMap) {
 			apiErr = ordjson.New().Set("error", "Schedule not found")
 			return
 		}
+
 		var target *ordjson.OMap
 		for _, s := range schedules {
 			if ordjson.GetStr(s, "id") == scheduleID {
@@ -213,6 +220,7 @@ func (a *API) ScheduleToggle(scheduleID string) (*ordjson.OMap, *ordjson.OMap) {
 			apiErr = ordjson.New().Set("error", "Schedule not found")
 			return
 		}
+
 		before := target.Clone()
 		target.Set("enabled", !ordjson.GetBool(target, "enabled"))
 		if ordjson.GetBool(target, "enabled") {
@@ -221,6 +229,7 @@ func (a *API) ScheduleToggle(scheduleID string) (*ordjson.OMap, *ordjson.OMap) {
 			target.Set("next_run_at", nil)
 		}
 		a.DB.Save(store.ColSchedules, schedules)
+
 		a.DB.RecordAudit("updated", "schedule", scheduleID, a.auditName(target),
 			before, target.Clone(),
 			ordjson.New().Set("changed", ordjsonArr(store.ChangedFields(before, target))))
@@ -240,6 +249,7 @@ func (a *API) ScheduleRunNow(scheduleID string) (*ordjson.OMap, *ordjson.OMap) {
 			apiErr = ordjson.New().Set("error", "Schedule not found")
 			return
 		}
+
 		var sched *ordjson.OMap
 		for _, s := range schedules {
 			if ordjson.GetStr(s, "id") == scheduleID {
@@ -251,14 +261,17 @@ func (a *API) ScheduleRunNow(scheduleID string) (*ordjson.OMap, *ordjson.OMap) {
 			apiErr = ordjson.New().Set("error", "Schedule not found")
 			return
 		}
+
 		runID := a.Sched.FireSchedule(sched)
 		if runID == "" {
 			apiErr = ordjson.New().Set("error", "Could not start run (target missing or script missing)")
 			return
 		}
+
 		sched.Set("last_run_at", ordjson.Number(nowSeconds()))
 		sched.Set("last_run_id", runID)
 		a.DB.Save(store.ColSchedules, schedules)
+
 		a.DB.RecordAudit("run_now", "schedule", scheduleID, a.auditName(sched),
 			nil, sched.Clone(), ordjson.New().Set("run_id", runID))
 		result = ordjson.New().Set("run_id", runID)
@@ -276,6 +289,7 @@ func (a *API) ScheduleDuplicate(scheduleID string) (*ordjson.OMap, *ordjson.OMap
 			apiErr = ordjson.New().Set("error", "Schedule not found")
 			return
 		}
+
 		var source *ordjson.OMap
 		for _, s := range schedules {
 			if ordjson.GetStr(s, "id") == scheduleID {
@@ -287,29 +301,35 @@ func (a *API) ScheduleDuplicate(scheduleID string) (*ordjson.OMap, *ordjson.OMap
 			apiErr = ordjson.New().Set("error", "Schedule not found")
 			return
 		}
+
 		existingNames := map[string]bool{}
 		for _, s := range schedules {
 			existingNames[ordjson.GetStr(s, "name")] = true
 		}
+
 		duplicate := source.Clone()
 		duplicate.Set("id", "sched_"+randHex12())
 		duplicate.Set("created_at", ordjson.Number(nowSeconds()))
 		duplicate.Set("last_run_at", nil)
 		duplicate.Set("last_run_id", nil)
 		duplicate.Set("last_status", nil)
+
 		base := orDefaultStr(ordjson.GetStr(source, "name"), "Schedule")
 		name := base + " (copy)"
 		for n := 2; existingNames[name]; n++ {
 			name = fmt.Sprintf("%s (copy %d)", base, n)
 		}
 		duplicate.Set("name", name)
+
 		if ordjson.GetBool(duplicate, "enabled") {
 			duplicate.Set("next_run_at", nextRunAt(ordjson.GetStr(duplicate, "cron")))
 		} else {
 			duplicate.Set("next_run_at", nil)
 		}
+
 		schedules = append(schedules, duplicate)
 		a.DB.Save(store.ColSchedules, schedules)
+
 		a.DB.RecordAudit("created", "schedule", ordjson.GetStr(duplicate, "id"),
 			ordjson.GetStr(duplicate, "name"), nil, duplicate.Clone(),
 			ordjson.New().Set("duplicate_of", a.auditName(source)))
@@ -352,6 +372,7 @@ func (a *API) ScheduleRestore(scheduleID string) (*ordjson.OMap, *ordjson.OMap) 
 			apiErr = ordjson.New().Set("error", "Schedule not found")
 			return
 		}
+
 		var target *ordjson.OMap
 		for _, s := range schedules {
 			if ordjson.GetStr(s, "id") != scheduleID {
@@ -364,12 +385,14 @@ func (a *API) ScheduleRestore(scheduleID string) (*ordjson.OMap, *ordjson.OMap) 
 			apiErr = ordjson.New().Set("error", "Schedule not found")
 			return
 		}
+
 		before := target.Clone()
 		target.Set("group", "")
 		if ordjson.GetBool(target, "enabled") {
 			target.Set("next_run_at", nextRunAt(ordjson.GetStr(target, "cron")))
 		}
 		a.DB.Save(store.ColSchedules, schedules)
+
 		a.DB.RecordAudit("restored", "schedule", scheduleID, a.auditName(target),
 			before, target.Clone(), nil)
 		result = target
@@ -384,6 +407,7 @@ func (a *API) SchedulePermanentDelete(scheduleID string) (*ordjson.OMap, *ordjso
 		if err != nil {
 			return
 		}
+
 		var target *ordjson.OMap
 		remaining := make([]*ordjson.OMap, 0, len(schedules))
 		for _, s := range schedules {
@@ -394,6 +418,7 @@ func (a *API) SchedulePermanentDelete(scheduleID string) (*ordjson.OMap, *ordjso
 			}
 		}
 		a.DB.Save(store.ColSchedules, remaining)
+
 		if target != nil {
 			a.DB.RecordAudit("permanently_deleted", "schedule", scheduleID,
 				a.auditName(target), target.Clone(), nil, nil)
@@ -409,6 +434,7 @@ func (a *API) SchedulePreview(cronExpr string) (*ordjson.OMap, int) {
 	if err != nil {
 		return ordjson.New().Set("error", "Invalid cron expression: "+err.Error()), 400
 	}
+
 	now := time.Now()
 	upcoming := []any{}
 	t := now

@@ -20,10 +20,12 @@ func (a *API) ProfileCreate(data *ordjson.OMap) *ordjson.OMap {
 			slog.Error("Cannot load profiles", "err", err)
 			profiles = nil
 		}
+
 		profile := data
 		if ordjson.GetStr(profile, "id") == "" {
 			profile.Set("id", fmt.Sprintf("profile_%d", time.Now().UnixMilli()))
 		}
+
 		var existingIdx = -1
 		for i, p := range profiles {
 			if ordjson.GetStr(p, "id") == ordjson.GetStr(profile, "id") {
@@ -31,6 +33,7 @@ func (a *API) ProfileCreate(data *ordjson.OMap) *ordjson.OMap {
 				break
 			}
 		}
+
 		var before *ordjson.OMap
 		if existingIdx >= 0 {
 			before = profiles[existingIdx].Clone()
@@ -39,6 +42,7 @@ func (a *API) ProfileCreate(data *ordjson.OMap) *ordjson.OMap {
 			profiles = append(profiles, profile)
 		}
 		a.DB.Save(store.ColProfiles, profiles)
+
 		action := "updated"
 		details := (*ordjson.OMap)(nil)
 		if before == nil {
@@ -111,6 +115,7 @@ func (a *API) ProfilePermanentDelete(profileID string) *ordjson.OMap {
 		if err != nil {
 			return
 		}
+
 		var target *ordjson.OMap
 		remaining := make([]*ordjson.OMap, 0, len(profiles))
 		for _, p := range profiles {
@@ -124,6 +129,7 @@ func (a *API) ProfilePermanentDelete(profileID string) *ordjson.OMap {
 			slog.Error("Cannot save profiles", "err", err)
 			remaining = nil
 		}
+
 		if target != nil {
 			var removedSchedules []any
 			a.DB.WithCollection(store.ColSchedules, func() {
@@ -146,6 +152,7 @@ func (a *API) ProfilePermanentDelete(profileID string) *ordjson.OMap {
 					a.DB.Save(store.ColSchedules, kept)
 				}
 			})
+
 			details := (*ordjson.OMap)(nil)
 			if len(removedSchedules) > 0 {
 				details = ordjson.New().Set("schedules_removed", removedSchedules)
@@ -168,6 +175,7 @@ func (a *API) ProfileDuplicate(profileID string) (*ordjson.OMap, bool) {
 		if err != nil {
 			return
 		}
+
 		index := -1
 		for i, p := range profiles {
 			if ordjson.GetStr(p, "id") == profileID {
@@ -178,11 +186,13 @@ func (a *API) ProfileDuplicate(profileID string) (*ordjson.OMap, bool) {
 		if index < 0 {
 			return
 		}
+
 		source := profiles[index]
 		existingNames := map[string]bool{}
 		for _, p := range profiles {
 			existingNames[ordjson.GetStr(p, "name")] = true
 		}
+
 		duplicate := source.Clone()
 		duplicate.Set("id", "profile_"+randHex12())
 		base := orDefaultStr(ordjson.GetStr(source, "name"), "Profile")
@@ -191,10 +201,12 @@ func (a *API) ProfileDuplicate(profileID string) (*ordjson.OMap, bool) {
 			name = fmt.Sprintf("%s (copy %d)", base, n)
 		}
 		duplicate.Set("name", name)
+
 		profiles = append(profiles, nil)
 		copy(profiles[index+2:], profiles[index+1:])
 		profiles[index+1] = duplicate
 		a.DB.Save(store.ColProfiles, profiles)
+
 		a.DB.RecordAudit("created", "profile", ordjson.GetStr(duplicate, "id"),
 			ordjson.GetStr(duplicate, "name"), nil, duplicate.Clone(),
 			ordjson.New().Set("duplicate_of", ordjson.GetStr(source, "name")))
@@ -214,10 +226,12 @@ func (a *API) ProfileReorder(data *ordjson.OMap) *ordjson.OMap {
 		if err != nil {
 			return
 		}
+
 		byID := map[string]*ordjson.OMap{}
 		for _, p := range profiles {
 			byID[ordjson.GetStr(p, "id")] = p
 		}
+
 		ordered := make([]*ordjson.OMap, 0, len(order))
 		orderedSet := map[string]bool{}
 		for _, raw := range order {
@@ -227,11 +241,13 @@ func (a *API) ProfileReorder(data *ordjson.OMap) *ordjson.OMap {
 				orderedSet[id] = true
 			}
 		}
+
 		for _, p := range profiles {
 			if !orderedSet[ordjson.GetStr(p, "id")] {
 				ordered = append(ordered, p)
 			}
 		}
+
 		previous := make([]string, len(profiles))
 		current := make([]string, len(ordered))
 		for i, p := range profiles {
@@ -241,6 +257,7 @@ func (a *API) ProfileReorder(data *ordjson.OMap) *ordjson.OMap {
 			current[i] = ordjson.GetStr(p, "id")
 		}
 		a.DB.Save(store.ColProfiles, ordered)
+
 		if joinStrings(current, ",") != joinStrings(previous, ",") {
 			orderAny := make([]any, len(current))
 			for i, id := range current {

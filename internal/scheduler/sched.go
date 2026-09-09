@@ -101,12 +101,14 @@ func (s *Scheduler) FireSchedule(schedule *ordjson.OMap) string {
 	if targetType == "workflow" {
 		column = store.ColWorkflows
 	}
+
 	items, err := s.db.Load(column)
 	if err != nil {
 		slog.Warn("Schedule cannot load targets - skipping",
 			"schedule", ordjson.GetStr(schedule, "id"), "err", err)
 		return ""
 	}
+
 	var target *ordjson.OMap
 	for _, item := range items {
 		if ordjson.GetStr(item, "id") == targetID {
@@ -119,6 +121,7 @@ func (s *Scheduler) FireSchedule(schedule *ordjson.OMap) string {
 			"schedule", ordjson.GetStr(schedule, "id"), "target_type", targetType, "target_id", targetID)
 		return ""
 	}
+
 	if targetType == "workflow" {
 		runID := s.Runs.StartWorkflowRun(target, "scheduled", schedule)
 		if runID != "" {
@@ -126,6 +129,7 @@ func (s *Scheduler) FireSchedule(schedule *ordjson.OMap) string {
 		}
 		return runID
 	}
+
 	runID, errStr := s.Runs.StartProfileRun(target, nil, nil, "scheduled", schedule)
 	if errStr != "" || runID == "" {
 		slog.Warn("Schedule could not start run - skipping",
@@ -168,6 +172,7 @@ func (s *Scheduler) RunTick(now time.Time) []firedRun {
 			slog.Error("Scheduler tick failed", "err", err)
 			return
 		}
+
 		changed := false
 		for _, sched := range schedules {
 			func() {
@@ -239,6 +244,7 @@ func (s *Scheduler) SkipMissed(now time.Time) {
 		if err != nil {
 			return
 		}
+
 		changed := false
 		for _, sched := range schedules {
 			if ordjson.GetStr(sched, "group") == "__trash__" {

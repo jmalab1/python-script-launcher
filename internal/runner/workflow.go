@@ -143,6 +143,7 @@ func (m *Manager) ExecuteWorkflow(workflow *ordjson.OMap, runID string, startedA
 	if err != nil {
 		profiles = nil
 	}
+
 	profileMap := map[string]*ordjson.OMap{}
 	for _, p := range profiles {
 		profileMap[ordjson.GetStr(p, "id")] = p
@@ -262,6 +263,7 @@ func (m *Manager) ExecuteWorkflow(workflow *ordjson.OMap, runID string, startedA
 				}
 				continue
 			}
+
 			m.runStep(profile, toStringSlice(ordjson.GetArr(step, "args")), runID, continueOnError,
 				ordjson.GetMap(step, "arg_values"))
 			m.mu.Lock()

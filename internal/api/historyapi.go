@@ -53,6 +53,7 @@ func summarizeEntry(entry *ordjson.OMap) *ordjson.OMap {
 		duration = ordjson.Number(pyRound(timestamp-startedAt, 1))
 	}
 	summary.Set("duration", duration)
+
 	if ordjson.GetStr(entry, "type") == "workflow" {
 		if steps := ordjson.GetMap(entry, "steps"); steps != nil {
 			total := steps.Len()
@@ -116,6 +117,7 @@ func (a *API) historyList(r *http.Request) *ordjson.OMap {
 		}
 		filtered = append(filtered, e)
 	}
+
 	// Newest first.
 	sortHistory(filtered)
 	total := len(filtered)
@@ -127,6 +129,7 @@ func (a *API) historyList(r *http.Request) *ordjson.OMap {
 	if end > total {
 		end = total
 	}
+
 	pageEntries := make([]any, 0, end-start)
 	for _, e := range filtered[start:end] {
 		pageEntries = append(pageEntries, summarizeEntry(e))
@@ -162,6 +165,7 @@ func (a *API) historyDetail(entryKey, typeFilter string) *ordjson.OMap {
 	if err != nil {
 		return nil
 	}
+
 	var matches []*ordjson.OMap
 	for _, e := range entries {
 		if ordjson.GetStr(e, "id") == entryKey || ordjson.GetStr(e, "run_id") == entryKey {
@@ -171,6 +175,7 @@ func (a *API) historyDetail(entryKey, typeFilter string) *ordjson.OMap {
 	if len(matches) == 0 {
 		return nil
 	}
+
 	if typeFilter != "" {
 		var typed []*ordjson.OMap
 		for _, e := range matches {

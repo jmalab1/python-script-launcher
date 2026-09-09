@@ -26,6 +26,7 @@ func TestPIDBookkeeping(t *testing.T) {
 	if err := writePID(8765, 999999); err != nil {
 		t.Fatal(err)
 	}
+
 	// A pid file pointing at a dead process is cleaned up and reports
 	// not-running.
 	if _, running := IsRunning(8765); running {

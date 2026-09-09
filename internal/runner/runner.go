@@ -193,6 +193,7 @@ func BuildCustomArgs(customArgs []any, argValues *ordjson.OMap) []string {
 		if flag == "" {
 			continue
 		}
+
 		val := ""
 		if overrides != nil {
 			if v, ok := overrides.GetOK(flag); ok {
@@ -206,12 +207,14 @@ func BuildCustomArgs(customArgs []any, argValues *ordjson.OMap) []string {
 				val = stringify(v)
 			}
 		}
+
 		if ordjson.GetStr(ca, "type") == "checkbox" {
 			if val == "true" {
 				built = append(built, flag)
 			}
 			continue
 		}
+
 		if val != "" {
 			out := val
 			if ordjson.GetStr(ca, "type") == "date" {
@@ -448,6 +451,7 @@ func (m *Manager) CancelRun(runID string) bool {
 	if !ok || finishedStatuses[r.Status] {
 		return false
 	}
+
 	r.Cancelled = true
 	for _, cmd := range r.procs {
 		if cmd.Process != nil {
@@ -485,6 +489,7 @@ func (m *Manager) Prune() {
 			finished = append(finished, aged{id, at})
 		}
 	}
+
 	// Oldest first, stable for equal finish times — same as the Python
 	// sort, so the same runs get dropped when over the cap.
 	for i := 1; i < len(finished); i++ {
@@ -492,6 +497,7 @@ func (m *Manager) Prune() {
 			finished[j], finished[j-1] = finished[j-1], finished[j]
 		}
 	}
+
 	var remaining []aged
 	for _, f := range finished {
 		if f.at <= now-FinishedRunTTLSeconds {
@@ -500,6 +506,7 @@ func (m *Manager) Prune() {
 			remaining = append(remaining, f)
 		}
 	}
+
 	if excess := len(remaining) - MaxFinishedRuns; excess > 0 {
 		for _, f := range remaining[:excess] {
 			delete(m.runs, f.id)

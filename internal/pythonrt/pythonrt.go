@@ -55,6 +55,7 @@ func doResolve() {
 			slog.Warn("Embedded Python runtime could not be extracted - falling back to a system interpreter", "err", err)
 		}
 	}
+
 	// Fallback (and the dev-build path): a system interpreter.
 	for _, name := range pythonCandidates() {
 		if path, err := execLookPath(name); err == nil {
@@ -82,9 +83,11 @@ func ensureExtracted(data []byte) (string, error) {
 	if _, err := os.Stat(marker); err == nil {
 		return targetDir, nil
 	}
+
 	if err := os.RemoveAll(targetDir); err != nil {
 		return "", err
 	}
+
 	gz, err := gzip.NewReader(bytes.NewReader(data))
 	if err != nil {
 		return "", err
@@ -92,6 +95,7 @@ func ensureExtracted(data []byte) (string, error) {
 	if err := extractTar(gz, targetDir); err != nil {
 		return "", err
 	}
+
 	// First run extracts ~60MB; a marker file avoids redoing it.
 	if err := os.WriteFile(marker, []byte(runtimeIdentifier()), 0o644); err != nil {
 		return "", err
@@ -112,6 +116,7 @@ func extractTar(gz *gzip.Reader, targetDir string) error {
 		if err != nil {
 			return err
 		}
+
 		name := header.Name
 		if parts := strings.SplitN(name, "/", 2); len(parts) == 2 && parts[0] == "python" {
 			// install_only archives root everything under python/
@@ -181,6 +186,7 @@ func pythonExecutable(dir string) string {
 	if runtime.GOOS == "windows" {
 		return filepath.Join(dir, "python.exe")
 	}
+
 	// install_only extracts make target dir itself the prefix: bin/ sits
 	// directly under it.
 	for _, rel := range []string{"bin/python3", "bin/python"} {

@@ -100,6 +100,7 @@ func adoptLegacyDataDir() {
 	if _, err := os.Stat(datadir); err == nil {
 		return
 	}
+
 	for _, legacyName := range legacyDataDirNames {
 		legacyPath := ""
 		if exe, err := os.Executable(); err == nil {

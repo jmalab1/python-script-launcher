@@ -78,6 +78,7 @@ func readLogBytes(path string, start, length int64) []byte {
 	if length <= 0 {
 		return nil
 	}
+
 	f, err := os.Open(path)
 	if err != nil {
 		return nil
@@ -101,6 +102,7 @@ func splitCompleteLines(data []byte, base int64) ([]string, int64) {
 	if lastNL < 0 {
 		return nil, base
 	}
+
 	text := strings.ToValidUTF8(string(data[:lastNL+1]), "\uFFFD")
 	lines := strings.Split(text, "\n")
 	// Drop the empty piece after the final newline.

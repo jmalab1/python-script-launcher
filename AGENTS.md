@@ -38,6 +38,12 @@ This is a **portable Go web launcher** that must run on any system — no instal
 - No jargon, acronyms, or clever shorthand without a brief explanation.
 - These same rules apply to edits made to this file (AGENTS.md): keep instructions short, direct, and easy to follow.
 
+### Blank lines between code blocks
+
+- Separate logical blocks inside a function body (if/for/switch, and steps like "load", "build", "save") with a blank line.
+- Keep tightly associated lines together: a call and the `if err` that checks it, a variable and the block that consumes it, guard clauses with the code they guard.
+- `gofmt` (`make go-fmt`) preserves these blank lines, so format after editing.
+
 ## Tests are required
 
 When adding or editing code, always include a unit test (or update existing ones) that covers the change.

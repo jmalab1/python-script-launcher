@@ -57,11 +57,13 @@ func StaticHandler() http.Handler {
 			http.NotFound(w, r)
 			return
 		}
+
 		data, err := fs.ReadFile(assets.Static(), rel)
 		if err != nil {
 			http.NotFound(w, r)
 			return
 		}
+
 		ctype := mimeFor(rel)
 		w.Header().Set("Cache-Control", "no-cache")
 		w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -77,6 +79,7 @@ func writeMaybeGzipped(w http.ResponseWriter, r *http.Request, key, contentType 
 		w.Header().Set("Content-Encoding", "gzip")
 		w.Header().Set("Vary", "Accept-Encoding")
 	}
+
 	w.Header().Set("Content-Length", strconv.Itoa(len(body)))
 	w.Write(body)
 }

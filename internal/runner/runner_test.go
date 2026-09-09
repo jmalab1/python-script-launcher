@@ -55,6 +55,7 @@ func profile(t *testing.T, scriptPath string, extra ...any) *ordjson.OMap {
 	}
 	return p
 }
+
 func waitForFinish(t *testing.T, m *Manager, runID string, timeout time.Duration) *Run {
 	t.Helper()
 	deadline := time.Now().Add(timeout)

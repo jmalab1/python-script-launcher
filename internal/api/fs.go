@@ -50,10 +50,12 @@ func (a *API) BrowseDirectory(dirPath string) *ordjson.OMap {
 			abs = resolved
 		}
 	}
+
 	info, err := os.Stat(abs)
 	if err != nil {
 		return ordjson.New().Set("error", "Path does not exist: "+abs)
 	}
+
 	if !info.IsDir() {
 		if !isPythonScript(abs) {
 			return ordjson.New().Set("error", "\""+filepath.Base(abs)+"\" is not a Python script (.py or .pyw)")
@@ -81,10 +83,12 @@ func (a *API) BrowseDirectory(dirPath string) *ordjson.OMap {
 	if err != nil {
 		return ordjson.New().Set("error", "Permission denied: "+abs)
 	}
+
 	names := make([]string, 0, len(dirEntries))
 	for _, e := range dirEntries {
 		names = append(names, e.Name())
 	}
+
 	sort.Strings(names)
 	for _, name := range names {
 		itemPath := filepath.Join(abs, name)

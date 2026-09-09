@@ -129,6 +129,7 @@ func Stop(port int) (bool, error) {
 		os.Remove(PIDFile(port))
 		return false, nil
 	}
+
 	// Ask nicely first, then force after a short grace period.
 	if signalErr := proc.Signal(syscall.SIGTERM); signalErr == nil && runtime.GOOS != "windows" {
 		exited := make(chan error, 1)

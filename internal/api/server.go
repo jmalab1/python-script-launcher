@@ -202,6 +202,7 @@ func (a *API) post(w http.ResponseWriter, r *http.Request, path string) {
 		a.writeJSON(w, r, response("error", "Invalid JSON"), http.StatusBadRequest)
 		return
 	}
+
 	data := ordjson.New()
 	if len(body) > 0 {
 		parsed, perr := ordjson.Parse(body)
@@ -370,6 +371,7 @@ func (a *API) writeJSON(w http.ResponseWriter, r *http.Request, v any, status in
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
+
 	w.Header().Set("Content-Type", "application/json")
 	if compress.WantsGzip(r.Header.Get("Accept-Encoding")) && compress.ShouldCompress("application/json", len(body)) {
 		body = compress.GzipBytes(body)

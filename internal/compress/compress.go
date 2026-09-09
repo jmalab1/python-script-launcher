@@ -70,6 +70,7 @@ func GzipCached(key string, body []byte) []byte {
 	if ok && cached.key == stamp {
 		return cached.data
 	}
+
 	data := GzipBytes(body)
 	cacheLock.Lock()
 	cache[key] = cacheEntry{key: stamp, data: data}

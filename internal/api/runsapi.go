@@ -15,6 +15,7 @@ func (a *API) RunProfile(data *ordjson.OMap) (*ordjson.OMap, int) {
 	if err != nil {
 		profiles = nil
 	}
+
 	var profile *ordjson.OMap
 	for _, p := range profiles {
 		if ordjson.GetStr(p, "id") == profileID {
@@ -30,6 +31,7 @@ func (a *API) RunProfile(data *ordjson.OMap) (*ordjson.OMap, int) {
 	if av := ordjson.GetMap(data, "arg_values"); av != nil {
 		argValues = av
 	}
+
 	extraArgs := toStringSliceAny(ordjson.GetArr(data, "args"))
 	runID, errStr := a.Runs.StartProfileRun(profile, argValues, extraArgs, "manual", nil)
 	if errStr != "" {
@@ -45,6 +47,7 @@ func (a *API) RunWorkflow(data *ordjson.OMap) (*ordjson.OMap, int) {
 	if err != nil {
 		workflows = nil
 	}
+
 	var workflow *ordjson.OMap
 	for _, w := range workflows {
 		if ordjson.GetStr(w, "id") == workflowID {

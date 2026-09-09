@@ -45,6 +45,7 @@ func (a *API) auditList(r *http.Request) *ordjson.OMap {
 		}
 		filtered = append(filtered, e)
 	}
+
 	sortAudit(filtered)
 	total := len(filtered)
 	start := (page - 1) * perPage
@@ -55,6 +56,7 @@ func (a *API) auditList(r *http.Request) *ordjson.OMap {
 	if end > total {
 		end = total
 	}
+
 	pageEntries := make([]any, 0, end-start)
 	for _, e := range filtered[start:end] {
 		pageEntries = append(pageEntries, summarizeAuditEntry(e))
@@ -103,5 +105,6 @@ func (a *API) auditDetail(entryID string) *ordjson.OMap {
 			return e
 		}
 	}
+
 	return nil
 }

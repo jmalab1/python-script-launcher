@@ -55,6 +55,7 @@ func (db *DB) LoadAudit() ([]*ordjson.OMap, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	changed := false
 	for _, entry := range entries {
 		if ordjson.GetStr(entry, "id") == "" {
@@ -80,6 +81,7 @@ func ChangedFields(before, after *ordjson.OMap) []string {
 	if before == nil {
 		return nil
 	}
+
 	seen := map[string]bool{}
 	for _, k := range before.Keys() {
 		seen[k] = true
@@ -87,6 +89,7 @@ func ChangedFields(before, after *ordjson.OMap) []string {
 	for _, k := range after.Keys() {
 		seen[k] = true
 	}
+
 	var changed []string
 	for k := range seen {
 		if !jsonEqual(before.Get(k), after.Get(k)) {
@@ -120,6 +123,7 @@ func (db *DB) VerifyAuditIntegrity() (bool, []string) {
 	if err != nil {
 		return false, nil
 	}
+
 	var tampered []string
 	for _, entry := range entries {
 		if HashEntry(entry) != ordjson.GetStr(entry, "_hash") {

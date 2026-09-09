@@ -35,10 +35,12 @@ func New(path string, maxSize int64, backupCount int) (*RotatingWriter, error) {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return nil, err
 	}
+
 	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
 	if err != nil {
 		return nil, err
 	}
+
 	info, err := f.Stat()
 	var size int64
 	if err == nil {
@@ -56,6 +58,7 @@ func (w *RotatingWriter) Write(p []byte) (int, error) {
 			return 0, err
 		}
 	}
+
 	n, err := w.file.Write(p)
 	w.size += int64(n)
 	return n, err
@@ -79,6 +82,7 @@ func (w *RotatingWriter) rotateLocked() error {
 	for n := 1; fileExists(candidate); n++ {
 		candidate = fmt.Sprintf("%s.%s-%d", w.path, stamp, n)
 	}
+
 	if err := os.Rename(w.path, candidate); err != nil {
 		// Keep writing to the same file if the rename failed.
 		f, err2 := os.OpenFile(w.path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
@@ -88,6 +92,7 @@ func (w *RotatingWriter) rotateLocked() error {
 		w.file = f
 		return nil
 	}
+
 	f, err := os.OpenFile(w.path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
 	if err != nil {
 		return err
@@ -105,6 +110,7 @@ func (w *RotatingWriter) pruneLocked() {
 	if err != nil {
 		return
 	}
+
 	var backups []string
 	for _, e := range entries {
 		name := e.Name()
@@ -147,11 +153,13 @@ func Setup(path string, maxSize int64, backupCount int) *RotatingWriter {
 		slog.Warn("Could not create data dir for logging", "err", err)
 		return nil
 	}
+
 	rotator, err := New(path, maxSize, backupCount)
 	if err != nil {
 		slog.Warn("Could not open log file", "path", path, "err", err)
 		return nil
 	}
+
 	out := io.MultiWriter(os.Stderr, rotator)
 	slog.SetDefault(slog.New(&pythonStyleHandler{w: out}))
 	return rotator
@@ -178,6 +186,7 @@ func (h *pythonStyleHandler) Handle(_ context.Context, r slog.Record) error {
 		return true
 	})
 	sb.WriteString("\n")
+
 	_, err := io.WriteString(h.w, sb.String())
 	return err
 }

@@ -68,12 +68,14 @@ func main() {
 		fmt.Println("Port 0 (auto) only works with -foreground; pick a real port for background mode.")
 		os.Exit(1)
 	}
+
 	replacePrevious(*port)
 	exe, err := os.Executable()
 	if err != nil {
 		fmt.Println("Cannot locate the executable:", err)
 		os.Exit(1)
 	}
+
 	childPID, err := daemon.StartDetached(
 		exe, []string{"-port", fmt.Sprint(*port), "-_child"}, os.Environ(), detachTimeout,
 		func() bool { return daemon.PortOpen(*port) },
@@ -85,6 +87,7 @@ func main() {
 	if err := daemon.RecordPID(*port, childPID); err != nil {
 		slog.Warn("Could not record the server PID file", "err", err)
 	}
+
 	fmt.Printf("Launch Control running in the background (PID %d) at http://127.0.0.1:%d\n", childPID, *port)
 	fmt.Println("  - log: data/server.log (tail with: tail -f data/server.log)")
 	fmt.Println("  - stop it with: ./dist/launchctl -stop")

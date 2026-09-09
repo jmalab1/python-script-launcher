@@ -26,6 +26,7 @@ func (db *DB) LoadHistory() ([]*ordjson.OMap, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	changed := false
 	for _, entry := range entries {
 		if ordjson.GetStr(entry, "id") == "" {
@@ -79,6 +80,7 @@ func (db *DB) SaveHistory(runID, name, runType, status string, returnCode any, o
 	if opts.TimedOut {
 		entry.Set("timed_out", true)
 	}
+
 	db.WithCollection("history", func() {
 		history, err := db.LoadHistory()
 		if err != nil {
@@ -109,6 +111,7 @@ func (db *DB) UpdateHistory(runID string, upd HistoryUpdate) bool {
 		if err != nil {
 			return
 		}
+
 		var target *ordjson.OMap
 		for _, entry := range history {
 			if ordjson.GetStr(entry, "run_id") == runID {
@@ -118,6 +121,7 @@ func (db *DB) UpdateHistory(runID string, upd HistoryUpdate) bool {
 		if target == nil {
 			return
 		}
+
 		if upd.Status != nil {
 			target.Set("status", *upd.Status)
 		}
@@ -154,6 +158,7 @@ func (db *DB) RemoveHistory(pred func(*ordjson.OMap) bool) int {
 		if err != nil {
 			return
 		}
+
 		remaining := make([]*ordjson.OMap, 0, len(history))
 		for _, entry := range history {
 			if pred(entry) {

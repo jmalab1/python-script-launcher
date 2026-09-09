@@ -71,6 +71,7 @@ func Open(dbPath, dataDir string) (*DB, error) {
 	if err := os.MkdirAll(dataDir, 0o755); err != nil {
 		return nil, err
 	}
+
 	repairOwnership(dbPath)
 
 	dsn := "file:" + dbPath + "?_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)&_pragma=foreign_keys(1)"
@@ -106,6 +107,7 @@ func repairOwnership(dbPath string) {
 	if info.Mode().Perm()&0o200 != 0 {
 		return
 	}
+
 	// Try to add owner-write. On POSIX this only works if we own the
 	// file or have the rights; on Windows it usually succeeds.
 	if err := os.Chmod(dbPath, info.Mode().Perm()|0o200); err != nil {
@@ -224,6 +226,7 @@ func (db *DB) Load(collection string) ([]*ordjson.OMap, error) {
 		return nil, err
 	}
 	defer rows.Close()
+
 	var out []*ordjson.OMap
 	for rows.Next() {
 		var blob string
@@ -251,6 +254,7 @@ func (db *DB) Save(collection string, items []*ordjson.OMap) error {
 	if err != nil {
 		return err
 	}
+
 	tx, err := db.sql.Begin()
 	if err != nil {
 		return err
@@ -259,6 +263,7 @@ func (db *DB) Save(collection string, items []*ordjson.OMap) error {
 	if _, err := tx.Exec(`DELETE FROM "` + table + `"`); err != nil {
 		return err
 	}
+
 	for _, item := range items {
 		if item.Get("id") == nil || ordjson.GetStr(item, "id") == "" {
 			item.Set("id", NewID())

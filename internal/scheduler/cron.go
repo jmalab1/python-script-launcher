@@ -60,6 +60,7 @@ func ParseCron(expr string) (*Cron, error) {
 	if len(fields) != 5 {
 		return nil, fmt.Errorf("cron expression must have 5 fields, got %d", len(fields))
 	}
+
 	c := &Cron{}
 	parts := map[string]*map[int]bool{
 		"minute": &c.Minute,
@@ -68,6 +69,7 @@ func ParseCron(expr string) (*Cron, error) {
 		"month":  &c.Month,
 		"dow":    &c.Dow,
 	}
+
 	for i, name := range fieldOrder {
 		values, err := parseField(fields[i], name)
 		if err != nil {
@@ -75,6 +77,7 @@ func ParseCron(expr string) (*Cron, error) {
 		}
 		*parts[name] = values
 	}
+
 	c.DomWild = isFullRange(c.Dom, 1, 31)
 	c.DowWild = isFullRange(c.Dow, 0, 6)
 	c.MonthWild = isFullRange(c.Month, 1, 12)
@@ -161,9 +164,11 @@ func parseField(token, field string) (map[int]bool, error) {
 			values[v] = true
 		}
 	}
+
 	if len(values) == 0 {
 		return nil, fmt.Errorf("%s field matches no values", field)
 	}
+
 	if field == "dow" && values[7] {
 		delete(values, 7)
 		values[0] = true
@@ -259,12 +264,14 @@ func DescribeCron(expr string) string {
 	if err != nil {
 		return expr
 	}
+
 	minute, hour := c.Minute, c.Hour
 	dom, dow := c.Dom, c.Dow
 
 	if !c.MonthWild {
 		return expr
 	}
+
 	minuteSorted := sortedKeys(minute)
 	hourSorted := sortedKeys(hour)
 
