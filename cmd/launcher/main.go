@@ -2,12 +2,10 @@
 // launcher.py's main(), with the same defaults (127.0.0.1:8765,
 // auto-open browser on Windows, graceful Ctrl+C shutdown).
 //
-// By default (Linux/macOS) it detaches into the background so closing
-// the terminal keeps the app running: ./launchctl starts it,
-// ./launchctl -stop stops it; -foreground opts out of detaching.
-// Windows runs in the foreground with the browser auto-opened. In
-// background mode every launch - fresh start or restart - also opens
-// the browser.
+// By default it detaches into the background so closing the terminal
+// keeps the app running: ./launchctl starts it, ./launchctl -stop stops
+// it; -foreground opts out of detaching. In background mode every
+// launch - fresh start or restart - also opens the browser.
 package main
 
 import (
@@ -19,7 +17,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"runtime"
 	"strconv"
 	"syscall"
 	"time"
@@ -62,10 +59,10 @@ func main() {
 	}
 
 	// The detached child (and -foreground runs) just serve; the parent
-	// process handles daemonising. Windows always wants the browser
-	// (its only mode is foreground); the child decides from the flag.
-	if *childFlag || *foreground || runtime.GOOS == "windows" {
-		serve(*port, dataDir, *browserFlag || runtime.GOOS == "windows")
+	// process handles daemonising. The child opens the browser when the
+	// parent asked it to.
+	if *childFlag || *foreground {
+		serve(*port, dataDir, *browserFlag)
 		return
 	}
 
@@ -168,12 +165,6 @@ func serve(port int, dataDir string, openUI bool) {
 	if err != nil {
 		slog.Error("Could not start server on port", "port", port, "err", err)
 		slog.Error("Is another instance of Launch Control already running?")
-		// Windows console windows close on exit, so the user would never
-		// read the error without a pause (Python did the same).
-		if runtime.GOOS == "windows" {
-			fmt.Println("Press Enter to exit...")
-			_, _ = fmt.Scanln()
-		}
 		shutdown(1)
 	}
 	defer listener.Close()

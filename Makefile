@@ -96,10 +96,14 @@ go-release: fetch-runtimes go-test
 		os=$${target%%-*}; arch=$${target#*-}; \
 		goos=$$(case $$os in linux) echo linux;; windows) echo windows;; macos) echo darwin;; esac); \
 		goarch=$$arch; \
+		ldflags="-s -w"; \
+		if [ "$$goos" = windows ]; then \
+			ldflags="$$ldflags -H=windowsgui"; \
+		fi; \
 		cp build/runtimes/$$target.tar.gz internal/pythonrt/runtime.tar.gz; \
 		echo "building dist/launchctl-$$os-$$arch"; \
 		CGO_ENABLED=0 GOOS=$$goos GOARCH=$$goarch \
-			$(GO) build -trimpath -ldflags "-s -w" -tags embedded \
+			$(GO) build -trimpath -ldflags "$$ldflags" -tags embedded \
 			-o dist/launchctl-$$os-$$arch ./cmd/launcher; \
 	done
 	@rm -f internal/pythonrt/runtime.tar.gz

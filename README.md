@@ -40,9 +40,8 @@ background so **closing the terminal does not stop it**. Every launch
 opens the UI in your default browser automatically. Running the
 command again automatically **stops the previous instance and restarts**
 (one instance per port — a second `-port` value runs alongside) and
-opens the browser again too.
-`./dist/launchctl -stop` stops it. On Windows it
-runs in the foreground and opens the browser automatically, like before.
+opens the browser again too — this works the same on Windows.
+`./dist/launchctl -stop` stops it.
 
 All state lives in one per-user folder — `~/.local/share/launchctl-data`
 on Linux, `~/Library/Application Support/launchctl-data` on macOS,
