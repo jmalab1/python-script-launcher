@@ -6,7 +6,6 @@ import (
 	"runtime"
 	"syscall"
 	"testing"
-
 )
 
 func TestPIDBookkeeping(t *testing.T) {

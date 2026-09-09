@@ -270,6 +270,7 @@ the e2e suite/demorecorder (Python) live in `requirements-dev.txt`.
 |---|---|
 | `make go-build` | Dev binary (uses a system `python3` for scripts) |
 | `make go-test` | Go unit test suite |
+| `make go-fmt` | Format all Go code with gofmt |
 | `make test-e2e` | Playwright suite against the built binary |
 | `make go-release-local` | Release binary with embedded CPython for this machine |
 | `make go-release` | Release binaries for linux, windows, macos (amd64 + arm64) |

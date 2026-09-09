@@ -4,8 +4,8 @@
 package api
 
 import (
-	"io"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"strconv"

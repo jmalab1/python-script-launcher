@@ -1,4 +1,4 @@
-.PHONY: start stop restart go-build go-test test test-e2e demo fetch-runtimes go-release go-release-local go-clean
+.PHONY: start stop restart go-build go-test go-fmt test test-e2e demo fetch-runtimes go-release go-release-local go-clean
 
 # Find the Go toolchain: the user's PATH if it has one, otherwise the
 # well-known install locations this repo uses (~/.local/go from the
@@ -25,6 +25,12 @@ restart: stop start
 # Go unit tests (the backend's test suite).
 go-test:
 	$(GO) test ./...
+
+# Format all Go code with gofmt (ships with the Go toolchain, so this
+# needs no extra install). Uses `go fmt` so it finds the toolchain the
+# same way the other targets do.
+go-fmt:
+	$(GO) fmt ./...
 
 # Alias so the old habit still works.
 test: go-test

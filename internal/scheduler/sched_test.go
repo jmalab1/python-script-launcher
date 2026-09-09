@@ -24,7 +24,6 @@ func (f *fakeRunner) IsRunning(runID string) bool {
 	return f.runs[runID]
 }
 
-
 // StartProfileRun records a started run under its schedule's id.
 func (f *fakeRunner) StartProfileRun(profile *ordjson.OMap, argValues *ordjson.OMap, extraArgs []string, trigger string, schedule *ordjson.OMap) (string, string) {
 	f.mu.Lock()
@@ -49,8 +48,6 @@ func vString(v any) string {
 	}
 	return ""
 }
-
-
 
 func TestTickFiresDueSchedule(t *testing.T) {
 	dir := t.TempDir()
@@ -183,7 +180,7 @@ func TestSkipMissedRecomputesStaleNextRun(t *testing.T) {
 	}
 	defer db.Close()
 	db.Save(store.ColProfiles, []*ordjson.OMap{ordjson.New().Set("id", "p1").Set("script_path", "x.py")})
-	stale := float64(time.Now().Add(-48 * time.Hour).UnixNano()) / 1e9
+	stale := float64(time.Now().Add(-48*time.Hour).UnixNano()) / 1e9
 	db.Save(store.ColSchedules, []*ordjson.OMap{ordjson.New().
 		Set("id", "s1").
 		Set("target_type", "profile").
