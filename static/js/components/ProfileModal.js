@@ -2,8 +2,9 @@ import { html } from '../../vendor/standalone-preact.esm.js';
 import { useState, useEffect } from '../../vendor/standalone-preact.esm.js';
 import { tags } from '../state.js';
 import { tagColor } from '../tagColors.js';
-import { saveProfile, loadProfiles, checkAllScripts, openNativeFileDialog } from '../api.js';
+import { saveProfile, loadProfiles, checkAllScripts, browseDirectory } from '../api.js';
 import { ErrorBanner } from './ErrorBanner.js';
+import { FileBrowser } from './FileBrowser.js';
 
 export function ProfileModal({ isOpen, onClose, profile }) {
     const [name, setName] = useState('');
@@ -90,10 +91,14 @@ export function ProfileModal({ isOpen, onClose, profile }) {
         onClose();
     }
 
-    async function handleBrowse() {
-        const data = await openNativeFileDialog();
-        if (data.error) { setError(data.error); return; }
-        if (data.path) setScriptPath(data.path);
+    // "Browse" opens the in-app file explorer (the Go binary cannot
+    // spawn native dialogs).
+    const [showBrowser, setShowBrowser] = useState(false);
+    function handleBrowse() { setShowBrowser(true); }
+
+    function dirOf(p) {
+        const idx = Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\'));
+        return idx > 0 ? p.slice(0, idx) : '';
     }
 
     if (!isOpen) return null;
@@ -101,6 +106,9 @@ export function ProfileModal({ isOpen, onClose, profile }) {
     return html`
         <div class="fixed inset-0 z-50">
             <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick=${onClose}></div>
+            <${FileBrowser} isOpen=${showBrowser} onClose=${() => setShowBrowser(false)}
+                onSelect=${(p) => setScriptPath(p)}
+                initialPath=${scriptPath} initialDir=${dirOf(scriptPath)} />
             <div class="relative flex items-center justify-center min-h-full p-4">
                 <div class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[85vh] overflow-y-auto border border-gray-200 dark:border-gray-700/60">
                     <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700/60 px-6 py-4 rounded-t-2xl z-10">
@@ -147,7 +155,7 @@ export function ProfileModal({ isOpen, onClose, profile }) {
                                 <input type="text" value=${scriptPath} readonly
                                     placeholder="No file selected"
                                     class="flex-1 bg-white dark:bg-gray-900/30 border border-gray-300 dark:border-gray-700/60 rounded-lg px-3 py-2 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 cursor-default" />
-                                <button onClick=${handleBrowse}
+                                <button onClick=${handleBrowse} type="button"
                                     class="bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm font-medium px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700/60 transition whitespace-nowrap">Browse</button>
                             </div>
                         </div>
