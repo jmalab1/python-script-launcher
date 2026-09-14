@@ -7,7 +7,6 @@ import re
 import sys
 import threading
 import time
-import traceback
 import urllib.parse
 import webbrowser
 from logging.handlers import RotatingFileHandler
@@ -15,6 +14,7 @@ from pathlib import Path
 
 from .config import PORT, DATA_DIR, INDEX_FILE, STATIC_DIR, log_file
 from .config import LOG_MAX_BYTES, LOG_BACKUP_COUNT
+from .config import load_settings, save_settings, resolve_python
 
 from .api import profiles, workflows, runs, history, filesystem, audit, logs, schedules
 from . import compress
@@ -57,7 +57,7 @@ class TimestampedRotatingFileHandler(RotatingFileHandler):
         names = []
         for name in os.listdir(dir_name):
             if name.startswith(base_name + "."):
-                suffix = name[len(base_name) + 1:]
+                suffix = name[len(base_name) + 1 :]
                 if self.SUFFIX_PATTERN.match(suffix):
                     names.append(name)
         names.sort()
@@ -93,10 +93,12 @@ def setup_file_logging():
             backupCount=LOG_BACKUP_COUNT,
             encoding="utf-8",
         )
-        handler.setFormatter(logging.Formatter(
-            "%(asctime)s [%(levelname)s] %(message)s",
-            datefmt="%Y-%m-%d %H:%M:%S",
-        ))
+        handler.setFormatter(
+            logging.Formatter(
+                "%(asctime)s [%(levelname)s] %(message)s",
+                datefmt="%Y-%m-%d %H:%M:%S",
+            )
+        )
         logging.getLogger().addHandler(handler)
     except OSError as e:
         log.warning("Could not open log file %s: %s", log_file(), e)
@@ -116,7 +118,6 @@ def _is_within(path, directory):
 
 
 class LauncherHandler(http.server.SimpleHTTPRequestHandler):
-
     protocol_version = "HTTP/1.1"
     disable_nagle_algorithm = True
 
@@ -174,21 +175,32 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
                     page = int(query.get("page", ["1"])[0])
                     per_page = int(query.get("per_page", ["15"])[0])
                 except ValueError:
-                    self._json_response({"error": "page and per_page must be integers"}, 400)
+                    self._json_response(
+                        {"error": "page and per_page must be integers"}, 400
+                    )
                     return
                 try:
                     since = float(query["since"][0]) if "since" in query else None
                     until = float(query["until"][0]) if "until" in query else None
                 except ValueError:
-                    self._json_response({"error": "since and until must be numbers"}, 400)
+                    self._json_response(
+                        {"error": "since and until must be numbers"}, 400
+                    )
                     return
                 type_filter = query.get("type", [None])[0]
                 name_filter = query.get("name", [None])[0]
                 status_filter = query.get("status", [None])[0]
-                self._json_response(history.handle_list(
-                    page, per_page, type_filter,
-                    name=name_filter, status=status_filter, since=since, until=until,
-                ))
+                self._json_response(
+                    history.handle_list(
+                        page,
+                        per_page,
+                        type_filter,
+                        name=name_filter,
+                        status=status_filter,
+                        since=since,
+                        until=until,
+                    )
+                )
 
             elif path.startswith("/api/history/"):
                 run_id = path.split("/")[-1]
@@ -204,21 +216,32 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
                     page = int(query.get("page", ["1"])[0])
                     per_page = int(query.get("per_page", ["20"])[0])
                 except ValueError:
-                    self._json_response({"error": "page and per_page must be integers"}, 400)
+                    self._json_response(
+                        {"error": "page and per_page must be integers"}, 400
+                    )
                     return
                 try:
                     since = float(query["since"][0]) if "since" in query else None
                     until = float(query["until"][0]) if "until" in query else None
                 except ValueError:
-                    self._json_response({"error": "since and until must be numbers"}, 400)
+                    self._json_response(
+                        {"error": "since and until must be numbers"}, 400
+                    )
                     return
                 action_filter = query.get("action", [None])[0]
                 entity_filter = query.get("entity", [None])[0]
                 name_filter = query.get("name", [None])[0]
-                self._json_response(audit.handle_list(
-                    page, per_page, action_filter, entity_filter,
-                    name=name_filter, since=since, until=until,
-                ))
+                self._json_response(
+                    audit.handle_list(
+                        page,
+                        per_page,
+                        action_filter,
+                        entity_filter,
+                        name=name_filter,
+                        since=since,
+                        until=until,
+                    )
+                )
 
             elif path.startswith("/api/audit/"):
                 entry_id = path.split("/")[-1]
@@ -235,6 +258,16 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
                 lines = query.get("lines", ["500"])[0]
                 after = query.get("after", [None])[0]
                 self._json_response(logs.handle_list(lines=lines, after=after))
+
+            elif path == "/api/config":
+                effective = resolve_python()
+                settings = load_settings()
+                self._json_response(
+                    {
+                        "runtime_path": settings.get("runtime_path", ""),
+                        "effective_interpreter": effective,
+                    }
+                )
 
             elif path.startswith("/api/runs/"):
                 run_id = path.split("/")[-1]
@@ -259,7 +292,7 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
 
     def _serve_static(self, path):
         static_dir = STATIC_DIR.resolve()
-        rel = urllib.parse.unquote(path[len("/static/"):])
+        rel = urllib.parse.unquote(path[len("/static/") :])
         try:
             file_path = (static_dir / rel).resolve()
             within = _is_within(file_path, static_dir)
@@ -306,7 +339,7 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
                 self._json_response(result)
 
             elif path.startswith("/api/profiles/") and path.endswith("/duplicate"):
-                profile_id = path[len("/api/profiles/"):-len("/duplicate")]
+                profile_id = path[len("/api/profiles/") : -len("/duplicate")]
                 result = profiles.handle_duplicate(profile_id)
                 if result:
                     self._json_response(result)
@@ -314,7 +347,7 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
                     self._json_response({"error": "Not found"}, 404)
 
             elif path.startswith("/api/profiles/") and path.endswith("/restore"):
-                profile_id = path[len("/api/profiles/"):-len("/restore")]
+                profile_id = path[len("/api/profiles/") : -len("/restore")]
                 result = profiles.handle_restore(profile_id)
                 if result:
                     self._json_response(result)
@@ -330,7 +363,7 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
                 self._json_response(result)
 
             elif path.startswith("/api/workflows/") and path.endswith("/duplicate"):
-                workflow_id = path[len("/api/workflows/"):-len("/duplicate")]
+                workflow_id = path[len("/api/workflows/") : -len("/duplicate")]
                 result = workflows.handle_duplicate(workflow_id)
                 if result:
                     self._json_response(result)
@@ -338,7 +371,7 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
                     self._json_response({"error": "Not found"}, 404)
 
             elif path.startswith("/api/workflows/") and path.endswith("/restore"):
-                workflow_id = path[len("/api/workflows/"):-len("/restore")]
+                workflow_id = path[len("/api/workflows/") : -len("/restore")]
                 result = workflows.handle_restore(workflow_id)
                 if result:
                     self._json_response(result)
@@ -346,7 +379,7 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
                     self._json_response({"error": "Not found"}, 404)
 
             elif path.startswith("/api/schedules/") and path.endswith("/duplicate"):
-                schedule_id = path[len("/api/schedules/"):-len("/duplicate")]
+                schedule_id = path[len("/api/schedules/") : -len("/duplicate")]
                 result, error = schedules.handle_duplicate(schedule_id)
                 if error:
                     self._json_response(error, 404)
@@ -354,7 +387,7 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
                     self._json_response(result)
 
             elif path.startswith("/api/schedules/") and path.endswith("/restore"):
-                schedule_id = path[len("/api/schedules/"):-len("/restore")]
+                schedule_id = path[len("/api/schedules/") : -len("/restore")]
                 result, error = schedules.handle_restore(schedule_id)
                 if error:
                     self._json_response(error, 404)
@@ -369,7 +402,7 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
                     self._json_response(result)
 
             elif path.startswith("/api/schedules/") and path.endswith("/toggle"):
-                schedule_id = path[len("/api/schedules/"):-len("/toggle")]
+                schedule_id = path[len("/api/schedules/") : -len("/toggle")]
                 result, error = schedules.handle_toggle(schedule_id)
                 if error:
                     self._json_response(error, 404)
@@ -377,7 +410,7 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
                     self._json_response(result)
 
             elif path.startswith("/api/schedules/") and path.endswith("/run_now"):
-                schedule_id = path[len("/api/schedules/"):-len("/run_now")]
+                schedule_id = path[len("/api/schedules/") : -len("/run_now")]
                 result, error = schedules.handle_run_now(schedule_id)
                 if error:
                     self._json_response(error, 400)
@@ -396,6 +429,19 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
                 else:
                     self._json_response(result)
 
+            elif path == "/api/config":
+                runtime_path = data.get("runtime_path", "").strip()
+                settings = load_settings()
+                settings["runtime_path"] = runtime_path
+                save_settings(settings)
+                effective = resolve_python()
+                self._json_response(
+                    {
+                        "runtime_path": runtime_path,
+                        "effective_interpreter": effective,
+                    }
+                )
+
             elif path == "/api/run/workflow":
                 result, status, error = runs.handle_run_workflow(data)
                 if error:
@@ -404,7 +450,7 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
                     self._json_response(result)
 
             elif path.startswith("/api/runs/") and path.endswith("/cancel"):
-                run_id = path[len("/api/runs/"):-len("/cancel")]
+                run_id = path[len("/api/runs/") : -len("/cancel")]
                 result, status, error = runs.handle_cancel_run(run_id)
                 if error:
                     self._json_response(error, status)
@@ -430,7 +476,7 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
 
         try:
             if path.startswith("/api/profiles/") and path.endswith("/permanent"):
-                profile_id = path[len("/api/profiles/"):-len("/permanent")]
+                profile_id = path[len("/api/profiles/") : -len("/permanent")]
                 result = profiles.handle_permanent_delete(profile_id)
                 self._json_response(result)
 
@@ -440,7 +486,7 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
                 self._json_response(result)
 
             elif path.startswith("/api/workflows/") and path.endswith("/permanent"):
-                workflow_id = path[len("/api/workflows/"):-len("/permanent")]
+                workflow_id = path[len("/api/workflows/") : -len("/permanent")]
                 result = workflows.handle_permanent_delete(workflow_id)
                 self._json_response(result)
 
@@ -450,7 +496,7 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
                 self._json_response(result)
 
             elif path.startswith("/api/schedules/") and path.endswith("/permanent"):
-                schedule_id = path[len("/api/schedules/"):-len("/permanent")]
+                schedule_id = path[len("/api/schedules/") : -len("/permanent")]
                 result, error = schedules.handle_permanent_delete(schedule_id)
                 if error:
                     self._json_response(error, 404)
@@ -486,9 +532,14 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
 
     def _maybe_gzip(self, content_type, body, cache_path=None):
         """gzip `body` when the client accepts it; sets Content-Encoding."""
-        if (compress.wants_gzip(self.headers.get("Accept-Encoding"))
-                and compress.should_compress(content_type, len(body))):
-            body = compress.gzip_static(cache_path, body) if cache_path else compress.gzip_bytes(body)
+        if compress.wants_gzip(
+            self.headers.get("Accept-Encoding")
+        ) and compress.should_compress(content_type, len(body)):
+            body = (
+                compress.gzip_static(cache_path, body)
+                if cache_path
+                else compress.gzip_bytes(body)
+            )
             self.send_header("Content-Encoding", "gzip")
             self.send_header("Vary", "Accept-Encoding")
         return body
@@ -518,12 +569,16 @@ def main():
     log.info("Press Ctrl+C to stop.")
     scheduler.start()
     if os.name == "nt":
-        threading.Timer(1.0, lambda: webbrowser.open(f"http://127.0.0.1:{PORT}")).start()
+        threading.Timer(
+            1.0, lambda: webbrowser.open(f"http://127.0.0.1:{PORT}")
+        ).start()
     # serve_forever runs on a worker thread so the main thread stays free
     # to service Tk file dialogs queued by HTTP workers (Tk must run on
     # the main thread on macOS).
     server_thread = threading.Thread(
-        target=server.serve_forever, name="http-server", daemon=True,
+        target=server.serve_forever,
+        name="http-server",
+        daemon=True,
     )
     server_thread.start()
     try:

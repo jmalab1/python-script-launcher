@@ -14,6 +14,7 @@ Launch Control is a local, zero-dependency web tool for managing and running Pyt
 - **Audit**: Complete trail of every profile, workflow, and schedule change. Filter by action, entity type, name, and date range.
 - **Server Logs**: Built-in log viewer with live tailing, level highlighting, and text search; the log file rotates automatically.
 - **Custom Arguments**: Define typed input fields that appear on profile cards for quick parameter editing.
+- **Python Runtime Settings**: Choose which Python interpreter runs scripts — useful when scripts need packages from a specific virtualenv.
 - **Script Timeout**: Per-profile time limit that kills runaway scripts and marks the run failed.
 - **Stop Runs**: Kill a running script or workflow from the run panel; the run is recorded as cancelled with its output so far kept.
 - **Output Export**: Download a run's output as a text file from the run panel.
@@ -189,6 +190,12 @@ All config lives in `launcher/config.py`:
 | `LOG_MAX_BYTES` | `2000000` | Rotate `data/server.log` when it reaches this size (`0` disables rotation) |
 | `LOG_BACKUP_COUNT` | `3` | How many datetime-stamped copies (e.g. `server.log.2026-09-08_11-19-10`) to keep |
 
+### Python Runtime Settings
+
+The **Settings** page (in the sidebar) lets you choose which Python interpreter runs your scripts. This is useful when scripts need packages from a specific virtualenv that isn't the system Python.
+
+Set a path to a Python executable or a virtualenv/install directory. If the path is empty, the app uses `sys.executable` (the Python running the server). Changes take effect immediately — no restart needed.
+
 The server mirrors its log output to `data/server.log` (rotated automatically at `LOG_MAX_BYTES`). The **Logs** panel in the UI tails this file with live updates, level highlighting, and text search, so it works on every platform regardless of how the server was launched — `python3 launcher.py`, the Makefile, or `start.bat` on Windows.
 
 ## Project Structure
@@ -199,7 +206,7 @@ index.html               # Main SPA shell
 
 launcher/                # Python backend
   server.py              # HTTP server, routing, gzip
-  config.py              # Port and file paths
+  config.py              # Port, file paths, and settings
   runner.py              # Script execution, workflow engine
   scheduler.py           # Cron engine and background scheduler
   storage.py             # JSON persistence, history
@@ -287,6 +294,21 @@ python3 scripts/dev/make_screencast.py --gif demo/launcher_demo.gif   # also an 
 ```
 
 Requires the same dev setup as the e2e tests (`pip install -r requirements-dev.txt` and `python3 -m playwright install chromium`). The `--gif` mode samples screenshots during the tour and assembles them with Pillow (also in `requirements-dev.txt`), resizing to `--gif-width` (default 800px); identical adjacent frames are merged so the pacing matches the recording. The output lands in `demo/` (gitignored); the throwaway data directory is removed afterwards.
+
+### Linting and Formatting
+
+```bash
+make lint        # check with ruff
+make format      # auto-fix with ruff
+```
+
+### Pre-commit Hooks
+
+```bash
+make hooks       # install and run pre-commit hooks
+```
+
+Hooks run `ruff` for linting/formatting, plus standard checks (trailing whitespace, end-of-file fixer, etc.) on every commit.
 
 ## Requirements
 

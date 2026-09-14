@@ -1,12 +1,11 @@
 import os
-import sys
 import subprocess
 import threading
 import time
 from datetime import datetime
 
-from .storage import load_json, save_json, save_history, update_history
-from .config import COL_PROFILES
+from .storage import load_json, save_history, update_history
+from .config import COL_PROFILES, resolve_python
 
 DEFAULT_DATE_FORMAT = "%Y-%m-%d"
 
@@ -33,7 +32,7 @@ _CHILD_ENV = {
 
 def build_command(script_path, args):
     """Return the full argv used to launch a script, for history/logging."""
-    return [sys.executable, script_path] + list(args)
+    return [resolve_python(), script_path] + list(args)
 
 
 def parse_timeout(value):
@@ -227,8 +226,15 @@ def execute_workflow(workflow, run_id, started_at, trigger="manual", schedule=No
     # Record the run up front so it stays visible in history (status: running)
     # even if the run modal is closed before it finishes.
     save_history(
-        run_id, workflow.get("name", "Unnamed"), "workflow", "running", None,
-        list(workflow_log), started_at, workflow_log=list(workflow_log), steps={},
+        run_id,
+        workflow.get("name", "Unnamed"),
+        "workflow",
+        "running",
+        None,
+        list(workflow_log),
+        started_at,
+        workflow_log=list(workflow_log),
+        steps={},
         trigger=trigger,
         schedule_id=schedule.get("id") if schedule else None,
         schedule_name=schedule.get("name") if schedule else None,
@@ -249,13 +255,17 @@ def execute_workflow(workflow, run_id, started_at, trigger="manual", schedule=No
                 for p in group_profiles:
                     prof = _resolve_profile(profile_map, p) or {}
                     step_names.append(prof.get("name") or p.get("profile_id", "?"))
-                active_runs[run_id]["workflow_log"].append(f"[PARALLEL] Running {len(group_profiles)} steps: {', '.join(step_names)}")
+                active_runs[run_id]["workflow_log"].append(
+                    f"[PARALLEL] Running {len(group_profiles)} steps: {', '.join(step_names)}"
+                )
             threads = []
             for profile_entry in group_profiles:
                 profile = _resolve_profile(profile_map, profile_entry)
                 if not profile:
                     with run_lock:
-                        active_runs[run_id]["workflow_log"].append(f"[SKIP] Profile not found: {profile_entry['profile_id']}")
+                        active_runs[run_id]["workflow_log"].append(
+                            f"[SKIP] Profile not found: {profile_entry['profile_id']}"
+                        )
                         if not continue_on_error:
                             active_runs[run_id]["failed"] = True
                     if not continue_on_error:
@@ -264,7 +274,13 @@ def execute_workflow(workflow, run_id, started_at, trigger="manual", schedule=No
 
                 t = threading.Thread(
                     target=_run_step,
-                    args=(profile, profile_entry.get("args", []), run_id, continue_on_error, profile_entry.get("arg_values", {})),
+                    args=(
+                        profile,
+                        profile_entry.get("args", []),
+                        run_id,
+                        continue_on_error,
+                        profile_entry.get("arg_values", {}),
+                    ),
                 )
                 threads.append(t)
                 t.start()
@@ -281,14 +297,22 @@ def execute_workflow(workflow, run_id, started_at, trigger="manual", schedule=No
             profile = _resolve_profile(profile_map, step)
             if not profile:
                 with run_lock:
-                    active_runs[run_id]["workflow_log"].append(f"[SKIP] Profile not found: {step.get('profile_id')}")
+                    active_runs[run_id]["workflow_log"].append(
+                        f"[SKIP] Profile not found: {step.get('profile_id')}"
+                    )
                     if not continue_on_error:
                         active_runs[run_id]["failed"] = True
                 if not continue_on_error:
                     break
                 continue
 
-            _run_step(profile, step.get("args", []), run_id, continue_on_error, step.get("arg_values", {}))
+            _run_step(
+                profile,
+                step.get("args", []),
+                run_id,
+                continue_on_error,
+                step.get("arg_values", {}),
+            )
             with run_lock:
                 if active_runs[run_id].get("cancelled"):
                     break
@@ -311,8 +335,11 @@ def execute_workflow(workflow, run_id, started_at, trigger="manual", schedule=No
         final_steps = active_runs[run_id].get("steps", {})
         timed_out = bool(active_runs[run_id].get("timed_out"))
     update_history(
-        run_id, status=status, output=final_log,
-        workflow_log=final_log, steps=final_steps,
+        run_id,
+        status=status,
+        output=final_log,
+        workflow_log=final_log,
+        steps=final_steps,
         timed_out=timed_out,
     )
 
@@ -327,8 +354,15 @@ def _run_step(profile, extra_args, run_id, continue_on_error, arg_overrides=None
     if not os.path.isfile(script_path):
         with run_lock:
             steps = active_runs[run_id].setdefault("steps", {})
-            steps[display_name] = {"output": [], "status": "failed", "returncode": -1, "step": n}
-            active_runs[run_id]["workflow_log"].append(f"[SKIP] Step {n} ({step_name}): script not found: {script_path}")
+            steps[display_name] = {
+                "output": [],
+                "status": "failed",
+                "returncode": -1,
+                "step": n,
+            }
+            active_runs[run_id]["workflow_log"].append(
+                f"[SKIP] Step {n} ({step_name}): script not found: {script_path}"
+            )
             # Mirror the missing-profile behavior: with continue_on_error the
             # step is skipped and the run can still complete.
             if not continue_on_error:
@@ -344,7 +378,10 @@ def _run_step(profile, extra_args, run_id, continue_on_error, arg_overrides=None
     with run_lock:
         steps = active_runs[run_id].setdefault("steps", {})
         steps[display_name] = {
-            "output": [], "status": "running", "returncode": None, "step": n,
+            "output": [],
+            "status": "running",
+            "returncode": None,
+            "step": n,
             "command": cmd,
         }
         active_runs[run_id]["workflow_log"].append(f"[RUN] Step {n}: {step_name}")
@@ -352,7 +389,9 @@ def _run_step(profile, extra_args, run_id, continue_on_error, arg_overrides=None
 
     step_result = {"returncode": None}
     timeout = parse_timeout(profile.get("timeout"))
-    for line in run_script(script_path, args, run_id, result=step_result, timeout=timeout):
+    for line in run_script(
+        script_path, args, run_id, result=step_result, timeout=timeout
+    ):
         with run_lock:
             steps[display_name]["output"].append(line)
 
@@ -363,18 +402,26 @@ def _run_step(profile, extra_args, run_id, continue_on_error, arg_overrides=None
         steps[display_name]["returncode"] = rc
         if rc == 0:
             steps[display_name]["status"] = "completed"
-            active_runs[run_id]["workflow_log"].append(f"[DONE] Step {n} ({step_name}) completed successfully")
+            active_runs[run_id]["workflow_log"].append(
+                f"[DONE] Step {n} ({step_name}) completed successfully"
+            )
         elif active_runs[run_id].get("cancelled"):
             # The process was killed by a cancel request, not by its own
             # failure, so the step is recorded as cancelled.
             steps[display_name]["status"] = "cancelled"
-            active_runs[run_id]["workflow_log"].append(f"[CANCEL] Step {n} ({step_name}) was stopped")
+            active_runs[run_id]["workflow_log"].append(
+                f"[CANCEL] Step {n} ({step_name}) was stopped"
+            )
         else:
             steps[display_name]["status"] = "failed"
             active_runs[run_id]["failed"] = True
-            active_runs[run_id]["workflow_log"].append(f"[FAIL] Step {n} ({step_name}) exited with code {rc}")
+            active_runs[run_id]["workflow_log"].append(
+                f"[FAIL] Step {n} ({step_name}) exited with code {rc}"
+            )
             if not continue_on_error:
-                active_runs[run_id]["workflow_log"].append("[ABORT] Workflow stopped due to error.")
+                active_runs[run_id]["workflow_log"].append(
+                    "[ABORT] Workflow stopped due to error."
+                )
 
 
 def prune_active_runs():
@@ -402,7 +449,11 @@ def _prune_active_runs_locked():
             # get the full grace period instead of being dropped immediately.
             finished.append((run_id, entry.get("finished_at") or now))
     finished.sort(key=lambda item: item[1])
-    expired = [run_id for run_id, finished_at in finished if finished_at <= now - FINISHED_RUN_TTL_SECONDS]
+    expired = [
+        run_id
+        for run_id, finished_at in finished
+        if finished_at <= now - FINISHED_RUN_TTL_SECONDS
+    ]
     expired_set = set(expired)
     for run_id in expired:
         del active_runs[run_id]

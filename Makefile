@@ -1,4 +1,4 @@
-.PHONY: start stop restart test test-e2e demo
+.PHONY: start stop restart test test-e2e demo lint format hooks
 
 PIDFILE := .server.pid
 
@@ -45,3 +45,14 @@ test-e2e:
 
 demo:
 	python3 scripts/dev/make_screencast.py
+
+lint:
+	python3 -m ruff check launcher/ tests/
+
+format:
+	python3 -m ruff format launcher/ tests/
+
+hooks:
+	pip install --quiet pre-commit
+	pre-commit install
+	pre-commit run --all-files

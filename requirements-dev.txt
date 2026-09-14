@@ -1,6 +1,12 @@
 # Development-only dependencies. The app itself must stay stdlib-only.
 pytest>=7.0
 
+# Linting and formatting
+ruff>=0.6.0
+
+# Pre-commit hooks
+pre-commit>=3.8.0
+
 # End-to-end browser tests (tests/e2e).
 # After installing, fetch a browser: python3 -m playwright install chromium
 pytest-playwright>=0.5

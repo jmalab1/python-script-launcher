@@ -72,6 +72,11 @@ export function Sidebar() {
                     <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 7.5l3 2.25-3 2.25m4.5 0h3m-9 8.25h13.5A2.25 2.25 0 0021 18V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v12a2.25 2.25 0 002.25 2.25z"/></svg>
                     Logs
                 </button>
+                <button onClick=${() => showPanel('settings')}
+                    class="nav-btn ${currentPanel.value === 'settings' ? 'active' : ''} w-full text-left flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium">
+                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.072.04.144.083.214.127.345.222.785.273 1.178.13l1.214-.451a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.262 1.34l-.893.877c-.19.185-.295.438-.294.703a9.965 9.965 0 010 1.412c.001.265.105.518.294.703l.893.877a1.125 1.125 0 01.262 1.34l-1.296 2.247a1.125 1.125 0 01-1.37.49l-1.214-.45a1.125 1.125 0 00-1.178.128 9.797 9.797 0 00-.214.126c-.332.184-.582.496-.645.87l-.213 1.281c-.09.542-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.212-1.281a1.125 1.125 0 00-.645-.87 8.09 8.09 0 01-.214-.127 1.125 1.125 0 00-1.178.128l-1.214.45a1.125 1.125 0 01-1.37-.49l-1.296-2.246a1.125 1.125 0 01.262-1.341l.893-.876c.19-.185.294-.438.294-.703a9.965 9.965 0 010-1.412 1.125 1.125 0 00-.294-.703l-.893-.876a1.125 1.125 0 01-.262-1.341l1.296-2.247a1.125 1.125 0 011.37-.49l1.214.45a1.125 1.125 0 001.178-.127 8.099 8.099 0 01.214-.126c.331-.184.582-.497.645-.87l.212-1.281z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    Settings
+                </button>
             </nav>
             <div class="px-3 py-3 border-t border-gray-200 dark:border-gray-700/60">
                 <button onClick=${toggleTheme}
@@ -116,6 +121,8 @@ export function MobileHeader() {
                     class="mob-nav px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap ${currentPanel.value === 'audit' ? 'text-violet-500 bg-violet-500/10' : 'text-gray-500 dark:text-gray-400'}">Audit</button>
                 <button onClick=${() => showPanel('logs')}
                     class="mob-nav px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap ${currentPanel.value === 'logs' ? 'text-violet-500 bg-violet-500/10' : 'text-gray-500 dark:text-gray-400'}">Logs</button>
+                <button onClick=${() => showPanel('settings')}
+                    class="mob-nav px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap ${currentPanel.value === 'settings' ? 'text-violet-500 bg-violet-500/10' : 'text-gray-500 dark:text-gray-400'}">Settings</button>
             </div>
         </header>
 
@@ -149,6 +156,11 @@ export function MobileHeader() {
                     class="nav-btn ${currentPanel.value === 'logs' ? 'active' : ''} w-full text-left flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium">
                     <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 7.5l3 2.25-3 2.25m4.5 0h3m-9 8.25h13.5A2.25 2.25 0 0021 18V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v12a2.25 2.25 0 002.25 2.25z"/></svg>
                     Logs
+                </button>
+                <button onClick=${() => showPanel('settings')}
+                    class="nav-btn ${currentPanel.value === 'settings' ? 'active' : ''} w-full text-left flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium">
+                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.072.04.144.083.214.127.345.222.785.273 1.178.13l1.214-.451a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.262 1.34l-.893.877c-.19.185-.295.438-.294.703a9.965 9.965 0 010 1.412c.001.265.105.518.294.703l.893.877a1.125 1.125 0 01.262 1.34l-1.296 2.247a1.125 1.125 0 01-1.37.49l-1.214-.45a1.125 1.125 0 00-1.178.128 9.797 9.797 0 00-.214.126c-.332.184-.582.496-.645.87l-.213 1.281c-.09.542-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.212-1.281a1.125 1.125 0 00-.645-.87 8.09 8.09 0 01-.214-.127 1.125 1.125 0 00-1.178.128l-1.214.45a1.125 1.125 0 01-1.37-.49l-1.296-2.246a1.125 1.125 0 01.262-1.341l.893-.876c.19-.185.294-.438.294-.703a9.965 9.965 0 010-1.412 1.125 1.125 0 00-.294-.703l-.893-.876a1.125 1.125 0 01-.262-1.341l1.296-2.247a1.125 1.125 0 011.37-.49l1.214.45a1.125 1.125 0 001.178-.127 8.099 8.099 0 01.214-.126c.331-.184.582-.497.645-.87l.212-1.281z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    Settings
                 </button>
             </nav>
             <div class="px-3 py-3 border-t border-gray-200 dark:border-gray-700/60">

@@ -8,7 +8,7 @@ export const schedules = signal([]);
 export const scriptStatusCache = signal({});
 
 // UI state
-export const PANELS = ['profiles', 'workflows', 'schedules', 'audit', 'logs'];
+export const PANELS = ['profiles', 'workflows', 'schedules', 'audit', 'logs', 'settings'];
 
 function initialPanel() {
     const hash = location.hash.replace(/^#\/?/, '');
