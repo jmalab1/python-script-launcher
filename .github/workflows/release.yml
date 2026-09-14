@@ -50,7 +50,8 @@ jobs:
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           ARCHIVE="launch-control-${VERSION}.tar.gz"
-          git archive --format=tar.gz --prefix="launch-control-${VERSION}/" -o "${ARCHIVE}" HEAD
+          git archive --format=tar.gz --prefix="launch-control-${VERSION}/" -o "${ARCHIVE}" HEAD \
+            -- launcher.py launcher/ index.html static/ start.bat README.md Makefile
           echo "archive=${ARCHIVE}" >> "$GITHUB_ENV"
 
       - name: Create tag and GitHub release
