@@ -1,5 +1,5 @@
 import { html } from '../../vendor/standalone-preact.esm.js';
-import { useState, useEffect, useRef } from '../../vendor/standalone-preact.esm.js';
+import { useState, useEffect } from '../../vendor/standalone-preact.esm.js';
 import { tags } from '../state.js';
 import { tagColor } from '../tagColors.js';
 import { saveProfile, loadProfiles, checkAllScripts, openNativeFileDialog } from '../api.js';
@@ -15,23 +15,9 @@ export function ProfileModal({ isOpen, onClose, profile }) {
     const [editingId, setEditingId] = useState(null);
     const [error, setError] = useState('');
     const [visible, setVisible] = useState(false);
-    const panelRef = useRef(null);
-    const onCloseRef = useRef(onClose);
-    onCloseRef.current = onClose;
 
     useEffect(() => {
         setVisible(isOpen);
-    }, [isOpen]);
-
-    useEffect(() => {
-        if (!isOpen) return;
-        function onOutsideClick(e) {
-            if (panelRef.current && !panelRef.current.contains(e.target)) {
-                onCloseRef.current();
-            }
-        }
-        document.addEventListener('click', onOutsideClick, true);
-        return () => document.removeEventListener('click', onOutsideClick, true);
     }, [isOpen]);
 
     useEffect(() => {
@@ -119,7 +105,7 @@ export function ProfileModal({ isOpen, onClose, profile }) {
 
     return html`
         <div class="fixed inset-0 z-50 pointer-events-none">
-            <div ref=${panelRef} class="${isOpen ? 'run-panel-in' : 'run-panel-out'} run-panel-surface pointer-events-auto absolute right-0 top-0 h-full bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700/60 shadow-2xl flex flex-col overflow-y-auto"
+            <div class="${isOpen ? 'run-panel-in' : 'run-panel-out'} run-panel-surface pointer-events-auto absolute right-0 top-0 h-full bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700/60 shadow-2xl flex flex-col overflow-y-auto"
                 style=${{ width: '42rem', maxWidth: '100vw' }}
                 onAnimationEnd=${(e) => { if (e.target === e.currentTarget && !isOpen) setVisible(false); }}>
                 <div class="shrink-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700/60 px-6 py-4">
