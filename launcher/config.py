@@ -1,11 +1,81 @@
 import json
 import os
+import shutil
 import sys
 import threading
 from pathlib import Path
 
 PORT = 8765
-DATA_DIR = Path(__file__).parent.parent / "data"
+
+# App data folder name inside the OS per-user state location.
+_APP_DATA_DIR_NAME = "launchctl-data"
+
+# Legacy data directory names created by earlier builds (next to the
+# executable). The first one found is adopted onto the canonical
+# per-user location on startup.
+_LEGACY_DATA_DIR_NAMES = [_APP_DATA_DIR_NAME, "data"]
+
+
+def _user_state_dir():
+    """Per-user base for app state, following platform conventions.
+
+    Linux:   XDG data home  (or ~/.local/share)
+    macOS:   ~/Library/Application Support
+    Windows: %APPDATA% (via os.UserConfigDir)
+    """
+    if os.name == "nt":
+        # os.UserConfigDir returns e.g. C:\Users\<user>\AppData\Roaming
+        try:
+            return Path(os.environ.get("APPDATA", "") or os.path.expanduser("~"))
+        except Exception:
+            pass
+    elif sys.platform == "darwin":
+        home = os.path.expanduser("~")
+        if home and home != "~":
+            return Path(home) / "Library" / "Application Support"
+    else:
+        xdg = os.environ.get("XDG_DATA_HOME", "")
+        if xdg:
+            return Path(xdg)
+        home = os.path.expanduser("~")
+        if home and home != "~":
+            return Path(home) / ".local" / "share"
+    # Fallback: next to this file (dev/legacy layout).
+    return Path(__file__).parent.parent
+
+
+def _resolve_data_dir():
+    """Return the data directory, respecting env override and OS conventions."""
+    # 1. Env var override (tests and e2e harness).
+    env = os.environ.get("LAUNCHER_DATA_DIR")
+    if env:
+        return Path(env)
+    # 2. OS per-user state location.
+    return _user_state_dir() / _APP_DATA_DIR_NAME
+
+
+def _adopt_legacy_data_dir():
+    """Move an earlier-build data dir next to this file to the canonical
+    per-user location (best effort, runs once per process)."""
+    dest = _resolve_data_dir()
+    if dest.exists():
+        return
+    for name in _LEGACY_DATA_DIR_NAMES:
+        src = Path(__file__).parent.parent / name
+        if src == dest or not src.is_dir():
+            continue
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            shutil.move(str(src), str(dest))
+            break
+        except OSError:
+            pass
+
+
+# Resolve data dir at import time. Legacy adoption runs once.
+DATA_DIR = _resolve_data_dir()
+_adopt_legacy_data_dir()
+
 DB_PATH = DATA_DIR / "launcher.db"
 
 COL_PROFILES = "profiles"
