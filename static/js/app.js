@@ -65,6 +65,12 @@ function App() {
     }, []);
 
     useEffect(() => {
+        setProfileOpen(false);
+        setWorkflowOpen(false);
+        setScheduleOpen(false);
+    }, [currentPanel.value]);
+
+    useEffect(() => {
         let cancelled = false;
         async function init() {
             try {
