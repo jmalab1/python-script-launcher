@@ -11,6 +11,7 @@ Deliberately bypasses server.main(): it auto-opens a browser on Windows and
 prompts interactively on port conflicts, neither of which a test run wants.
 Instead the same request handler is served directly.
 """
+
 import http.server
 import sys
 from pathlib import Path
@@ -27,6 +28,7 @@ def main():
 
     config.DATA_DIR = data_dir
     config.DB_PATH = data_dir / "launcher.db"
+    config.SETTINGS_PATH = data_dir / "settings.json"
     config.PORT = port
 
     from launcher.server import LauncherHandler, setup_file_logging

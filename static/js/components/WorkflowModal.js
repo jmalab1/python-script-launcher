@@ -1,5 +1,5 @@
 import { html } from '../../vendor/standalone-preact.esm.js';
-import { useState, useEffect } from '../../vendor/standalone-preact.esm.js';
+import { useState, useEffect, useRef } from '../../vendor/standalone-preact.esm.js';
 import { profiles, tags } from '../state.js';
 import { tagColor } from '../tagColors.js';
 import { saveWorkflow, loadWorkflows } from '../api.js';
@@ -17,6 +17,25 @@ export function WorkflowModal({ isOpen, onClose, workflow }) {
     const [editingId, setEditingId] = useState(null);
     const [tagIds, setTagIds] = useState([]);
     const [error, setError] = useState('');
+    const [visible, setVisible] = useState(false);
+    const panelRef = useRef(null);
+    const onCloseRef = useRef(onClose);
+    onCloseRef.current = onClose;
+
+    useEffect(() => {
+        setVisible(isOpen);
+    }, [isOpen]);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        function onOutsideClick(e) {
+            if (panelRef.current && !panelRef.current.contains(e.target)) {
+                onCloseRef.current();
+            }
+        }
+        document.addEventListener('click', onOutsideClick, true);
+        return () => document.removeEventListener('click', onOutsideClick, true);
+    }, [isOpen]);
 
     useEffect(() => {
         if (isOpen) {
@@ -233,7 +252,7 @@ export function WorkflowModal({ isOpen, onClose, workflow }) {
         onClose();
     }
 
-    if (!isOpen) return null;
+    if (!visible) return null;
 
     const profileList = profiles.value;
     const profileMap = Object.fromEntries(profileList.map(p => [p.id, p]));
@@ -331,79 +350,78 @@ export function WorkflowModal({ isOpen, onClose, workflow }) {
     }
 
     return html`
-        <div class="fixed inset-0 z-50">
-            <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick=${onClose}></div>
-            <div class="relative flex items-center justify-center min-h-full p-4">
-                <div class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[85vh] overflow-y-auto border border-gray-200 dark:border-gray-700/60">
-                    <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700/60 px-6 py-4 rounded-t-2xl z-10">
-                        <div class="flex items-center justify-between">
-                            <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100">
-                                ${editingId ? 'Edit Workflow' : 'New Workflow'}
-                            </h2>
-                            <button onClick=${onClose} class="p-1 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
-                            </button>
-                        </div>
+        <div class="fixed inset-0 z-50 pointer-events-none">
+            <div ref=${panelRef} class="${isOpen ? 'run-panel-in' : 'run-panel-out'} run-panel-surface pointer-events-auto absolute right-0 top-0 h-full bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700/60 shadow-2xl flex flex-col overflow-y-auto"
+                style=${{ width: '48rem', maxWidth: '100vw' }}
+                onAnimationEnd=${(e) => { if (e.target === e.currentTarget && !isOpen) setVisible(false); }}>
+                <div class="shrink-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700/60 px-6 py-4">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100">
+                            ${editingId ? 'Edit Workflow' : 'New Workflow'}
+                        </h2>
+                        <button onClick=${onClose} class="p-1 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
+                        </button>
                     </div>
-                    <div class="px-6 py-5 space-y-4">
-                        <${ErrorBanner} message=${error} />
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Workflow Name</label>
-                            <input type="text" value=${name} onInput=${e => setName(e.target.value)}
-                                placeholder="e.g. ETL Pipeline"
-                                class="w-full bg-white dark:bg-gray-900/30 border border-gray-300 dark:border-gray-700/60 rounded-lg px-3 py-2 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-violet-500 focus:ring-0 focus:ring-offset-0 transition" />
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tags <span class="text-gray-400 font-normal">(any number)</span></label>
-                            ${tags.value.length ? html`
-                                <div class="flex flex-wrap gap-1.5">
-                                    ${tags.value.map(t => {
-                                        const color = tagColor(t);
-                                        return html`
-                                            <button type="button" onClick=${() => toggleTagId(t.id)}
-                                                class="px-2.5 py-1.5 text-xs font-medium rounded-lg border transition ${tagIds.includes(t.id)
-                                                    ? color.chip + ' ring-2 ' + color.ring
-                                                    : 'bg-white dark:bg-gray-900/30 border-gray-300 dark:border-gray-700/60 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'}">
-                                                ${t.name}
-                                            </button>
-                                        `;
-                                    })}
-                                </div>
-                            ` : html`
-                                <p class="text-sm text-gray-500 dark:text-gray-400">No tags yet — create some with the Tags button above the list.</p>
-                            `}
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Steps</label>
-                            <div class="flex gap-2 mb-3">
-                                <button onClick=${addSequentialStep}
-                                    disabled=${!profileList.length}
-                                    class="bg-gray-900 text-gray-100 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-800 dark:hover:bg-white text-sm font-medium px-3 py-2 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed">+ Add Step</button>
-                                <button onClick=${addParallelGroup}
-                                    disabled=${!profileList.length}
-                                    class="bg-green-600 text-white hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-sm font-medium px-3 py-2 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed">+ Parallel Group</button>
+                </div>
+                <div class="flex-1 min-h-0 overflow-y-auto px-6 py-5 space-y-4">
+                    <${ErrorBanner} message=${error} />
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Workflow Name</label>
+                        <input type="text" value=${name} onInput=${e => setName(e.target.value)}
+                            placeholder="e.g. ETL Pipeline"
+                            class="w-full bg-white dark:bg-gray-900/30 border border-gray-300 dark:border-gray-700/60 rounded-lg px-3 py-2 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-violet-500 focus:ring-0 focus:ring-offset-0 transition" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tags <span class="text-gray-400 font-normal">(any number)</span></label>
+                        ${tags.value.length ? html`
+                            <div class="flex flex-wrap gap-1.5">
+                                ${tags.value.map(t => {
+                                    const color = tagColor(t);
+                                    return html`
+                                        <button type="button" onClick=${() => toggleTagId(t.id)}
+                                            class="px-2.5 py-1.5 text-xs font-medium rounded-lg border transition ${tagIds.includes(t.id)
+                                                ? color.chip + ' ring-2 ' + color.ring
+                                                : 'bg-white dark:bg-gray-900/30 border-gray-300 dark:border-gray-700/60 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'}">
+                                            ${t.name}
+                                        </button>
+                                    `;
+                                })}
                             </div>
-                            ${!localSteps.length ? html`<div class="text-xs text-gray-400 py-2">${profileList.length ? 'No steps added yet. Use "+ Add Step" for a single step, or "+ Parallel Group" to run multiple profiles at once.' : 'Create a profile first, then add it as a step here.'}</div>` : html`
-                                <${SortableList}
-                                    items=${localSteps}
-                                    getKey=${s => s._id}
-                                    gripClass="mt-2.5"
-                                    onReorder=${reorderSteps}
-                                    renderItem=${renderStep}
-                                />
-                            `}
-                        </div>
-                        <div class="flex items-center gap-3">
-                            <input type="checkbox" checked=${continueOnError}
-                                onChange=${e => setContinueOnError(e.target.checked)}
-                                class="w-4 h-4 rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900/30 text-violet-500 focus:ring-violet-500/50 focus:ring-offset-0" />
-                            <label class="text-sm text-gray-700 dark:text-gray-300">Continue on error</label>
-                        </div>
+                        ` : html`
+                            <p class="text-sm text-gray-500 dark:text-gray-400">No tags yet — create some with the Tags button above the list.</p>
+                        `}
                     </div>
-                    <div class="sticky bottom-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700/60 px-6 py-4 rounded-b-2xl flex justify-end gap-2">
-                        <button onClick=${onClose} class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg transition">Cancel</button>
-                        <button onClick=${handleSave} class="bg-gray-900 text-gray-100 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-800 dark:hover:bg-white text-sm font-medium px-4 py-2 rounded-lg transition">Save Workflow</button>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Steps</label>
+                        <div class="flex gap-2 mb-3">
+                            <button onClick=${addSequentialStep}
+                                disabled=${!profileList.length}
+                                class="bg-gray-900 text-gray-100 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-800 dark:hover:bg-white text-sm font-medium px-3 py-2 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed">+ Add Step</button>
+                            <button onClick=${addParallelGroup}
+                                disabled=${!profileList.length}
+                                class="bg-green-600 text-white hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-sm font-medium px-3 py-2 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed">+ Parallel Group</button>
+                        </div>
+                        ${!localSteps.length ? html`<div class="text-xs text-gray-400 py-2">${profileList.length ? 'No steps added yet. Use "+ Add Step" for a single step, or "+ Parallel Group" to run multiple profiles at once.' : 'Create a profile first, then add it as a step here.'}</div>` : html`
+                            <${SortableList}
+                                items=${localSteps}
+                                getKey=${s => s._id}
+                                gripClass="mt-2.5"
+                                onReorder=${reorderSteps}
+                                renderItem=${renderStep}
+                            />
+                        `}
                     </div>
+                    <div class="flex items-center gap-3">
+                        <input type="checkbox" checked=${continueOnError}
+                            onChange=${e => setContinueOnError(e.target.checked)}
+                            class="w-4 h-4 rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900/30 text-violet-500 focus:ring-violet-500/50 focus:ring-offset-0" />
+                        <label class="text-sm text-gray-700 dark:text-gray-300">Continue on error</label>
+                    </div>
+                </div>
+                <div class="shrink-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700/60 px-6 py-4 flex justify-end gap-2">
+                    <button onClick=${onClose} class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg transition">Cancel</button>
+                    <button onClick=${handleSave} class="bg-gray-900 text-gray-100 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-800 dark:hover:bg-white text-sm font-medium px-4 py-2 rounded-lg transition">Save Workflow</button>
                 </div>
             </div>
         </div>
