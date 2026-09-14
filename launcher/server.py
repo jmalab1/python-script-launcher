@@ -139,6 +139,11 @@ class LauncherHandler(http.server.SimpleHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(content)
 
+            elif path == "/favicon.ico":
+                self.send_response(302)
+                self.send_header("Location", "/static/favicon.svg")
+                self.end_headers()
+
             elif path == "/api/browse":
                 dir_path = query.get("path", [str(Path.home())])[0]
                 result = filesystem.browse_directory(dir_path)
